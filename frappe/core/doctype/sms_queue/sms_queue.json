@@ -1,4 +1,5 @@
 {
+ "actions": [],
  "autoname": "hash",
  "creation": "2022-08-08 16:41:14.237485",
  "doctype": "DocType",
@@ -21,6 +22,8 @@
   "section_break_4",
   "reference_doctype",
   "reference_name",
+  "child_doctype",
+  "child_name",
   "column_break_13",
   "party_doctype",
   "party",
@@ -160,14 +163,31 @@
   {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "child_doctype",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Child DocType",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "child_name",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Child Name",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-mobile-phone",
  "in_create": 1,
- "modified": "2022-08-10 09:35:32.066686",
+ "links": [],
+ "modified": "2023-06-09 16:46:19.583073",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "SMS Queue",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {
@@ -181,5 +201,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "reference_name"
 }

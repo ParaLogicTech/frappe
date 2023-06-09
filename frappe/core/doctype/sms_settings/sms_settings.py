@@ -163,6 +163,8 @@ def get_sms_args_from_controller(notification_type, doc):
 	if args:
 		args.reference_doctype = doc.doctype
 		args.reference_name = doc.name
+		args.child_doctype = child_doctype
+		args.child_name = child_name
 
 	return args
 

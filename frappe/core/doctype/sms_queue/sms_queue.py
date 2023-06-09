@@ -53,7 +53,7 @@ def flush(from_test=False):
 def send_one(sms_queue, auto_commit=True, now=False, from_test=False):
 	sms_queue = frappe.db.sql('''
 		select name, status, message, sender, reference_doctype, reference_name, retry, party_doctype, party,
-			notification_type, communication
+			child_doctype, child_name, notification_type, communication
 		from `tabSMS Queue`
 		where name=%s
 		for update
@@ -179,6 +179,8 @@ def prepare_sms(sms_queue, recipient):
 		'party_doctype': sms_queue.party_doctype,
 		'party': sms_queue.party,
 		'sms_queue': sms_queue.name,
+		'child_doctype': sms_queue.child_doctype,
+		'child_name': sms_queue.child_name
 	})
 
 	return args
