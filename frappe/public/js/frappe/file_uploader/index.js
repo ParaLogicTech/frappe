@@ -19,6 +19,8 @@ export default class FileUploader {
 		attach_doc_image,
 		frm,
 		make_attachments_public,
+		allow_web_link,
+		show_upload_button,
 	} = {}) {
 		frm && frm.attachments.max_reached(true);
 
@@ -28,12 +30,16 @@ export default class FileUploader {
 			this.wrapper = wrapper.get ? wrapper.get(0) : wrapper;
 		}
 
+		if (show_upload_button == null) {
+			show_upload_button = !Boolean(this.dialog);
+		}
+
 		this.$fileuploader = new Vue({
 			el: this.wrapper,
 			render: (h) =>
 				h(FileUploaderComponent, {
 					props: {
-						show_upload_button: !Boolean(this.dialog),
+						show_upload_button,
 						doctype,
 						docname,
 						fieldname,
@@ -47,6 +53,7 @@ export default class FileUploader {
 						disable_file_browser,
 						attach_doc_image,
 						make_attachments_public,
+						allow_web_link,
 					},
 				}),
 		});

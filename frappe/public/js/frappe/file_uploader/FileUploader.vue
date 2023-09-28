@@ -183,6 +183,9 @@ export default {
 		},
 		upload_notes: {
 			default: null // "Images or video, upto 2MB"
+		},
+		allow_web_link: {
+			default: true
 		}
 	},
 	components: {
@@ -204,7 +207,6 @@ export default {
 			close_dialog: false,
 			hide_dialog_footer: false,
 			allow_take_photo: false,
-			allow_web_link: true,
 			google_drive_settings: {
 				enabled: false
 			},
