@@ -801,14 +801,13 @@ class DatabaseQuery:
 				value = cstr(f.value)
 				fallback = f"'{FallBackDateTimeStr}'"
 
-			elif f.operator.lower() in ("between") and (
-				f.fieldname in ("creation", "modified")
-				or (df and (df.fieldtype == "Date" or df.fieldtype == "Datetime"))
-			):
-
-				escape = False
-				value = get_between_date_filter(f.value, df)
-				fallback = f"'{FallBackDateTimeStr}'"
+			elif f.operator.lower() == 'between':
+				if f.fieldname in ('creation', 'modified') or (df and df.fieldtype in ("Date", "Datetime")):
+					value = get_between_date_filter(f.value, df)
+					fallback = "'0001-01-01 00:00:00'"
+				elif df and df.fieldtype in frappe.model.numeric_fieldtypes:
+					value = get_between_numeric_filter(f.value, df)
+					fallback = 0
 
 			elif f.operator.lower() == "is":
 				if f.value == "set":
@@ -1255,6 +1254,26 @@ def get_between_date_filter(value, df=None):
 		)
 	else:
 		data = f"'{frappe.db.format_date(from_date)}' AND '{frappe.db.format_date(to_date)}'"
+
+	return data
+
+
+def get_between_numeric_filter(value, df=None):
+	from_value = to_value = 0
+
+	if value and isinstance(value, (list, tuple)):
+		if len(value) >= 2:
+			from_value, to_value = value[0], value[1]
+		elif len(value) == 1:
+			if flt(value[0]) > 0: to_value = value[0]
+			else: from_value = value[0]
+
+	if df and df.fieldtype in ("Int", "Check"):
+		from_value, to_value = cint(from_value), cint(to_value)
+	else:
+		from_value, to_value = flt(from_value), flt(to_value)
+
+	data = "{0} AND {1}".format(frappe.db.escape(from_value), frappe.db.escape(to_value))
 
 	return data
 
