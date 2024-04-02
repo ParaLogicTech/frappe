@@ -166,6 +166,11 @@ def get_mapped_doc(
 	):
 		target_doc.raise_no_permission_to("create")
 
+	if source_doc.get("customer") and source_doc.get("company"):
+		if frappe.get_cached_value("Customer", source_doc.get("customer"), "taxes_and_charges_template"):
+			set_taxes_and_charges(source_doc, target_doc)
+			target_doc.set_onload("load_after_mapping", True)
+	
 	return target_doc
 
 
@@ -282,3 +287,10 @@ def map_child_doc(source_d, target_parent, table_map, source_parent=None, target
 		target_parent.append(target_parentfield, target_d)
 
 	return target_d
+
+
+def set_taxes_and_charges(source_doc, target_doc):
+	from erpnext.accounts.party import set_taxes
+	from erpnext.accounts.doctype.sales_invoice.pos import update_tax_table
+	target_doc.taxes_and_charges = set_taxes(source_doc.get("customer"), "Customer", source_doc.get("posting_date"), source_doc.get("company"))
+	update_tax_table(target_doc)
