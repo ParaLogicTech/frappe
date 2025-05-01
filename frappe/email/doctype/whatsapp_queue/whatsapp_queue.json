@@ -1,0 +1,95 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "WMR.####",
+ "creation": "2025-05-01 07:40:14.225180",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "price_list_email_ref",
+  "message_id",
+  "status",
+  "message",
+  "error",
+  "updated_time",
+  "msg_type",
+  "recipient",
+  "created_time"
+ ],
+ "fields": [
+  {
+   "fieldname": "price_list_email_ref",
+   "fieldtype": "Data",
+   "label": "Price List Email"
+  },
+  {
+   "fieldname": "message_id",
+   "fieldtype": "Data",
+   "label": "Message Id"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Code",
+   "label": "Message"
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Code",
+   "label": "Error"
+  },
+  {
+   "fieldname": "updated_time",
+   "fieldtype": "Datetime",
+   "label": "Updated Time"
+  },
+  {
+   "fieldname": "msg_type",
+   "fieldtype": "Data",
+   "label": "Type"
+  },
+  {
+   "fieldname": "recipient",
+   "fieldtype": "Data",
+   "label": "Recipient"
+  },
+  {
+   "fieldname": "created_time",
+   "fieldtype": "Datetime",
+   "label": "Created Time"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-01 09:46:04.832520",
+ "modified_by": "Administrator",
+ "module": "Email",
+ "name": "WhatsApp Queue",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
