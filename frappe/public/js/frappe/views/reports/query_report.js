@@ -770,11 +770,83 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 	}
 
 	render_summary(data) {
-		data.forEach((summary) => {
-			frappe.utils.build_summary_item(summary).appendTo(this.$summary);
+		this.$summary.empty();
+
+		// Check if all items in data have card property set to true
+		let is_it_build_card = data.every((item) => {
+			return item.card === true;
 		});
 
+		if (is_it_build_card) {
+			let html = `<div class="report-summary-card-container">`;
+
+			let section_label = '';
+			let section_rows = [];
+
+			data.forEach((item, index) => {
+				if (item.datatype === "Section Break") {
+					// render last section if exists
+					if (section_rows.length > 0) {
+						html += this.build_card(section_label, section_rows);
+						section_rows = [];
+					}
+					section_label = item.label;
+				} else {
+					section_rows.push(item);
+				}
+			});
+
+			// render final section
+			if (section_rows.length > 0) {
+				html += this.build_card(section_label, section_rows);
+			}
+			html += `</div>`;
+			this.$summary.html(html);
+
+			// Remove border-bottom from summary section
+			$('.report-summary').css('border-bottom', 'none');
+		}
+		else {
+			data.forEach((summary) => {
+				frappe.utils.build_summary_item(summary).appendTo(this.$summary);
+			});
+		}
 		this.$summary.show();
+	}
+
+	// Add this helper method
+	build_card(title, rows) {
+		let card = `
+			<div class="report-summary-card">
+				<h4 style="margin: 0 0 10px 0; font-size: 16px;">${title}</h4>
+				<table style="width:100%; border-collapse: collapse;">
+					<tbody>
+		`;
+
+		rows.forEach(item => {
+			const value = item.datatype === "Percent" ? `${item.value}%` : frappe.format(item.value, { fieldtype: item.datatype });
+			const color = {
+				green: "#28a745",
+				red: "#dc3545",
+				blue: "#007bff",
+				orange: "#fd7e14",
+				purple: "#6f42c1"
+			}[item.indicator] || "#333";
+
+			card += `
+				<tr>
+					<td style="padding: 4px 0;">${item.label}</td>
+					<td style="text-align: right; font-weight: bold; color: ${color}; padding: 4px 0;">${value}</td>
+				</tr>`;
+		});
+
+		card += `
+					</tbody>
+				</table>
+			</div>
+		`;
+
+		return card;
 	}
 
 	get_query_params() {
