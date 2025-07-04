@@ -31,6 +31,7 @@ class Report(Document):
 		add_total_row: DF.Check
 		columns: DF.Table[ReportColumn]
 		disabled: DF.Check
+		enable_card_view_in_summary: DF.Check
 		filters: DF.Table[ReportFilter]
 		is_standard: DF.Literal["No", "Yes"]
 		javascript: DF.Code | None
@@ -46,7 +47,6 @@ class Report(Document):
 		report_type: DF.Literal["Report Builder", "Query Report", "Script Report", "Custom Report"]
 		roles: DF.Table[HasRole]
 		timeout: DF.Int
-
 	# end: auto-generated types
 	def validate(self):
 		"""only administrator can save standard report"""
