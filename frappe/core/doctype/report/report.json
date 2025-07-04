@@ -15,6 +15,7 @@
   "report_type",
   "letter_head",
   "add_total_row",
+  "enable_card_view_in_summary",
   "disabled",
   "prepared_report",
   "timeout",
@@ -190,12 +191,18 @@
    "fieldname": "timeout",
    "fieldtype": "Int",
    "label": "Timeout (In Seconds)"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_card_view_in_summary",
+   "fieldtype": "Check",
+   "label": "Enable Card View in Summary"
   }
  ],
  "idx": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-31 20:34:10.018811",
+ "modified": "2025-07-04 14:04:43.497377",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Report",

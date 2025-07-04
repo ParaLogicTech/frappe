@@ -772,12 +772,8 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 	render_summary(data) {
 		this.$summary.empty();
 
-		// Check if all items in data have card property set to true
-		let is_it_build_card = data.every((item) => {
-			return item.card === true;
-		});
-
-		if (is_it_build_card) {
+		// Check if the report enable card view
+		if (this.report_doc.enable_card_view_in_summary) {
 			let html = `<div class="report-summary-card-container">`;
 
 			let section_label = '';
