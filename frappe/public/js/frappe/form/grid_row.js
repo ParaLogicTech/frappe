@@ -122,9 +122,16 @@ export default class GridRow {
 		this.doc.__checked = checked ? 1 : 0;
 	}
 	refresh_check() {
+		let checked = false;
+		if (this.doc) {
+			checked = !!this.doc.__checked;
+		} else if (!this.show_search) {
+			checked = this.grid.grid_rows?.every(d => d.doc?.__checked);
+		}
+
 		this.wrapper
 			.find(".grid-row-check")
-			.prop("checked", this.doc ? !!this.doc.__checked : false);
+			.prop("checked", checked);
 		this.grid.debounced_refresh_remove_rows_button();
 	}
 	remove() {
