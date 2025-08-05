@@ -126,7 +126,7 @@ export default class GridRow {
 		if (this.doc) {
 			checked = !!this.doc.__checked;
 		} else if (!this.show_search) {
-			checked = this.grid.grid_rows?.every(d => d.doc?.__checked);
+			checked = !!this.grid.grid_rows?.length && this.grid.grid_rows.every(d => d.doc?.__checked);
 		}
 
 		this.wrapper
