@@ -656,7 +656,6 @@ frappe.ui.form.PrintView = class {
 	}
 
 	render_page(method, printit = false) {
-		console.log(this.is_ncr());
 		let w = window.open(
 			frappe.urllib.get_full_url(
 				method +
