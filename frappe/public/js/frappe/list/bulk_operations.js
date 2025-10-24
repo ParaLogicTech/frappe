@@ -84,11 +84,17 @@ export default class BulkOperations {
 				},
 				{
 					fieldtype: "Check",
+					label: __("NCR"),
+					fieldname: "ncr_check",
+					default: 0
+				},
+				{
+					fieldtype: "Check",
 					label: __("Background Print (required for >25 documents)"),
 					fieldname: "background_print",
 					default: valid_docs.length > BACKGROUND_PRINT_THRESHOLD,
 					read_only: valid_docs.length > BACKGROUND_PRINT_THRESHOLD,
-				},
+				}
 			],
 		});
 
@@ -96,6 +102,7 @@ export default class BulkOperations {
 			if (!args) return;
 			const default_print_format = frappe.get_meta(this.doctype).default_print_format;
 			const with_letterhead = args.letter_sel == __("No Letterhead") ? 0 : 1;
+			const ncr_selector = args.ncr_check;
 			const print_format = args.print_sel ? args.print_sel : default_print_format;
 			const json_string = JSON.stringify(valid_docs);
 			const letterhead = args.letter_sel;
@@ -122,6 +129,7 @@ export default class BulkOperations {
 						no_letterhead: with_letterhead ? "0" : "1",
 						letterhead: letterhead,
 						options: pdf_options,
+						ncr:ncr_selector
 					})
 					.then((response) => {
 						let task_id = response.message.task_id;
@@ -154,7 +162,9 @@ export default class BulkOperations {
 						"&letterhead=" +
 						encodeURIComponent(letterhead) +
 						"&options=" +
-						encodeURIComponent(pdf_options)
+						encodeURIComponent(pdf_options) +
+						"&ncr=" +
+						encodeURIComponent(ncr_selector)
 				);
 
 				if (!w) {
