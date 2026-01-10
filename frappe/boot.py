@@ -164,9 +164,9 @@ def get_user_pages_or_reports(parent, cache=False):
 	report = DocType("Report")
 
 	if parent == "Report":
-		columns = (report.name.as_("title"), report.ref_doctype, report.report_type)
+		columns = (report.name.as_("title"), report.ref_doctype, report.report_type, report.module)
 	else:
-		columns = (page.title.as_("title"),)
+		columns = (page.title.as_("title"), page.module)
 
 	customRole = DocType("Custom Role")
 	hasRole = DocType("Has Role")
@@ -216,7 +216,7 @@ def get_user_pages_or_reports(parent, cache=False):
 
 	for p in pages_with_standard_roles:
 		if p.name not in has_role:
-			has_role[p.name] = {"modified": p.modified, "title": p.title}
+			has_role[p.name] = {"modified": p.modified, "title": p.title, "module": p.module}
 			if parent == "Report":
 				has_role[p.name].update({"ref_doctype": p.ref_doctype})
 
@@ -235,7 +235,7 @@ def get_user_pages_or_reports(parent, cache=False):
 
 		for p in pages_with_no_roles:
 			if p.name not in has_role:
-				has_role[p.name] = {"modified": p.modified, "title": p.title}
+				has_role[p.name] = {"modified": p.modified, "title": p.title, "module": p.module}
 
 	elif parent == "Report":
 		if not has_permission("Report", raise_exception=False):
