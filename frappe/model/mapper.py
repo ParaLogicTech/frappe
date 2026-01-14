@@ -5,6 +5,7 @@ import json
 import frappe
 from frappe import _
 from frappe.model import child_table_fields, default_fields, table_fields
+from frappe.model.document import Document
 from frappe.utils import cstr
 
 
@@ -79,6 +80,9 @@ def get_mapped_doc(
 	):
 		target_doc.raise_no_permission_to("create")
 
+	if isinstance(from_docname, Document):
+		source_doc = from_docname
+		from_docname = source_doc.name
 	if cached:
 		source_doc = frappe.get_cached_doc(from_doctype, from_docname)
 	else:
