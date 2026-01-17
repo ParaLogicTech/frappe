@@ -323,8 +323,8 @@
 	}
 
 	.grid-static-col[data-fieldtype="Rating"] .field-area {
-		margin-top: 1rem;
-		margin-left: 1rem;
+		padding: var(--grid-padding);
+		line-height: 1;
 	}
 
 	.grid-static-col[data-fieldtype="Code"],
