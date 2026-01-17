@@ -453,6 +453,11 @@ class File(Document):
 		thumbnail_url = f"{filename}_{suffix}.{extn}"
 		path = os.path.abspath(frappe.get_site_path("public", thumbnail_url.lstrip("/")))
 
+		# Convert RGBA to RGB if JPEG
+		mimetype = mimetypes.guess_type(thumbnail_url)[0]
+		if mimetype == "image/jpeg" and image.mode == "RGBA":
+			image = image.convert("RGB")
+
 		try:
 			image.save(path)
 			if set_as_thumbnail:
