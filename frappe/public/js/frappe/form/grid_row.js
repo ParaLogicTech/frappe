@@ -393,6 +393,10 @@ export default class GridRow {
 			$(this.frm.wrapper).trigger("grid-row-render", [this]);
 		}
 
+		if (this.grid?.control?.layout) {
+			$(this.grid.control.layout.wrapper).trigger("grid-row-render", [this]);
+		}
+
 		return true;
 	}
 
@@ -814,7 +818,7 @@ export default class GridRow {
 			}
 		});
 
-		if (this.show_search) {
+		if (this.show_search && !this.grid.df.in_place_edit) {
 			// last empty column
 			$(`<div class="col grid-static-col search"></div>`).appendTo(this.row);
 		}
