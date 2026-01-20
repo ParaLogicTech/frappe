@@ -67,7 +67,6 @@
   "authorize_api_indexing_access",
   "indexing_refresh_token",
   "indexing_authorization_code",
-  "google_analytics_anonymize_ip",
   "column_break_17",
   "google_analytics_id",
   "google_analytics_anonymize_ip",
@@ -132,7 +131,6 @@
    "label": "Website Theme Image Link"
   },
   {
-   "collapsible": 1,
    "fieldname": "brand",
    "fieldtype": "Section Break",
    "label": "Brand"
@@ -173,7 +171,6 @@
    "options": "Top Bar Item"
   },
   {
-   "collapsible": 1,
    "collapsible_depends_on": "banner_html",
    "fieldname": "banner",
    "fieldtype": "Section Break",
@@ -217,7 +214,6 @@
    "label": "Hide Footer Signup"
   },
   {
-   "collapsible": 1,
    "fieldname": "integrations",
    "fieldtype": "Tab Break",
    "label": "Integrations"
@@ -257,7 +253,6 @@
    "label": "Disable signups"
   },
   {
-   "collapsible": 1,
    "fieldname": "section_break_38",
    "fieldtype": "Tab Break",
    "label": "Header, Robots"
@@ -385,7 +380,6 @@
    "label": "Show Language Picker"
   },
   {
-   "collapsible": 1,
    "collapsible_depends_on": "navbar_template",
    "fieldname": "navbar_template_section",
    "fieldtype": "Section Break",
@@ -490,7 +484,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-01-08 11:50:34.750809",
+ "modified": "2026-01-20 14:25:16.267431",
  "modified_by": "Administrator",
  "module": "Website",
  "name": "Website Settings",
@@ -511,6 +505,7 @@
    "role": "All"
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
