@@ -391,9 +391,7 @@ export default class GridRow {
 
 		if (this.frm && this.doc) {
 			$(this.frm.wrapper).trigger("grid-row-render", [this]);
-		}
-
-		if (this.grid?.control?.layout) {
+		} else if (this.grid?.control?.layout && this.doc) {
 			$(this.grid.control.layout.wrapper).trigger("grid-row-render", [this]);
 		}
 
