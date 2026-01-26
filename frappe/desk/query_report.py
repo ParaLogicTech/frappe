@@ -962,9 +962,9 @@ def _group_report_data(
 		if not group_field:
 			group_value = ''
 		elif isinstance(group_field, (list, tuple)):
-			group_value = tuple(map(lambda f: row.get(f) or '', group_field))
+			group_value = tuple(map(lambda f: row.get(f), group_field))
 		else:
-			group_value = row.get(group_field) or ''
+			group_value = row.get(group_field)
 
 		group_rows.setdefault(group_value, []).append(row)
 
