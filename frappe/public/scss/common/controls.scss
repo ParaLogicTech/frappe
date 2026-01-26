@@ -342,10 +342,10 @@ textarea.form-control {
 	cursor: pointer;
 	--star-fill: var(--gray-300);
 	.star-hover {
-		--star-fill: var(--yellow-100);
+		--star-fill: var(--yellow-200);
 	}
 	.star-click {
-		--star-fill: var(--yellow-300);
+		--star-fill: var(--yellow-400);
 	}
 
 	.rating-box {
