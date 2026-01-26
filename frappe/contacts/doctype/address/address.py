@@ -109,7 +109,7 @@ class Address(Document):
 						update_preferred_address(address, field)
 
 	def get_display(self):
-		return get_address_display(self.as_dict())
+		return render_address(self.as_dict())
 
 	def has_link(self, doctype, name):
 		for link in self.links:
@@ -170,12 +170,12 @@ def get_default_address(doctype: str, name: str | None, sort_key: str = "is_prim
 
 @frappe.whitelist()
 def get_address_display(address_dict: dict | str | None) -> str | None:
-	return render_address(address_dict)
+	return render_address(address_dict, check_permissions=True)
 
 
-def render_address(address: dict | str | None, check_permissions=True) -> str | None:
+def render_address(address: dict | str | None, check_permissions=False) -> str | None:
 	if not address:
-		return
+		return None
 
 	if not isinstance(address, dict):
 		address = frappe.get_cached_doc("Address", address)
@@ -373,6 +373,6 @@ def get_address_display_list(doctype: str, name: str) -> list[dict]:
 		order_by="is_primary_address DESC, `tabAddress`.creation ASC",
 	)
 	for a in address_list:
-		a["display"] = get_address_display(a)
+		a["display"] = render_address(a)
 
 	return address_list

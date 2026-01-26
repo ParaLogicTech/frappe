@@ -412,8 +412,24 @@ def invite_user(contact: str):
 
 @frappe.whitelist()
 def get_contact_details(contact, get_contact_no_list=False, link_doctype=None, link_name=None):
+	return _get_contact_details(
+		contact,
+		get_contact_no_list=get_contact_no_list,
+		link_doctype=link_doctype,
+		link_name=link_name,
+		check_permissions=True,
+	)
+
+
+def _get_contact_details(
+	contact,
+	get_contact_no_list=False,
+	link_doctype=None,
+	link_name=None,
+	check_permissions=False,
+):
 	contact = frappe.get_doc("Contact", contact) if contact else frappe._dict()
-	if contact:
+	if contact and check_permissions:
 		contact.check_permission()
 
 	out = frappe._dict({
