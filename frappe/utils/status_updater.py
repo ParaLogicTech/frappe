@@ -104,14 +104,26 @@ class StatusUpdater(Document):
 		for row in items:
 			completed_qty = 0
 			for f in completed_field:
-				completed_qty += abs(flt(row.get(f), precision))
+				completed_qty += flt(row.get(f), precision)
 
-			reference_qty = abs(flt(row.get(reference_field), precision))
-			completed_qty = min(completed_qty, reference_qty)
+			reference_qty = flt(row.get(reference_field), precision)
 
+			# clip completed qty, not more than required/reference and 0 if the other direction
+			if reference_qty < 0:
+				completed_qty = max(completed_qty, reference_qty)
+				completed_qty = min(completed_qty, 0)
+			else:
+				completed_qty = min(completed_qty, reference_qty)
+				completed_qty = max(completed_qty, 0)
+
+			# min qty allowance, consider negative reference
 			min_qty = flt(reference_qty - (reference_qty * under_delivery_percentage / 100), precision)
-			if completed_qty < min_qty:
-				within_allowance = False
+			if reference_qty < 0:
+				if completed_qty > min_qty:
+					within_allowance = False
+			else:
+				if completed_qty < min_qty:
+					within_allowance = False
 
 			total_reference_qty += reference_qty
 			total_completed_qty += completed_qty
