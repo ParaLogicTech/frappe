@@ -11,8 +11,9 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 	}
 
 	init() {
-		this.page_length = 20;
-		this.child_page_length = 20;
+		this.initial_page_length = cint(this.initial_page_length) || 20;
+		this.page_length = this.initial_page_length;
+		this.child_page_length = this.initial_page_length;
 		this.fields = this.get_fields();
 
 		this.make();
@@ -31,7 +32,7 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 
 	get_result_fields() {
 		const show_next_page = () => {
-			this.page_length += 20;
+			this.page_length += this.initial_page_length;
 			this.get_results();
 		};
 		return [
@@ -61,7 +62,7 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 		const fields = [];
 		if (this.allow_child_item_selection && this.child_fieldname) {
 			const show_more_child_results = () => {
-				this.child_page_length += 20;
+				this.child_page_length += this.initial_page_length;
 				this.show_child_results();
 			};
 			fields.push({ fieldtype: "HTML", fieldname: "child_selection_area" });
@@ -142,8 +143,8 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 	setup_results() {
 		this.$parent = $(this.dialog.body);
 		this.$wrapper = this.dialog.fields_dict.results_area.$wrapper
-			.append(`<div class="results my-3"
-			style="border: 1px solid #d1d8dd; border-radius: 3px; height: 300px; overflow: auto;"></div>`);
+			.append(`<div class="results mb-3"
+			style="border: 1px solid #d1d8dd; border-radius: 3px; height: 50vh; overflow: auto;"></div>`);
 
 		this.$results = this.$wrapper.find(".results");
 		this.$results.append(this.make_list_row());
@@ -211,7 +212,7 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 		const header_columns = this.get_child_datatable_columns();
 		const rows = this.get_child_datatable_rows();
 		this.$child_wrapper = this.dialog.fields_dict.child_selection_area.$wrapper;
-		this.$child_wrapper.addClass("my-3");
+		this.$child_wrapper.addClass("my-2");
 
 		this.child_datatable = new frappe.DataTable(this.$child_wrapper.get(0), {
 			columns: header_columns,
@@ -237,7 +238,7 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 		columns[0] = [
 			{
 				fieldtype: "Data",
-				label: __("Name"),
+				label: __("Search Term"),
 				fieldname: "search_term",
 			},
 		];
@@ -487,12 +488,17 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 		let contents = ``;
 		this.get_datatable_columns().forEach(function (column) {
 			let df = frappe.meta.get_docfield(me.doctype, column);
+
 			let label = df ? df.label : frappe.model.unscrub(column);
+			if (column == "name" && me.name_label) {
+				label = me.name_label;
+			}
+
 			let formatted_value = df && !head && result[column] ?
 				frappe.format(result[column], df, {only_value: 1}, result)
 				: result[column] || "";
 
-			contents += `<div class="list-item__content ellipsis">
+			contents += `<div class="list-item__content ellipsis ${column != 'name' ? 'list-item__content--flex-2' : ''}">
 				${
 					head
 						? `<span class="ellipsis text-muted" title="${__(
@@ -581,10 +587,19 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 
 		if ($.isArray(this.setters)) {
 			for (let df of this.setters) {
-				if (df.fieldtype == "DateRange" && me.dialog.fields_dict[df.fieldname].get_value()) {
-					filters[df.fieldname] = ['between', me.dialog.fields_dict[df.fieldname].get_value()];
+				let value = me.dialog.fields_dict[df.fieldname].get_value();
+				if (df.fieldtype == "DateRange" && value) {
+					filters[df.fieldname] = ['between', value];
+				} else if (
+					df.fieldtype == "Link"
+					&& frappe.boot.nested_set_doctypes.includes(df.options)
+					&& value
+				) {
+					filters[df.fieldname] = ['subtree of', value];
+				} else if (df.fieldtype == "Data" && value) {
+					filters[df.fieldname] = ["like", "%" + value + "%"];
 				} else {
-					filters[df.fieldname] = me.dialog.fields_dict[df.fieldname].get_value() || undefined;
+					filters[df.fieldname] = value || undefined;
 				}
 
 				me.args[df.fieldname] = filters[df.fieldname];
@@ -592,9 +607,16 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 			}
 		} else {
 			Object.keys(this.setters).forEach(function (setter) {
-				var value = me.dialog.fields_dict[setter].get_value();
-				if (me.dialog.fields_dict[setter].df.fieldtype == "Data" && value) {
+				let setter_field = me.dialog.fields_dict[setter];
+				let value = setter_field.get_value();
+				if (setter_field.df.fieldtype == "Data" && value) {
 					filters[setter] = ["like", "%" + value + "%"];
+				} else if (
+					setter_field.df.fieldtype == "Link"
+					&& frappe.boot.nested_set_doctypes.includes(setter_field.df.options)
+					&& value
+				) {
+					filters[setter] = ["subtree of", value];
 				} else {
 					filters[setter] = value || undefined;
 					me.args[setter] = filters[setter];
