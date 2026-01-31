@@ -164,7 +164,7 @@ export default class GridRow {
 						},
 						() => {
 							this.frm.dirty();
-							this.grid.refresh();
+							this.grid.debounced_refresh();
 						},
 					])
 					.catch((e) => {
@@ -191,7 +191,7 @@ export default class GridRow {
 					d.idx = i + 1;
 				});
 
-				this.grid.refresh();
+				this.grid.debounced_refresh();
 			}
 		}
 	}
