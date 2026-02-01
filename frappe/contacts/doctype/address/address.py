@@ -160,24 +160,29 @@ def get_preferred_address(doctype, name, preferred_key="is_primary_address"):
 
 
 @frappe.whitelist()
-def get_default_address(doctype: str, name: str | None, sort_key: str = "is_primary_address") -> str | None:
+def get_default_address(doctype: str, name: str | None, sort_key: str = "is_primary_address", primary_only=False) -> str | None:
 	"""Returns default Address name for the given doctype, name"""
 	if sort_key not in ["is_shipping_address", "is_primary_address"]:
 		return None
 
-	addresses = frappe.get_all(
-		"Address",
-		filters=[
-			["Dynamic Link", "link_doctype", "=", doctype],
-			["Dynamic Link", "link_name", "=", name],
-			["disabled", "=", 0],
-		],
-		pluck="name",
-		order_by=f"{sort_key} DESC, `tabAddress`.creation ASC",
-		limit=1,
-	)
+	shipping_order_by = ""
+	if sort_key == "is_shipping_address":
+		shipping_order_by = ", addr.address_type = 'Shipping' desc"
 
-	return addresses[0] if addresses else None
+	primary_condition = ""
+	if cint(primary_only):
+		primary_condition = f" and addr.`{sort_key}` = 1"
+
+	out = frappe.db.sql_list(f"""
+		select addr.name
+		from `tabDynamic Link` dl
+		inner join `tabAddress` addr on addr.name = dl.parent and dl.parenttype = 'Address'
+		where dl.link_doctype = %s and dl.link_name = %s {primary_condition}
+		order by addr.`{sort_key}` desc {shipping_order_by}, addr.creation asc
+		limit 1
+	""", (doctype, name), as_dict=True)
+
+	return out[0] if out else None
 
 
 @frappe.whitelist()

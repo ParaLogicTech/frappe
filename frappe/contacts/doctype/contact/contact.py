@@ -408,27 +408,16 @@ def download_vcards(contacts: str):
 
 def get_default_contact(doctype, name):
 	"""Returns default contact for the given doctype, name"""
-	out = frappe.db.sql(
-		"""select parent,
-			IFNULL((select is_primary_contact from tabContact c where c.name = dl.parent), 0)
-				as is_primary_contact
-		from
-			`tabDynamic Link` dl
-		where
-			dl.link_doctype=%s and
-			dl.link_name=%s and
-			dl.parenttype = 'Contact' """,
-		(doctype, name),
-		as_dict=True,
-	)
+	out = frappe.db.sql_list("""
+		select cont.name
+		from `tabDynamic Link` dl
+		inner join `tabContact` cont on cont.name = dl.parent and dl.parenttype = 'Contact'
+		where dl.link_doctype = %s and dl.link_name = %s
+		order by cont.is_primary_contact desc, cont.creation asc
+		limit 1
+	""", (doctype, name), as_dict=True)
 
-	if out:
-		for contact in out:
-			if contact.is_primary_contact:
-				return contact.parent
-		return out[0].parent
-	else:
-		return None
+	return out[0] if out else None
 
 
 @frappe.whitelist()
