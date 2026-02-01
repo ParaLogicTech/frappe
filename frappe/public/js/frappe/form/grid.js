@@ -972,7 +972,7 @@ export default class Grid {
 		}
 
 		this.grid_rows[idx].row
-			.find('input[type="Text"],textarea,select')
+			.find('input,textarea,select')
 			.filter(":not(.grid-row-check):visible:enabled" + (last_column ? ":last" : ":first"))
 			.focus();
 	}

@@ -1310,7 +1310,7 @@ export default class GridRow {
 				// TAB
 				if (e.which === TAB) {
 					if (!e.shiftKey) {
-						let last_column = me.wrapper.find('input[type="Text"],textarea,select')
+						let last_column = me.wrapper.find('input,textarea,select')
 							.filter(":visible:enabled:last").get(0);
 						let is_last_column = $(this).attr("data-last-input") || last_column === this;
 
@@ -1333,7 +1333,7 @@ export default class GridRow {
 							}
 						}
 					} else {
-						let first_column = me.wrapper.find('input[type="Text"],textarea,select')
+						let first_column = me.wrapper.find('input,textarea,select')
 							.filter(":not(.grid-row-check):visible:enabled:first").get(0);
 						let is_first_column = first_column === this;
 						if (is_first_column && me.doc.idx > 1) {
