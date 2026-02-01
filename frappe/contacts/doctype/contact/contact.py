@@ -159,6 +159,15 @@ class Contact(Document):
 					d.is_primary_mobile_no = 0
 
 	def set_primary_email(self):
+		# remove previous email if changed to something new
+		prev_email_id = self.db_get("email_id") if not self.is_new() else None
+		all_emails = [d.email_id for d in self.email_ids]
+		if prev_email_id and prev_email_id != self.email_id and self.email_id not in all_emails:
+			to_remove = [d for d in self.email_ids if d.email_id == prev_email_id and d.is_primary]
+			for d in to_remove:
+				self.remove(d)
+
+		# Primary Email
 		if self.email_id:
 			if self.email_id not in [d.email_id for d in self.email_ids]:
 				self.append('email_ids', {'email_id': self.email_id})
@@ -166,6 +175,7 @@ class Contact(Document):
 			if self.email_ids:
 				self.email_id = self.email_ids[0].email_id
 
+		# Mark as primary in table
 		for d in self.email_ids:
 			d.is_primary = 1 if d.email_id == self.email_id else 0
 
@@ -179,10 +189,28 @@ class Contact(Document):
 		if self.mobile_no == self.mobile_no_2:
 			self.mobile_no_2 = ""
 
+		# remove previous number if changed to something new
+		prev_mobile_no = prev_mobile_no_2 = prev_phone = None
+		if not self.is_new():
+			prev_mobile_no, prev_mobile_no_2, prev_phone = self.db_get(["mobile_no", "mobile_no_2", "phone"])
+
+		all_nos = [d.phone for d in self.phone_nos]
+		to_remove = []
+		if prev_mobile_no and prev_mobile_no != self.mobile_no and self.mobile_no not in all_nos:
+			to_remove += [d for d in self.phone_nos if d.phone == prev_mobile_no and d.is_primary_mobile_no]
+		if prev_mobile_no_2 and prev_mobile_no_2 != self.mobile_no_2 and self.mobile_no_2 not in all_nos:
+			to_remove += [d for d in self.phone_nos if d.phone == prev_mobile_no_2 and d.is_primary_mobile_no]
+		if prev_phone and prev_phone != self.phone and self.phone not in all_nos:
+			to_remove += [d for d in self.phone_nos if d.phone == prev_phone and d.is_primary_phone]
+
+		for d in to_remove:
+			self.remove(d)
+
 		all_nos = [d.phone for d in self.phone_nos]
 		mobile_nos = [d.phone for d in self.phone_nos if d.is_primary_mobile_no]
 		phone_nos = [d.phone for d in self.phone_nos if d.is_primary_phone]
 
+		# Primary Mobile
 		if self.mobile_no:
 			if self.mobile_no not in all_nos:
 				self.append('phone_nos', {'phone': self.mobile_no, 'is_primary_mobile_no': 1})
@@ -190,6 +218,7 @@ class Contact(Document):
 			if mobile_nos:
 				self.mobile_no = mobile_nos[0]
 
+		# Secondary Mobile
 		non_primary_mobile_nos = [d.phone for d in self.phone_nos if d.is_primary_mobile_no and d.phone != self.mobile_no]
 		if self.mobile_no_2:
 			if self.mobile_no_2 not in all_nos:
@@ -198,6 +227,7 @@ class Contact(Document):
 			if non_primary_mobile_nos:
 				self.mobile_no_2 = non_primary_mobile_nos[0]
 
+		# Primary Landline
 		if self.phone:
 			if self.phone not in all_nos:
 				self.append('phone_nos', {'phone': self.phone, 'is_primary_phone': 1})
@@ -205,6 +235,7 @@ class Contact(Document):
 			if phone_nos:
 				self.phone = phone_nos[0]
 
+		# Mark as primary in table
 		for d in self.phone_nos:
 			if d.phone in (self.mobile_no, self.mobile_no_2):
 				d.is_primary_mobile_no = 1
@@ -256,10 +287,22 @@ class Contact(Document):
 
 		return None
 
+	def add_link(self, doctype, name, update=False):
+		if not doctype or not name:
+			return
+		if self.has_link(doctype, name):
+			return
+
+		row = self.append("links", {"link_doctype": doctype, "link_name": name})
+		if update:
+			row.db_insert()
+
 	def has_link(self, doctype, name):
 		for link in self.links:
-			if link.link_doctype==doctype and link.link_name== name:
+			if link.link_doctype == doctype and link.link_name == name:
 				return True
+
+		return False
 
 	def has_common_link(self, doc):
 		reference_links = [(link.link_doctype, link.link_name) for link in doc.links]
@@ -628,7 +671,7 @@ def get_full_name(
 	last: str | None = None,
 	company: str | None = None,
 ) -> str:
-	full_name = " ".join(filter(None, [cstr(f).strip() for f in [first, middle, last]]))
+	full_name = " ".join(filter(None, [clean_whitespace(f) for f in [first, middle, last]]))
 	if not full_name and company:
 		full_name = company
 

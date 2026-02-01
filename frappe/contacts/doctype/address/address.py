@@ -111,10 +111,22 @@ class Address(Document):
 	def get_display(self):
 		return render_address(self.as_dict())
 
+	def add_link(self, doctype, name, update=False):
+		if not doctype or not name:
+			return
+		if self.has_link(doctype, name):
+			return
+
+		row = self.append("links", {"link_doctype": doctype, "link_name": name})
+		if update:
+			row.db_insert()
+
 	def has_link(self, doctype, name):
 		for link in self.links:
 			if link.link_doctype == doctype and link.link_name == name:
 				return True
+
+		return False
 
 	def has_common_link(self, doc):
 		reference_links = [(link.link_doctype, link.link_name) for link in doc.links]

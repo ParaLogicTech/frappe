@@ -176,10 +176,11 @@
    "fieldtype": "Column Break"
   }
  ],
+ "grid_page_length": 500,
  "icon": "fa fa-map-marker",
  "idx": 5,
  "links": [],
- "modified": "2025-06-02 10:31:20.797803",
+ "modified": "2026-01-31 15:55:13.195528",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",
@@ -276,7 +277,8 @@
   }
  ],
  "quick_entry": 1,
- "search_fields": "address_title, address_line1, address_line2, city, country",
+ "row_format": "Dynamic",
+ "search_fields": "address_title, address_line1, address_line2, city, state, country",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
