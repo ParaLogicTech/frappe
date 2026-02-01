@@ -17,14 +17,20 @@
   "salutation",
   "gender",
   "tax_cnic",
-  "cb00",
-  "mobile_no",
-  "mobile_no_2",
-  "phone",
-  "email_id",
+  "column_break_2jwq",
+  "designation",
+  "department",
+  "company_name",
   "sync_with_google_contacts",
   "unsubscribed",
   "image",
+  "primary_contact_details_section",
+  "mobile_no",
+  "mobile_no_2",
+  "cb00",
+  "phone",
+  "column_break_hrig",
+  "email_id",
   "sb_00",
   "google_contacts",
   "google_contacts_id",
@@ -38,13 +44,10 @@
   "is_primary_contact",
   "more_info",
   "status",
-  "user",
   "col_break_31",
-  "company_name",
-  "address",
+  "user",
   "column_break_31",
-  "designation",
-  "department"
+  "address"
  ],
  "fields": [
   {
@@ -56,7 +59,6 @@
    "allow_in_quick_entry": 1,
    "fieldname": "first_name",
    "fieldtype": "Data",
-   "in_global_search": 1,
    "label": "First Name",
    "oldfieldname": "first_name",
    "oldfieldtype": "Data"
@@ -176,10 +178,10 @@
    "label": "Unsubscribed"
   },
   {
-   "allow_in_quick_entry": 1,
    "fieldname": "middle_name",
    "fieldtype": "Data",
-   "label": "Middle Name"
+   "label": "Middle Name",
+   "read_only": 1
   },
   {
    "collapsible": 1,
@@ -252,9 +254,10 @@
   {
    "fieldname": "company_name",
    "fieldtype": "Data",
-   "label": "Company Name"
+   "label": "Organization Name"
   },
   {
+   "allow_in_quick_entry": 1,
    "fieldname": "column_break_6",
    "fieldtype": "Column Break"
   },
@@ -274,7 +277,7 @@
    "allow_in_quick_entry": 1,
    "fieldname": "tax_cnic",
    "fieldtype": "Data",
-   "label": "CNIC"
+   "label": "National ID No"
   },
   {
    "fieldname": "col_break_31",
@@ -283,9 +286,24 @@
   {
    "fieldname": "full_name",
    "fieldtype": "Data",
+   "in_global_search": 1,
    "in_standard_filter": 1,
    "label": "Full Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2jwq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "primary_contact_details_section",
+   "fieldtype": "Section Break",
+   "label": "Primary Contact Details"
+  },
+  {
+   "fieldname": "column_break_hrig",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 500,
@@ -294,7 +312,7 @@
  "image_field": "image",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-31 15:23:12.697646",
+ "modified": "2026-02-01 15:28:58.411018",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Contact",

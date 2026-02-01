@@ -31,6 +31,7 @@ from frappe.utils import (
 	has_gravatar,
 	now_datetime,
 	today,
+	clean_whitespace,
 )
 from frappe.utils.data import sha256_hash
 from frappe.utils.deprecations import deprecated
@@ -267,7 +268,7 @@ class User(Document):
 	def clean_name(self):
 		for field in ("first_name", "middle_name", "last_name"):
 			if field_value := self.get(field):
-				self.set(field, sanitize_html(field_value, always_sanitize=True))
+				self.set(field, sanitize_html(clean_whitespace(field_value), always_sanitize=True))
 
 	def set_full_name(self):
 		self.full_name = " ".join(filter(None, [self.first_name, self.last_name]))
