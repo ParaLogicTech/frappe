@@ -40,6 +40,7 @@ class FormTimeline extends BaseTimeline {
 					doc: this.frm.doc,
 					frm: this.frm,
 					recipients: this.get_recipient(),
+					cc: this.get_cc(),
 					txt: frappe.markdown(this.frm.comment_box.get_value()),
 				};
 				return new frappe.views.InteractionComposer(args);
@@ -550,6 +551,7 @@ class FormTimeline extends BaseTimeline {
 				communication_doc && communication_doc.sender != frappe.session.user_email
 					? communication_doc.sender
 					: this.get_recipient(),
+			cc: !communication_doc ? this.get_cc() : "",
 			is_a_reply: Boolean(communication_doc),
 			title: communication_doc ? __("Reply") : null,
 			last_email: communication_doc,
@@ -602,6 +604,14 @@ class FormTimeline extends BaseTimeline {
 			return this.frm.doc[this.frm.email_field];
 		} else {
 			return this.frm.doc.email_id || this.frm.doc.email || "";
+		}
+	}
+
+	get_cc() {
+		if (this.frm.email_cc_field) {
+			return this.frm.doc[this.frm.email_cc_field];
+		} else {
+			return "";
 		}
 	}
 

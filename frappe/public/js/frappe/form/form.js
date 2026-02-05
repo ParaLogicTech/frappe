@@ -1309,11 +1309,14 @@ frappe.ui.form.Form = class FrappeForm {
 	}
 
 	email_doc(message) {
+		let recipients = this.timeline ? this.timeline.get_recipient() : this.doc.email || this.doc.email_id || this.doc.contact_email;
+		let cc = this.timeline ? this.timeline.get_cc() : "";
 		new frappe.views.CommunicationComposer({
 			doc: this.doc,
 			frm: this,
 			subject: __(this.meta.name) + ": " + this.docname,
-			recipients: this.doc.email || this.doc.email_id || this.doc.contact_email,
+			recipients: recipients,
+			cc: cc,
 			attach_document_print: true,
 			message: message,
 		});
