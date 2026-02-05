@@ -26,6 +26,7 @@ class Contact(Document):
 		department: DF.Data | None
 		designation: DF.Data | None
 		email_id: DF.Data | None
+		email_id_2: DF.Data | None
 		email_ids: DF.Table[ContactEmail]
 		first_name: DF.Data | None
 		full_name: DF.Data | None
@@ -159,13 +160,31 @@ class Contact(Document):
 					d.is_primary_mobile_no = 0
 
 	def set_primary_email(self):
+		# secondary without primary
+		if not self.email_id and self.email_id_2:
+			self.email_id = self.email_id_2
+			self.email_id_2 = ""
+
+		# no duplicate
+		if self.email_id == self.email_id_2:
+			self.email_id_2 = ""
+
 		# remove previous email if changed to something new
-		prev_email_id = self.db_get("email_id") if not self.is_new() else None
+		prev_email_id = prev_email_id_2 = None
+		if not self.is_new():
+			prev_email_id, prev_email_id_2 = self.db_get(["email_id", "email_id_2"])
+
 		all_emails = [d.email_id for d in self.email_ids]
+		to_remove = []
 		if prev_email_id and prev_email_id != self.email_id and self.email_id not in all_emails:
-			to_remove = [d for d in self.email_ids if d.email_id == prev_email_id and d.is_primary]
-			for d in to_remove:
-				self.remove(d)
+			to_remove += [d for d in self.email_ids if d.email_id == prev_email_id and d.is_primary]
+		if prev_email_id_2 and prev_email_id_2 != self.email_id_2 and self.email_id_2 not in all_emails:
+			to_remove += [d for d in self.email_ids if d.email_id == prev_email_id_2]
+
+		for d in to_remove:
+			self.remove(d)
+
+		all_emails = [d.email_id for d in self.email_ids]
 
 		# Primary Email
 		if self.email_id:
@@ -174,6 +193,15 @@ class Contact(Document):
 		else:
 			if self.email_ids:
 				self.email_id = self.email_ids[0].email_id
+
+		# Secondary Email
+		non_primary_emails = [d.email_id for d in self.email_ids if d.email_id != self.email_id]
+		if self.email_id_2:
+			if self.email_id_2 not in all_emails:
+				self.append('email_ids', {'email_id': self.email_id_2})
+		else:
+			if non_primary_emails:
+				self.email_id_2 = non_primary_emails[0]
 
 		# Mark as primary in table
 		for d in self.email_ids:
@@ -470,6 +498,7 @@ def _get_contact_details(
 			filter(None, [contact.get("salutation"), contact.get("full_name")])
 		),
 		"contact_email": contact.get("email_id"),
+		"contact_email_cc": contact.get("email_id_2"),
 		"contact_mobile": contact.get("mobile_no"),
 		"contact_mobile_2": contact.get("mobile_no_2"),
 		"contact_phone": contact.get("phone"),

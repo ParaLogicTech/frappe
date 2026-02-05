@@ -31,6 +31,7 @@
   "phone",
   "column_break_hrig",
   "email_id",
+  "email_id_2",
   "sb_00",
   "google_contacts",
   "google_contacts_id",
@@ -304,6 +305,14 @@
   {
    "fieldname": "column_break_hrig",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "email_id_2",
+   "fieldtype": "Data",
+   "label": "Email Address (Secondary)",
+   "oldfieldname": "email_id",
+   "oldfieldtype": "Data",
+   "options": "Email"
   }
  ],
  "grid_page_length": 500,
@@ -312,7 +321,7 @@
  "image_field": "image",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-01 15:28:58.411018",
+ "modified": "2026-02-01 15:46:44.316918",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Contact",
