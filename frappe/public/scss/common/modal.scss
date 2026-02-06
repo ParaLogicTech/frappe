@@ -127,11 +127,33 @@ body.modal-open[style^="padding-right"] {
 		}
 
 		.form-column {
+			@include media-breakpoint-down(sm) {
+				display: flex;
+				gap: 10px;
+				width: 100%;
+			}
+
+			form {
+				@include media-breakpoint-down(sm) {
+					width: 100%;
+				}
+			}
+
 			&:first-child {
 				padding-left: 0;
+
+				@include media-breakpoint-down(sm) {
+					padding-left: 0;
+					padding-right: 0;
+				}
 			}
 			&:last-child {
 				padding-right: 0;
+
+				@include media-breakpoint-down(sm) {
+					padding-left: 0;
+					padding-right: 0;
+				}
 			}
 		}
 
