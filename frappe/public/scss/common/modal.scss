@@ -128,12 +128,8 @@ body.modal-open[style^="padding-right"] {
 		}
 
 		.section-head {
-			padding: 0;
+			padding: var(--padding-xs) var(--padding-md);
 			font-size: var(--text-md);
-
-			&:not(.collapsed) {
-				padding-bottom: var(--padding-sm);
-			}
 		}
 	}
 
