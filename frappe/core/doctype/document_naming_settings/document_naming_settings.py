@@ -4,7 +4,7 @@
 
 import frappe
 from frappe import _
-from frappe.core.doctype.doctype.doctype import validate_series
+from frappe.core.doctype.doctype.doctype import validate_series, validate_fields_for_doctype
 from frappe.model.document import Document
 from frappe.model.naming import NamingSeries
 from frappe.permissions import get_doctypes_with_read
@@ -134,9 +134,9 @@ class DocumentNamingSettings(Document):
 		option_string = "\n".join(options)
 
 		# Erase default first, it might not be in new options.
-		self.update_naming_series_property_setter(doctype, "default", "")
 		self.update_naming_series_property_setter(doctype, "options", option_string)
 		self.update_naming_series_property_setter(doctype, "default", default)
+		validate_fields_for_doctype(doctype)
 
 		self.naming_series_options = option_string
 
