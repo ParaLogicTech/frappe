@@ -145,7 +145,8 @@ class DocumentNamingSettings(Document):
 	def update_naming_series_property_setter(self, doctype, property, value):
 		from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 
-		make_property_setter(doctype, "naming_series", property, value, "Text")
+		make_property_setter(doctype, "naming_series", property, value, "Text",
+			validate_fields_for_doctype=False)
 
 	def check_duplicate(self):
 		def stripped_series(s: str) -> str:

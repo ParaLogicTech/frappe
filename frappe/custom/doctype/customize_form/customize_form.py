@@ -559,6 +559,7 @@ class CustomizeForm(Document):
 				"property_type": property_type,
 			},
 			is_system_generated=False,
+			validate_fields_for_doctype=False,
 		)
 
 	def get_existing_property_value(self, property_name, fieldname=None):
