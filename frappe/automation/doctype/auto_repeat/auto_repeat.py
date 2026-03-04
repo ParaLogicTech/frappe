@@ -13,7 +13,6 @@ from frappe.contacts.doctype.contact.contact import (
 	get_contacts_linking_to,
 )
 from frappe.core.doctype.communication.email import make
-from frappe.desk.form import assign_to
 from frappe.model.document import Document
 from frappe.utils import (
 	add_days,
@@ -24,6 +23,7 @@ from frappe.utils import (
 	month_diff,
 	split_emails,
 	today,
+	validate_email_address,
 )
 from frappe.utils.background_jobs import get_jobs
 from frappe.utils.jinja import validate_template
@@ -147,7 +147,6 @@ class AutoRepeat(Document):
 		if self.notify_by_email:
 			if self.recipients:
 				email_list = split_emails(self.recipients.replace("\n", ""))
-				from frappe.utils import validate_email_address
 
 				for email in email_list:
 					if not validate_email_address(email):
@@ -449,7 +448,9 @@ class AutoRepeat(Document):
 
 	def notify_error_to_user(self, error_log):
 		recipients = list(get_system_managers())
-		recipients.append(self.owner)
+		if validate_email_address(self.owner):
+			recipients.append(self.owner)
+
 		subject = _("Auto Repeat Document Creation Failed")
 
 		form_link = frappe.utils.get_link_to_form(self.reference_doctype, self.reference_document)
