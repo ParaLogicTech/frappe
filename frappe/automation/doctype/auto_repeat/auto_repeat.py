@@ -440,10 +440,15 @@ class AutoRepeat(Document):
 				self.recipients = ", ".join(email_ids)
 
 	def disable_auto_repeat(self):
-		frappe.db.set_value("Auto Repeat", self.name, "disabled", 1)
+		self.disabled = 1
+		self.update_status()
+		self.db_set({
+			"disabled": self.disabled,
+			"status": self.status,
+		})
 
 	def notify_error_to_user(self, error_log):
-		recipients = list(get_system_managers(only_name=True))
+		recipients = list(get_system_managers())
 		recipients.append(self.owner)
 		subject = _("Auto Repeat Document Creation Failed")
 
