@@ -6,6 +6,10 @@ frappe.ui.form.on("Error Log", {
 		frm.disable_save();
 
 		if (frm.doc.reference_doctype && frm.doc.reference_name) {
+			frm.add_custom_button(__(frm.doc.reference_doctype) + ": " + __(frm.doc.reference_name), function () {
+				frappe.set_route("Form", frm.doc.reference_doctype, frm.doc.reference_name);
+			});
+
 			frm.add_custom_button(__("Show Related Errors"), function () {
 				frappe.set_route("List", "Error Log", {
 					reference_doctype: frm.doc.reference_doctype,
