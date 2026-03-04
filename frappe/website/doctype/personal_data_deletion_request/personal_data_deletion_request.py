@@ -101,7 +101,7 @@ class PersonalDataDeletionRequest(Document):
 		)
 
 	def notify_system_managers(self):
-		system_managers = get_system_managers(only_name=True)
+		system_managers = get_system_managers()
 
 		frappe.sendmail(
 			recipients=system_managers,

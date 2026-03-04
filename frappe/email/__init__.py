@@ -44,12 +44,8 @@ def get_contact_list(txt, page_length=20, extra_filters: str | None = None) -> l
 
 
 def get_system_managers():
-	return frappe.db.sql_list(
-		"""select parent FROM `tabHas Role`
-		WHERE role='System Manager'
-		AND parent!='Administrator'
-		AND parent IN (SELECT email FROM tabUser WHERE enabled=1)"""
-	)
+	from frappe.utils.user import get_system_managers
+	return get_system_managers()
 
 
 @frappe.whitelist()
