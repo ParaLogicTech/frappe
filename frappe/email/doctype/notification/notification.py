@@ -17,7 +17,7 @@ from frappe.utils import add_to_date, cast, nowdate, validate_email_address, cst
 from frappe.utils.jinja import validate_template
 from frappe.utils.safe_exec import get_safe_globals
 from frappe.core.doctype.notification_count.notification_count import (
-	get_notification_count, set_notification_last_scheduled
+	get_notification_last_scheduled, set_notification_last_scheduled
 )
 from frappe.model.base_document import get_controller
 
@@ -621,7 +621,7 @@ def evaluate_alert(doc: Document, alert, event, context=None):
 			return
 
 		if alert.send_only_once:
-			notification_count = get_notification_count(
+			notification_count = get_notification_last_scheduled(
 				doc.doctype,
 				doc.name,
 				notification_type,
