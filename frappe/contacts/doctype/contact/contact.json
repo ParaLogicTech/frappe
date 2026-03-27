@@ -58,6 +58,7 @@
   },
   {
    "allow_in_quick_entry": 1,
+   "bold": 1,
    "fieldname": "first_name",
    "fieldtype": "Data",
    "label": "First Name",
@@ -66,7 +67,6 @@
   },
   {
    "allow_in_quick_entry": 1,
-   "bold": 1,
    "fieldname": "last_name",
    "fieldtype": "Data",
    "label": "Last Name",
@@ -321,7 +321,7 @@
  "image_field": "image",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-01 15:46:44.316918",
+ "modified": "2026-03-25 23:22:09.843313",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Contact",
