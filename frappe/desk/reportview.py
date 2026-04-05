@@ -748,8 +748,8 @@ def get_filters_cond(doctype, filters, conditions, ignore_permissions=None, with
 	if isinstance(filters, str):
 		filters = json.loads(filters)
 
-	if filters:
-		flt = filters
+	if filters or conditions:
+		flt = filters or []
 		if isinstance(filters, dict):
 			filters = filters.items()
 			flt = []
