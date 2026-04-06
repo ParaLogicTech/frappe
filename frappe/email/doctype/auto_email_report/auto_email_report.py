@@ -92,6 +92,18 @@ class AutoEmailReport(Document):
 				valid.append(email)
 
 		self.email_to = "\n".join(valid)
+	
+	def filter_enabled_recipients(self):
+		updated_receipient_list = []
+		current_receipient_list = self.email_to.split()
+		for each_email in current_receipient_list:
+			if frappe.db.exists("User", each_email):
+				if frappe.db.get_value("User", each_email, "enabled"):
+					updated_receipient_list.append(each_email)
+			else:
+				updated_receipient_list.append(each_email)
+		return updated_receipient_list
+
 
 	def validate_report_count(self):
 		count = frappe.db.count("Auto Email Report", {"user": self.user, "enabled": 1})
@@ -271,9 +283,11 @@ class AutoEmailReport(Document):
 
 		if not self.format == "HTML":
 			attachments = [{"fname": self.get_file_name(), "fcontent": data}]
+		
+		filterd_recipients = self.filter_enabled_recipients()
 
 		frappe.sendmail(
-			recipients=self.email_to.split(),
+			recipients=filterd_recipients,
 			sender=formataddr((self.sender, self.sender_email)) if self.sender else "",
 			subject=self.name,
 			message=message,
