@@ -331,16 +331,13 @@ def send_daily():
 	enabled_reports = frappe.get_all(
 		"Auto Email Report", filters={"enabled": 1, "frequency": ("in", ("Daily", "Weekdays", "Weekly"))}
 	)
-	from frappe.email.doctype.auto_email_report.auto_email_report import process_auto_email_report
 
 	for report in enabled_reports:
-		# frappe.enqueue(
-		# 	"frappe.email.doctype.auto_email_report.auto_email_report.process_auto_email_report",
-		# 	report=report,
-		# 	queue="long",
-		# )
-		# y = frappe.get_doc("Auto Email Report", report)
-		process_auto_email_report(report)
+		frappe.enqueue(
+			"frappe.email.doctype.auto_email_report.auto_email_report.process_auto_email_report",
+			report=report,
+			queue="long",
+		)
 
 
 def process_auto_email_report(report):
