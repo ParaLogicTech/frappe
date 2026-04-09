@@ -1752,7 +1752,11 @@ frappe.ui.form.Form = class FrappeForm {
 								}
 							}
 
-							me.fields_dict[opts.child.parentfield].refresh();
+							if (opts.child.parentfield) {
+								me.fields_dict[opts.child.parentfield]?.refresh();
+							} else {
+								me.refresh_fields();
+							}
 						}
 					} else {
 						// update parent doc
