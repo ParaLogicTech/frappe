@@ -2078,12 +2078,12 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		this.columns.forEach((df) => {
 			if (df.fieldtype == "Link" && df.options && df.options != "Currency") {
 				doctypes.push({
-					doctype: df.options,
+					doctype: __(df.options),
 					fieldname: df.fieldname,
 				});
 			} else if (df.fieldtype == "Dynamic Link" && df.options) {
 				dynamic_links.push({
-					link_name: df.options,
+					link_name: __(df.options),
 					fieldname: df.fieldname,
 				});
 			}
