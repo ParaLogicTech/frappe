@@ -632,6 +632,9 @@ export default class Grid {
 				if (!this.is_editable()) {
 					return false;
 				}
+				if (this.df.disable_sorting) {
+					return false;
+				}
 				// prevent drag behaviour if _sortable property is "false"
 				let idx = $(event.dragged).closest(".grid-row").attr("data-idx");
 				let doc = this.data[idx % this.grid_pagination.page_length];

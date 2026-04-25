@@ -444,7 +444,7 @@ export default class GridRow {
 	}
 
 	add_column_configure_button() {
-		if (this.grid.df.in_place_edit && !this.frm) return;
+		if (this.grid.df.in_place_edit) return;
 
 		if (this.configure_columns && this.frm) {
 			this.configure_columns_button = $(`
