@@ -1863,7 +1863,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 								fieldname: "doctype",
 								label: __("From Document Type"),
 								options: this.linked_doctypes?.map((df) => ({
-									label: df.doctype + " (" + (df.label || df.fieldname) + ")",
+									label: __(df.doctype) + " (" + (df.label || df.fieldname) + ")",
 									value: JSON.stringify({
 										doctype: df.doctype,
 										fieldname: df.fieldname,
@@ -2078,15 +2078,15 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		this.columns.forEach((df) => {
 			if (df.fieldtype == "Link" && df.options && df.options != "Currency") {
 				doctypes.push({
-					doctype: __(df.options),
+					doctype: df.options,
 					fieldname: df.fieldname,
-					label:__(df.label)
+					label: __(df.label)
 				});
 			} else if (df.fieldtype == "Dynamic Link" && df.options) {
 				dynamic_links.push({
-					link_name: __(df.options),
+					link_name: df.options,
 					fieldname: df.fieldname,
-					label:__(df.label)
+					label: __(df.label),
 				});
 			}
 		});
