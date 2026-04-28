@@ -332,9 +332,7 @@ def clean_receiver_nos(receiver_list, format_sms=False):
 
 
 def clean_receiver_number(number, format_sms=False):
-	invalid_characters = (' ', '\t', '-', '(', ')', '\xa0')
-	for char in invalid_characters:
-		number = cstr(number).replace(char, '')
+	number = clean_phone_no(number)
 
 	if format_sms:
 		sms_settings = frappe.get_cached_doc("SMS Settings", None)
@@ -343,6 +341,12 @@ def clean_receiver_number(number, format_sms=False):
 			if formatted_number:
 				number = formatted_number
 
+	return number
+
+
+def clean_phone_no(number):
+	invalid_characters = {' ', '\t', '-', '(', ')', '\xa0'}
+	number = "".join([c for c in cstr(number) if c not in invalid_characters])
 	return number
 
 
