@@ -6,7 +6,7 @@ import frappe
 from frappe import _
 from frappe.model import child_table_fields, default_fields, table_fields
 from frappe.model.document import Document
-from frappe.utils import cstr
+from frappe.utils import cstr, cint
 
 
 @frappe.whitelist()
@@ -32,7 +32,7 @@ def make_mapped_doc(method, source_name, selected_children=None, args=None):
 
 
 @frappe.whitelist()
-def map_docs(method, source_names, target_doc, args=None):
+def map_docs(method, source_names, target_doc, args=None, method_supports_list=False):
 	'''Returns the mapped document calling the given mapper method
 	with each of the given source docs on the target doc
 
@@ -45,8 +45,12 @@ def map_docs(method, source_names, target_doc, args=None):
 	if args:
 		frappe.flags.args = frappe._dict(json.loads(args))
 
-	for src in json.loads(source_names):
-		target_doc = method(src, target_doc)
+	source_names = json.loads(source_names)
+	if cint(method_supports_list):
+		target_doc = method(source_names, target_doc)
+	else:
+		for src in source_names:
+			target_doc = method(src, target_doc)
 
 	if frappe.flags.postprocess_after_mapping:
 		frappe.flags.postprocess_after_mapping(target_doc)
