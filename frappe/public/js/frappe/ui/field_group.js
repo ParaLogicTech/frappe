@@ -30,7 +30,7 @@ frappe.ui.FieldGroup = class FieldGroup extends frappe.ui.form.Layout {
 						def_value = frappe.datetime.get_today();
 					}
 
-					field.set_input(def_value);
+					field.set_model_value(def_value);
 					// if default and has depends_on, render its fields.
 					me.refresh_dependency();
 				}

@@ -15,6 +15,7 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 		this.page_length = this.initial_page_length;
 		this.child_page_length = this.initial_page_length;
 		this.fields = this.get_fields();
+		this.filters_doc = {};
 
 		this.make();
 
@@ -83,6 +84,7 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 		this.dialog = new frappe.ui.Dialog({
 			title: title,
 			fields: this.fields,
+			doc: this.filters_doc,
 			size: this.size || "extra-large",
 			primary_action_label: this.primary_action_label || __("Get Items"),
 			secondary_action_label: __("Make {0}", [__(this.doctype)]),
