@@ -4,8 +4,10 @@ import os
 import uuid
 from io import BytesIO
 from typing import Literal
+from reportlab.pdfgen import canvas
 
-from pypdf import PdfWriter
+
+from pypdf import PdfReader, PdfWriter
 
 import frappe
 from frappe import _
@@ -13,6 +15,7 @@ from frappe.core.doctype.access_log.access_log import make_access_log
 from frappe.translate import print_language
 from frappe.utils.deprecations import deprecated
 from frappe.utils.pdf import get_pdf
+from .print_utils import ncr_get_print, add_background_color, merge_pdfs
 
 no_cache = 1
 
@@ -30,11 +33,12 @@ def download_multi_pdf(
 	no_letterhead: bool = False,
 	letterhead: str | None = None,
 	options: str | None = None,
+	ncr: bool = False,
 ):
 	"""
 	Calls _download_multi_pdf with the given parameters and returns the response
 	"""
-	return _download_multi_pdf(doctype, name, format, no_letterhead, letterhead, options)
+	return _download_multi_pdf(doctype, name, format, no_letterhead, letterhead, options, ncr)
 
 
 @frappe.whitelist()
@@ -45,6 +49,7 @@ def download_multi_pdf_async(
 	no_letterhead: bool = False,
 	letterhead: str | None = None,
 	options: str | None = None,
+	ncr: bool = False,
 ):
 	"""
 	Calls _download_multi_pdf with the given parameters in a background job, returns task ID
@@ -64,6 +69,7 @@ def download_multi_pdf_async(
 		no_letterhead=no_letterhead,
 		letterhead=letterhead,
 		options=options,
+		ncr=ncr,
 		queue="long" if doc_count > 20 else "short",
 	)
 	frappe.local.response["http_status_code"] = http.HTTPStatus.CREATED
@@ -77,6 +83,7 @@ def _download_multi_pdf(
 	no_letterhead: bool = False,
 	letterhead: str | None = None,
 	options: str | None = None,
+	ncr: bool = False,
 	task_id: str | None = None,
 ):
 	"""Return a PDF compiled by concatenating multiple documents.
@@ -118,6 +125,7 @@ def _download_multi_pdf(
 	filename = ""
 
 	pdf_writer = PdfWriter()
+	pdf_writer_ncr = PdfWriter()
 
 	if isinstance(options, str):
 		options = json.loads(options)
@@ -140,6 +148,18 @@ def _download_multi_pdf(
 					letterhead=letterhead,
 					pdf_options=options,
 				)
+				if ncr:
+					pdf_writer_ncr = ncr_get_print(
+						doctype,
+						ss,
+						format,
+						as_pdf=True,
+						output=pdf_writer_ncr,
+						letterhead=letterhead,
+						no_letterhead=no_letterhead,
+						pdf_options=options
+					)
+
 			except Exception:
 				if task_id:
 					frappe.publish_realtime(task_id=task_id, message={"message": "Failed"})
@@ -177,6 +197,17 @@ def _download_multi_pdf(
 						letterhead=letterhead,
 						pdf_options=options,
 					)
+					if ncr:
+						pdf_writer_ncr = ncr_get_print(
+							doctype,
+							doc_name,
+							format,
+							as_pdf=True,
+							output=pdf_writer_ncr,
+							letterhead=letterhead,
+							no_letterhead=no_letterhead,
+							pdf_options=options
+						)
 				except Exception:
 					if task_id:
 						frappe.publish_realtime(task_id=task_id, message="Failed")
@@ -201,21 +232,27 @@ def _download_multi_pdf(
 		if task_id is None:
 			frappe.local.response.filename = f"{name}.pdf"
 
-	with BytesIO() as merged_pdf:
+	with BytesIO() as merged_pdf, BytesIO() as merged_pdf_ncr:
 		pdf_writer.write(merged_pdf)
+		final_pdf = merged_pdf.getvalue()
+
+		if ncr:
+			pdf_writer_ncr.write(merged_pdf_ncr)
+			pdf_with_color = add_background_color(merged_pdf_ncr.getvalue())
+			final_pdf = merge_pdfs([merged_pdf.getvalue(), pdf_with_color])
 		if task_id:
 			_file = frappe.get_doc(
 				{
 					"doctype": "File",
 					"file_name": f"{filename}{task_id}.pdf",
-					"content": merged_pdf.getvalue(),
+					"content": final_pdf,
 					"is_private": 1,
 				}
 			)
 			_file.save()
 			frappe.publish_realtime(f"task_complete:{task_id}", message={"file_url": _file.unique_url})
 		else:
-			frappe.local.response.filecontent = merged_pdf.getvalue()
+			frappe.local.response.filecontent = final_pdf
 			frappe.local.response.type = "pdf"
 
 
@@ -236,6 +273,7 @@ def download_pdf(
 	language=None,
 	letterhead=None,
 	pdf_generator: Literal["wkhtmltopdf", "chrome"] | None = None,
+	ncr: bool = False,
 ):
 	doc = doc or frappe.get_doc(doctype, name)
 	validate_print_permission(doc)
@@ -251,6 +289,17 @@ def download_pdf(
 			no_letterhead=no_letterhead,
 			pdf_generator=pdf_generator,
 		)
+		if ncr:
+			pdf_file_2 = ncr_get_print(
+				doctype,
+				name,
+				format,
+				doc=doc,
+				as_pdf=True,
+				letterhead=letterhead,
+				no_letterhead=no_letterhead,
+				pdf_generator=pdf_generator,
+			)
 
 	title = doc.get_title()
 	if title and title == name:
@@ -260,6 +309,10 @@ def download_pdf(
 		title = title[:25]
 		title = title.rstrip()
 		title = " " + title
+	
+	if ncr:
+		jut_list = [pdf_file, add_background_color(pdf_file_2)]
+		pdf_file = merge_pdfs(jut_list)
 
 	frappe.local.response.filename = "{name}{title}.pdf".format(
 		name=name.replace(" ", "-").replace("/", "-"),

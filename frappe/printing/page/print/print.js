@@ -136,6 +136,13 @@ frappe.ui.form.PrintView = class {
 		this.sidebar_dynamic_section = $(`<div class="dynamic-settings"></div>`).appendTo(
 			this.sidebar
 		);
+
+		this.ncr_selector = this.add_sidebar_item({
+			fieldtype: "Check",
+			fieldname: "ncr_check",
+			label: __("NCR"),
+			default:0
+		});
 	}
 
 	add_sidebar_item(df, is_dynamic) {
@@ -665,7 +672,9 @@ frappe.ui.form.PrintView = class {
 					encodeURIComponent(this.get_letterhead()) +
 					"&settings=" +
 					encodeURIComponent(JSON.stringify(this.additional_settings)) +
-					(this.lang_code ? "&_lang=" + this.lang_code : "")
+					(this.lang_code ? "&_lang=" + this.lang_code : "") +
+					"&ncr=" +
+					encodeURIComponent(this.is_ncr())
 			)
 		);
 		if (!w) {
@@ -760,6 +769,10 @@ frappe.ui.form.PrintView = class {
 
 	selected_format() {
 		return this.print_format_selector.val() || "Standard";
+	}
+
+	is_ncr() {
+		return this.ncr_selector.value;
 	}
 
 	is_raw_printing(format) {
