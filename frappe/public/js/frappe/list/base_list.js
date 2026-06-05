@@ -884,7 +884,7 @@ class FilterArea {
 				];
 			}
 
-			if (df.fieldtype === "Link" && frappe.boot.nested_set_doctypes.includes(df.options)) {
+			if (df.fieldtype === "Link" && df.options && frappe.boot.treeviews.includes(df.options)) {
 				condition = 'subtree of';
 			}
 
