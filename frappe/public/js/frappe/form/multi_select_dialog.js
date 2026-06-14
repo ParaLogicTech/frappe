@@ -353,14 +353,9 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 		let me = this;
 
 		this.$results.on("click", ".list-item-container", function (e) {
-			if (!$(e.target).is(":checkbox") && !$(e.target).is("a")) {
+			if (!$(e.target).is(":checkbox")) {
 				$(this).find(":checkbox").trigger("click");
-			}
-			let name = $(this).attr("data-item-name").trim();
-			if ($(this).find(":checkbox").is(":checked")) {
-				me.selected_fields.add(name);
-			} else {
-				me.selected_fields.delete(name);
+				return false;
 			}
 		});
 
@@ -368,13 +363,12 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 			let checked = $(e.target).is(":checked");
 			this.$results.find(".list-item-container .list-row-check").each(function () {
 				$(this).prop("checked", checked);
-				const name = $(this).closest(".list-item-container").attr("data-item-name").trim();
-				if (checked) {
-					me.selected_fields.add(name);
-				} else {
-					me.selected_fields.delete(name);
-				}
 			});
+			this.set_selected_fields();
+		});
+
+		this.$results.on("change", ".list-item-container .list-row-check", function() {
+			me.on_check(this);
 		});
 
 		this.$parent.find(".input-with-feedback").on("change", () => {
@@ -401,6 +395,34 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 					}
 				}, 300)
 			);
+		});
+	}
+
+	on_check(checkbox) {
+		let checked = $(checkbox).is(":checked");
+
+		if (checked && this.single_selection) {
+			this.$results.find(".list-item-container .list-row-check").each(function () {
+				if (this == checkbox) {
+					return;
+				}
+				$(this).prop("checked", false);
+			});
+		}
+
+		this.set_selected_fields();
+	}
+
+	set_selected_fields() {
+		let me = this;
+		this.$results.find(".list-item-container .list-row-check").each(function () {
+			let checked = $(this).is(":checked");
+			const name = $(this).closest(".list-item-container").attr("data-item-name").trim();
+			if (checked) {
+				me.selected_fields.add(name);
+			} else {
+				me.selected_fields.delete(name);
+			}
 		});
 	}
 
@@ -533,6 +555,10 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 			: ($row = $(
 					`<div class="list-item-container" data-item-name="${result.name}"></div>`
 			  ).append($row));
+
+		if (head && this.single_selection) {
+			$row.find(".list-row-check").prop("disabled", true);
+		}
 
 		return $row;
 	}
