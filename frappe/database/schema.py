@@ -4,10 +4,14 @@ import frappe
 from frappe import _
 from frappe.utils import cint, cstr, flt
 
-# This matches anything that isn't [a-zA-Z0-9_]
+# This matches anything that isn't Unicode Word Characters, Numbers and Underscore.
 SPECIAL_CHAR_PATTERN = re.compile(r"[\W]", flags=re.UNICODE)
 
 VARCHAR_CAST_PATTERN = re.compile(r"varchar\(([\d]+)\)")
+
+CONFIGURABLE_DECIMAL_TYPES = ("Currency", "Float", "Percent")
+DEFAULT_DECIMAL_LENGTH = 21
+DEFAULT_DECIMAL_PRECISION = 9
 
 
 class InvalidColumnName(frappe.ValidationError):
@@ -277,12 +281,15 @@ class DbColumn:
 			return cur_default != new_default
 
 	def default_changed_for_decimal(self, current_def):
+		cur_default = current_def["default"]
+		if cur_default == "NULL":
+			cur_default = None
 		try:
-			if current_def["default"] in ("", None) and self.default in ("", None):
+			if cur_default in ("", None) and self.default in ("", None):
 				# both none, empty
 				return False
 
-			elif current_def["default"] in ("", None):
+			elif cur_default in ("", None):
 				try:
 					# check if new default value is valid
 					float(self.default)
@@ -296,7 +303,7 @@ class DbColumn:
 
 			else:
 				# NOTE float() raise ValueError when "" or None is passed
-				return float(current_def["default"]) != float(self.default)
+				return float(cur_default) != float(self.default)
 		except TypeError:
 			return True
 
@@ -332,13 +339,19 @@ def get_definition(fieldtype, precision=None, length=None):
 	size = d[1] if d[1] else None
 
 	if size:
-		# This check needs to exist for backward compatibility.
-		# Till V13, default size used for float, currency and percent are (18, 6).
-		if fieldtype in ["Float", "Currency", "Percent"] and cint(precision) > 6:
-			size = "21,9"
+		if fieldtype in CONFIGURABLE_DECIMAL_TYPES:
+			width = length if length else DEFAULT_DECIMAL_LENGTH
+			precision_is_set = precision not in (None, "")
+			precision = precision if precision_is_set else DEFAULT_DECIMAL_PRECISION
+			if cint(precision) > cint(width):
+				precision = width
+			size = f"{cint(width)},{cint(precision)}"
 
 		if length:
 			if coltype == "varchar":
+				# Reference: https://mariadb.com/docs/server/server-usage/storage-engines/innodb/innodb-row-formats/troubleshooting-row-size-too-large-errors-with-innodb
+				if cint(length) < 64:
+					length = 64
 				size = length
 			elif coltype == "int" and length < 11:
 				# allow setting custom length for int if length provided is less than 11

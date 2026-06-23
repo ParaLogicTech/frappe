@@ -215,7 +215,7 @@ def rename_doc(
 		new_doc.add_comment("Edit", _("renamed from {0} to {1}").format(frappe.bold(old), frappe.bold(new)))
 
 	if merge:
-		frappe.delete_doc(doctype, old)
+		frappe.delete_doc(doctype, old, ignore_permissions=ignore_permissions)
 
 	new_doc.clear_cache()
 	frappe.clear_cache()
@@ -645,6 +645,9 @@ def update_parenttype_values(old: str, new: str):
 	child_doctypes = set(list(d["options"] for d in child_doctypes) + property_setter_child_doctypes)
 
 	for doctype in child_doctypes:
+		if frappe.get_meta(doctype).is_virtual:
+			continue
+
 		table = frappe.qb.DocType(doctype)
 		frappe.qb.update(table).set(table.parenttype, new).where(table.parenttype == old).run()
 

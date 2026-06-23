@@ -137,8 +137,12 @@ frappe.form.formatters = {
 
 	Data: function(value, df, options, doc) {
 		if (df && df.options == "URL") {
-			if (!value) return;
+			if (!value) return "";
 			return `<a href="${value}" title="Open Link" target="_blank">${value}</a>`;
+		}
+		if (df && df.options == "IBAN") {
+			if (!value) return "";
+			return frappe.utils.get_formatted_iban(value);
 		}
 		value = value == null ? "" : value;
 
@@ -181,11 +185,16 @@ frappe.form.formatters = {
 		value = frappe.form.formatters._format_number(value, null, 0);
 		return frappe.form.formatters._style(value, docfield, options, doc, true);
 	},
-	Percent: function(value, docfield, options, doc) {
+	Percent: function(value, docfield, options, doc) {		
+		const precision =
+			docfield.precision ||
+			cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.float_precision) ||
+			2;
+
 		if (value == null || value === "")
 			value = "";
 		else {
-			value = flt(value, 2) + "%";
+			value = flt(value, precision) + "%";
 		}
 
 		return frappe.form.formatters._style(value, docfield, options, doc, true);
@@ -493,27 +502,28 @@ frappe.form.formatters = {
 		return (rows || []).join(", ");
 	},
 	Color: (value) => {
-		return value
-			? `<div>
-			<div class="selected-color" style="background-color: ${value}"></div>
-			<span class="color-value">${value}</span>
-		</div>`
-			: "";
+		if (!value) return "";
+		let escaped_value = frappe.utils.escape_html(value);
+		return `<div>
+			<div class="selected-color" style="background-color: ${escaped_value}"></div>
+			<span class="color-value">${escaped_value}</span>
+		</div>`;
 	},
 	Icon: (value) => {
-		return value
-			? `<div>
-			<div class="selected-icon">${frappe.utils.icon(value, "md")}</div>
-			<span class="icon-value">${value}</span>
-		</div>`
-			: "";
+		if (!value) return "";
+		let escaped_value = frappe.utils.escape_html(value);
+		return `<div>
+			<div class="selected-icon">${frappe.utils.icon(escaped_value, "md")}</div>
+			<span class="icon-value">${escaped_value}</span>
+		</div>`;
 	},
 	Attach: format_attachment_url,
 	AttachImage: format_attachment_url,
 };
 
 function format_attachment_url(url) {
-	return url ? `<a href="${url}" target="_blank">${url}</a>` : "";
+	let escaped = frappe.utils.escape_html(url);
+	return url ? `<a href="${escaped}" target="_blank">${escaped}</a>` : "";
 }
 
 frappe.form.get_formatter = function (fieldtype) {

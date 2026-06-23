@@ -170,7 +170,6 @@ def handle_error(e, sms_queue, recipients_list, auto_commit, now):
 	else:
 		frappe.log_error(
 			title=_("Failed to send SMS"),
-			message=str(e),
 			reference_doctype="SMS Queue",
 			reference_name=sms_queue.name
 		)

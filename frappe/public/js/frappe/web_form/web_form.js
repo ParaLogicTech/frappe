@@ -30,6 +30,8 @@ export default class WebForm extends frappe.ui.FieldGroup {
 			this.setup_discard_action();
 		}
 
+		this.setup_delete_action();
+
 		this.setup_previous_next_button();
 		this.toggle_section();
 
@@ -163,7 +165,7 @@ export default class WebForm extends frappe.ui.FieldGroup {
 		let values = frappe.utils.get_query_params();
 		delete values.new;
 		Object.assign(defaults, values);
-		this.set_values(values);
+		this.set_values(defaults);
 	}
 
 	setup_primary_action() {
@@ -172,6 +174,10 @@ export default class WebForm extends frappe.ui.FieldGroup {
 
 	setup_discard_action() {
 		$(".web-form-footer .discard-btn").on("click", () => this.discard_form());
+	}
+
+	setup_delete_action() {
+		$(".web-form-footer .delete-btn").on("click", () => this.delete_form());
 	}
 
 	discard_form() {
@@ -192,6 +198,24 @@ export default class WebForm extends frappe.ui.FieldGroup {
 		return false;
 	}
 
+	delete_form() {
+		const path = window.location.href;
+		frappe.confirm(__("Are you sure you want to delete this record?"), () => {
+			frappe.call({
+				method: "frappe.website.doctype.web_form.web_form.delete",
+				args: {
+					web_form_name: this.name,
+					docname: this.doc.name,
+				},
+				callback: () => {
+					frappe.msgprint(__("Deleted!"));
+					window.location.href = path.substring(0, path.lastIndexOf("/"));
+				},
+			});
+		});
+		return false;
+	}
+
 	validate_section() {
 		if (this.allow_incomplete) return true;
 
@@ -206,6 +230,8 @@ export default class WebForm extends frappe.ui.FieldGroup {
 			field = this.fields_dict[fieldname];
 
 			if (field && field.get_value) {
+				if (field.df.hidden) continue;
+
 				let value = field.get_value();
 				if (
 					field.df.reqd &&
@@ -248,6 +274,9 @@ export default class WebForm extends frappe.ui.FieldGroup {
 
 	toggle_section() {
 		if (!this.is_multi_step_form) return;
+
+		// close any open child table row form before switching pages
+		frappe.ui.form?.close_grid_form && frappe.ui.form.close_grid_form();
 
 		this.render_progress_dots();
 		this.toggle_previous_button();

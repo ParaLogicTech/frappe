@@ -31,7 +31,7 @@ def import_fixtures(app, force=False):
 	if not os.path.exists(fixtures_path):
 		return
 
-	fixture_files = os.listdir(fixtures_path)
+	fixture_files = sorted(os.listdir(fixtures_path))
 
 	for fname in fixture_files:
 		if not fname.endswith(".json"):

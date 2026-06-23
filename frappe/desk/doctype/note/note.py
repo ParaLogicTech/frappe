@@ -36,6 +36,7 @@ class Note(Document):
 
 		if not self.content:
 			self.content = "<span></span>"
+		self.content = frappe.utils.sanitize_html(self.content, always_sanitize=True)
 
 	def before_print(self, settings=None):
 		self.print_heading = self.name
@@ -51,6 +52,7 @@ class Note(Document):
 @frappe.whitelist()
 def mark_as_seen(note: str):
 	note: Note = frappe.get_doc("Note", note)
+	note.check_permission("read")
 	note.mark_seen_by(frappe.session.user)
 	note.save(ignore_permissions=True, ignore_version=True)
 

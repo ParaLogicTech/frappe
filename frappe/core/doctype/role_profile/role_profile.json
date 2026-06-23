@@ -43,7 +43,8 @@
    "link_fieldname": "role_profile_name"
   }
  ],
- "modified": "2023-06-14 15:18:15.130808",
+
+ "modified": "2025-11-15 20:00:18.844434",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Role Profile",

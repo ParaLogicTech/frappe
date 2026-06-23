@@ -36,14 +36,17 @@ class Notification(Document):
 		from frappe.email.doctype.notification_recipient.notification_recipient import NotificationRecipient
 		from frappe.types import DF
 
+		attach_files: DF.Literal["", "From Field", "All"]
 		attach_print: DF.Check
 		channel: DF.Literal["Email", "Slack", "System Notification", "SMS"]
 		condition: DF.Code | None
 		date_changed: DF.Literal[None]
 		days_in_advance: DF.Int
 		document_type: DF.Link
+		email_template: DF.Link | None
 		enabled: DF.Check
 		event: DF.Literal["", "New", "Save", "Submit", "Cancel", "Days After", "Days Before", "Value Change", "Method", "Custom"]
+		from_attach_field: DF.Literal[None]
 		is_standard: DF.Check
 		message: DF.Code | None
 		message_type: DF.Literal["Markdown", "HTML", "Plain Text"]
@@ -62,7 +65,9 @@ class Notification(Document):
 		slack_webhook_url: DF.Link | None
 		subject: DF.Data | None
 		timeline_field: DF.Data | None
+		use_email_template: DF.Check
 		value_changed: DF.Literal[None]
+		with_container: DF.Check
 	# end: auto-generated types
 
 	def onload(self):
@@ -85,6 +90,9 @@ class Notification(Document):
 
 		if self.event == "Value Change" and not self.value_changed:
 			frappe.throw(_("Please specify which value field must be checked"))
+
+		if self.attach_files == "From Field" and not self.from_attach_field:
+			frappe.throw(_("Please specify the field from which to attach files"))
 
 		self.validate_forbidden_document_types()
 		self.validate_condition()
@@ -182,21 +190,8 @@ def get_context(context):
 
 		if self.is_standard:
 			self.load_standard_properties(context)
-		try:
-			if self.channel == "Email":
-				self.send_an_email(doc, context)
 
-			if self.channel == "Slack":
-				self.send_a_slack_msg(doc, context)
-
-			if self.channel == "SMS":
-				self.send_sms(doc, context)
-
-			if self.channel == "System Notification" or self.send_system_notification:
-				self.create_system_notification(doc, context)
-
-		except Exception:
-			self.log_error("Failed to send Notification")
+		self.send_notification_by_channel(doc, context)
 
 		if self.set_property_after_alert:
 			allow_update = True
@@ -223,7 +218,34 @@ def get_context(context):
 					doc.save(ignore_permissions=True)
 					doc.flags.in_notification_update = False
 			except Exception:
-				self.log_error("Document update failed")
+				frappe.log_error(
+					"Document update failed",
+					reference_doctype=get_reference_doctype(doc),
+					reference_name=get_reference_name(doc),
+				)
+
+	def send_notification_by_channel(self, doc, context):
+		"""Send notification based on the specified channel."""
+		try:
+			if self.channel == "Email":
+				self.send_an_email(doc, context)
+			elif self.channel == "Slack":
+				self.send_a_slack_msg(doc, context)
+			elif self.channel == "SMS":
+				self.send_sms(doc, context)
+			elif self.channel == "System Notification":
+				self.create_system_notification(doc, context)
+
+			# Additionally, if explicitly enabled, create a system notification
+			# even when the primary channel is not "System Notification".
+			if self.send_system_notification and self.channel != "System Notification":
+				self.create_system_notification(doc, context)
+		except Exception:
+			frappe.log_error(
+				title=_("Failed to send Notification: {0}").format(self.name),
+				reference_doctype=get_reference_doctype(doc),
+				reference_name=get_reference_name(doc),
+			)
 
 	def create_system_notification(self, doc, context):
 		if self.flags.message:
@@ -252,7 +274,7 @@ def get_context(context):
 			"subject": subject,
 			"from_user": doc.modified_by or doc.owner,
 			"email_content": message,
-			"attached_file": attachments and json.dumps(attachments[0]),
+			"attached_file": json.dumps(attachments) if attachments else None,
 		}
 
 		notification_type = self.get_notification_type()
@@ -336,6 +358,13 @@ def get_context(context):
 				child_name=context.get("child_name"),
 			)
 
+		# We expect at most one print format attachment, but we don't know where it is.
+		print_letterhead = any(
+			attachment.get("print_letterhead")
+			for attachment in attachments
+			if attachment.get("print_format_attachment") == 1
+		)
+
 		frappe.sendmail(
 			recipients=recipients,
 			subject=subject,
@@ -349,7 +378,7 @@ def get_context(context):
 			child_name=context.get("child_name"),
 			attachments=attachments,
 			expose_recipients="header",
-			print_letterhead=((attachments and attachments[0].get("print_letterhead")) or False),
+			print_letterhead=print_letterhead,
 			communication=communication,
 			notification_type=notification_type,
 			with_container=self.with_container,
@@ -490,14 +519,33 @@ def get_context(context):
 
 		return None, None
 
-	def get_attachment(self, doc):
-		"""check print settings are attach the pdf"""
-		if not self.attach_print:
-			return None
+	def get_attachment(self, doc) -> list[dict]:
+		"""Check Attachment Settings and return attachments accordingly"""
 
 		hooked_attachment = doc.run_method("get_notification_attachment", self.get_notification_type())
 		if hooked_attachment is not None:
-			return hooked_attachment
+			return hooked_attachment		
+
+		attachments = []
+
+		if self.attach_print:
+			attachments.append(self.get_print(doc))
+
+		if self.attach_files == "From Field" and self.from_attach_field:
+			attachments.append({"file_url": doc.get(self.from_attach_field)})
+		elif self.attach_files == "All":
+			attachments.extend(
+				frappe.get_all(
+					"File",
+					fields=["file_url"],
+					filters={"attached_to_doctype": self.document_type, "attached_to_name": doc.name},
+				)
+			)
+
+		return attachments
+
+	def get_print(self, doc):
+		"""check print settings and return dict with print info"""
 
 		print_settings = frappe.get_doc("Print Settings", "Print Settings")
 		if (doc.docstatus == 0 and not print_settings.allow_print_for_draft) or (
@@ -512,18 +560,16 @@ def get_context(context):
 				title=_("Error in Notification"),
 			)
 		else:
-			return [
-				{
-					"print_format_attachment": 1,
-					"doctype": doc.doctype,
-					"name": doc.name,
-					"print_format": self.print_format,
-					"print_letterhead": print_settings.with_letterhead,
-					"lang": frappe.db.get_value("Print Format", self.print_format, "default_print_language")
-					if self.print_format
-					else "en",
-				}
-			]
+			return {
+				"print_format_attachment": 1,
+				"doctype": doc.doctype,
+				"name": doc.name,
+				"print_format": self.print_format,
+				"print_letterhead": print_settings.with_letterhead,
+				"lang": doc.get("language") or frappe.db.get_value("Print Format", self.print_format, "default_print_language")
+				if self.print_format
+				else "en",
+			}
 
 	def get_template(self, md_as_html=False):
 		module = get_doc_module(self.module, self.doctype, self.name)
@@ -659,7 +705,7 @@ def evaluate_alert(doc: Document, alert, event, context=None):
 	except Exception as e:
 		title = str(e)
 		message = frappe.get_traceback(with_context=True)
-		frappe.log_error(title=title, message=message)
+		frappe.log_error(title=title, message=message, reference_doctype=doc.doctype, reference_name=doc.name)
 		msg = f"<details><summary>{title}</summary>{message}</details>"
 		frappe.throw(msg, title=_("Error in Notification"))
 

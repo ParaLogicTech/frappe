@@ -335,7 +335,7 @@ frappe.views.TreeView = class TreeView {
 		var node = me.tree.get_selected_node();
 
 		if (!(node && node.expandable)) {
-			frappe.msgprint(__("Select a group node first."));
+			frappe.msgprint(__("Select a group {0} first.", [__(me.doctype)]));
 			return;
 		}
 
@@ -403,8 +403,10 @@ frappe.views.TreeView = class TreeView {
 			{
 				fieldtype: "Check",
 				fieldname: "is_group",
-				label: __("Group Node"),
-				description: __("Further nodes can be only created under 'Group' type nodes"),
+				label: __("Is Group"),
+				description: __(
+					"Further sub-groups can only be created under records marked as 'Group'"
+				),
 			},
 		];
 

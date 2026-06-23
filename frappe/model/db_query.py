@@ -7,6 +7,11 @@ import datetime
 import json
 import re
 from collections import Counter
+from functools import lru_cache
+
+import sqlparse
+from sqlparse import tokens
+from sqlparse.sql import Function, Parenthesis, Statement
 
 import frappe
 import frappe.defaults
@@ -30,6 +35,22 @@ from frappe.utils import (
 	make_filter_tuple,
 )
 from frappe.utils.data import DateTimeLikeObject, get_datetime, getdate, sbool
+
+
+@lru_cache(maxsize=128)
+def _parse_sql(field: str) -> Statement | None:
+	"""
+	Parse a given SQL statement using `sqlparse`.
+
+	Args:
+		field (str): The SQL statement string to parse.
+
+	Returns:
+		Statement | None: A `sqlparse.sql.Statement` object if parsing succeeds, otherwise `None`.
+	"""
+	if parsed := sqlparse.parse(field):
+		return parsed[0]
+
 
 LOCATE_PATTERN = re.compile(r"locate\([^,]+,\s*[`\"]?name[`\"]?\s*\)", flags=re.IGNORECASE)
 LOCATE_CAST_PATTERN = re.compile(r"locate\(([^,]+),\s*([`\"]?name[`\"]?)\s*\)", flags=re.IGNORECASE)
@@ -217,7 +238,9 @@ class DatabaseQuery:
 
 		if self.distinct:
 			args.fields = "distinct " + args.fields
-			args.order_by = ""  # TODO: recheck for alternative
+			if frappe.db.db_type == "postgres":
+				# PostgreSQL requires ORDER BY expressions to appear in SELECT list when using DISTINCT
+				args.order_by = ""
 
 		# Postgres requires any field that appears in the select clause to also
 		# appear in the order by and group by clause
@@ -306,10 +329,10 @@ from {tables}
 		self.set_order_by(args)
 
 		self.validate_order_by_and_group_by(args.order_by)
-		args.order_by = args.order_by and (" order by " + args.order_by) or ""
+		args.order_by = (args.order_by and (" order by " + args.order_by)) or ""
 
 		self.validate_order_by_and_group_by(self.group_by)
-		args.group_by = self.group_by and (" group by " + self.group_by) or ""
+		args.group_by = (self.group_by and (" group by " + self.group_by)) or ""
 
 		return args
 
@@ -387,8 +410,6 @@ from {tables}
 			"concat",
 			"concat_ws",
 			"if",
-			"ifnull",
-			"nullif",
 			"coalesce",
 			"connection_id",
 			"current_user",
@@ -399,7 +420,54 @@ from {tables}
 			"user",
 			"version",
 			"global",
+			"sleep",
 		]
+
+		def _find_subqueries(parsed: Statement) -> list:
+			"""
+			Recursively find all subqueries in a parsed SQL statement.
+			"""
+			subqueries = []
+
+			for token in parsed.tokens:
+				if isinstance(token, Parenthesis):
+					# Check for DML token for subquery check
+					is_subquery = False
+					for sub_token in token.tokens:
+						if sub_token.ttype is tokens.DML:
+							is_subquery = True
+							break
+					if is_subquery:
+						subqueries.append(token)
+					# Recursively check for nested subqueries
+					subqueries.extend(_find_subqueries(token))
+				elif token.is_group:
+					subqueries.extend(_find_subqueries(token))
+
+			return subqueries
+
+		def _check_sql_token(statement: Statement) -> None:
+			"""
+			Checks the output of `sqlparse.parse()` to detect blocked functions and subqueries.
+			"""
+			if _find_subqueries(statement):
+				_raise_exception()
+
+			for token in statement.tokens:
+				if isinstance(token, Function):
+					if (name := (token.get_name())) and name.lower() in blacklisted_functions:
+						_raise_exception()
+
+				if token.ttype in tokens.Keyword:
+					if any(re.search(rf"\b{kw}\b", token.value.lower()) for kw in blacklisted_keywords):
+						_raise_exception()
+
+				if token.ttype in tokens.Name and not re.match(r"^`\w.*`$", token.value.strip()):
+					if any(re.search(rf"\b{kw}\b", token.value.lower()) for kw in blacklisted_keywords):
+						_raise_exception()
+
+				if token.is_group:
+					_check_sql_token(token)
 
 		def _raise_exception():
 			frappe.throw(_("Use of sub-query or function is restricted"), frappe.DataError)
@@ -415,18 +483,8 @@ from {tables}
 			lower_field = field.lower().strip()
 
 			if SUB_QUERY_PATTERN.match(field):
-				# Check for subquery anywhere in the field, not just at the beginning
-				if "(" in lower_field:
-					location = lower_field.index("(")
-					subquery_token = lower_field[location + 1 :].lstrip().split(" ", 1)[0]
-					if any(keyword in subquery_token for keyword in blacklisted_keywords):
-						_raise_exception()
-
-				function = lower_field.split("(", 1)[0].rstrip()
-				if function in blacklisted_functions:
-					frappe.throw(
-						_("Use of function {0} in field is restricted").format(function), exc=frappe.DataError
-					)
+				# Check all tokens for subquery detection
+				_check_sql_token(_parse_sql(field))
 
 				if "@" in lower_field:
 					# prevent access to global variables
@@ -513,6 +571,8 @@ from {tables}
 	def check_read_permission(self, doctype: str, parent_doctype: str | None = None):
 		if self.flags.ignore_permissions:
 			return
+
+		self.join = "left join"
 
 		if doctype not in self.permission_map:
 			self._set_permission_map(doctype, parent_doctype)
@@ -634,7 +694,6 @@ from {tables}
 		if self.flags.ignore_permissions:
 			return
 
-		asterisk_fields = []
 		permitted_fields = set(
 			get_permitted_fields(
 				doctype=self.doctype,
@@ -645,7 +704,10 @@ from {tables}
 		)
 		permitted_child_table_fields = {}
 
-		for i, field in enumerate(self.fields):
+		# Create a copy of the fields list and reverse it to avoid index issues when removing fields
+		fields_to_check = list(enumerate(self.fields))[::-1]
+
+		for i, field in fields_to_check:
 			# field: 'count(distinct `tabPhoto`.name) as total_count'
 			# column: 'tabPhoto.name'
 			# field: 'count(`tabPhoto`.name) as total_count'
@@ -655,9 +717,10 @@ from {tables}
 				continue
 
 			column = columns[0]
+			# handle * fields
 			if column == "*" and "*" in field:
 				if not in_function("*", field):
-					asterisk_fields.append(i)
+					self.fields[i : i + 1] = permitted_fields
 				continue
 
 			# handle pseudo columns
@@ -711,12 +774,6 @@ from {tables}
 			# remove if access not allowed
 			else:
 				self.remove_field(i)
-
-		# handle * fields
-		j = 0
-		for i in asterisk_fields:
-			self.fields[i + j : i + j + 1] = permitted_fields
-			j = j + len(permitted_fields) - 1
 
 	def prepare_filter_condition(self, f):
 		"""Returns a filter condition in the format:
@@ -806,7 +863,11 @@ from {tables}
 
 			values = f.value or ""
 			if isinstance(values, str):
-				values = values.split(",")
+				try:
+					parsed = json.loads(values)
+					values = parsed if isinstance(parsed, list) else [parsed]
+				except ValueError:
+					values = values.split(",")
 
 			fallback = "''"
 			value = [frappe.db.escape((cstr(v) or "").strip(), percent=False) for v in values]
@@ -1136,22 +1197,48 @@ from {tables}
 		if not parameters:
 			return
 
-		blacklisted_sql_functions = {
-			"sleep",
-		}
 		_lower = parameters.lower()
-
-		if "select" in _lower and "from" in _lower:
-			frappe.throw(_("Cannot use sub-query in order by"))
 
 		if self.strict and ORDER_GROUP_PATTERN.match(_lower):
 			frappe.throw(_("Illegal SQL Query"))
 
-		link_tables = [d.table_name for d in self.link_tables]
+		subquery_indicators = {
+			r"union",
+			r"intersect",
+			r"select\b.*\bfrom",
+		}
+
+		# Replace doctype names with a hardcoded string "doc"
+		# This is to avoid false positives based on doctype name
+		sanitized = re.sub(r"`tab[^`]*`", " doc ", _lower)
+
+		# Run the subquery checks against the sanitized string
+		if any(re.search(r"\b" + pattern + r"\b", sanitized) for pattern in subquery_indicators):
+			frappe.throw(_("Cannot use sub-query here."))
+
+		# blacklisted_operators = {"if", "regexp", "rlike", "like"}
+		blacklisted_operators = {"regexp", "rlike", "like"}
+		if any(re.search(r"\b" + op + r"\b", sanitized) for op in blacklisted_operators):
+			frappe.throw(_("Illegal SQL Query"))
+
+		blacklisted_sql_functions = {
+			"sleep",
+			"benchmark",
+			"extractvalue",
+			"database",
+			"user",
+			"current_user",
+			"version",
+			"substr",
+			"substring",
+			"updatexml",
+			"load_file",
+			"session_user",
+			"system_user",
+			"get_lock",
+		}
 
 		for field in parameters.split(","):
-			if field.count('"') % 2 or field.count("'") % 2 or field.count("`") % 2:
-				frappe.throw(_("Invalid field name: {0}").format(field))
 			field = field.strip()
 			full_field_name = "." in field and field.startswith("`tab")
 
@@ -1164,7 +1251,7 @@ from {tables}
 
 			# Check for SQL function using regex with word boundaries and optional whitespace before parenthesis
 			for func in blacklisted_sql_functions:
-				if re.search(r"\b" + re.escape(func) + r"\s*\(", field.lower()):
+				if re.search(r"\b" + re.escape(func) + r"\W*\(", field.lower()):
 					frappe.throw(_("Cannot use {0} in order/group by").format(field))
 
 	def add_limit(self):
@@ -1297,7 +1384,7 @@ def get_between_date_filter(value, df=None):
 	        no change is applied.
 	"""
 
-	fieldtype = df and df.fieldtype or "Datetime"
+	fieldtype = (df and df.fieldtype) or "Datetime"
 
 	from_date = frappe.utils.nowdate()
 	to_date = frappe.utils.nowdate()

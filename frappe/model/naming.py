@@ -64,6 +64,14 @@ class NamingSeries:
 				exc=InvalidNamingSeriesError,
 			)
 
+		if "#" in self.series and ".#" not in self.series:
+			frappe.throw(
+				_(
+					"Invalid naming series {}: dot (.) missing before the numeric placeholders. Kindly use a format like <b>ABCD.#####</b>."
+				).format(frappe.bold(self.series)),
+				exc=InvalidNamingSeriesError,
+			)
+
 	def generate_next_name(self, doc: "Document", *, ignore_validate=False, series_value_field='') -> str:
 		if not ignore_validate:
 			self.validate()
@@ -122,7 +130,7 @@ class NamingSeries:
 
 	def get_current_value(self) -> int:
 		prefix = self.get_prefix()
-		return cint(frappe.db.get_value("Series", prefix, "current", order_by="name"))
+		return cint(frappe.db.get_value("Series", prefix, "current", order_by="name", for_update=True))
 
 
 def set_new_name(doc):

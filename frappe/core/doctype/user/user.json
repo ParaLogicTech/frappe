@@ -57,6 +57,7 @@
   "view_switcher",
   "form_settings_section",
   "form_sidebar",
+  "form_navigation_buttons",
   "timeline",
   "dashboard",
   "change_password",
@@ -600,6 +601,7 @@
    "unique": 1
   },
   {
+   "description": "<a href=\"https://docs.frappe.io/framework/user/en/api/rest#1-token-based-authentication\" target=\"_blank\">\n  Click here to learn about token-based authentication\n</a>",
    "fieldname": "generate_keys",
    "fieldtype": "Button",
    "label": "Generate Keys",
@@ -806,6 +808,12 @@
    "fieldname": "dashboard",
    "fieldtype": "Check",
    "label": "Dashboard"
+  },
+  {
+   "default": "1",
+   "fieldname": "form_navigation_buttons",
+   "fieldtype": "Check",
+   "label": "Navigation Buttons"
   }
  ],
  "icon": "fa fa-user",
@@ -866,20 +874,10 @@
    "group": "Integrations",
    "link_doctype": "Token Cache",
    "link_fieldname": "user"
-  },
-  {
-   "group": "Logs",
-   "link_doctype": "Activity Log",
-   "link_fieldname": "user"
-  },
-  {
-   "group": "Logs",
-   "link_doctype": "Route History",
-   "link_fieldname": "user"
   }
  ],
  "make_attachments_public": 1,
- "modified": "2026-02-01 15:43:36.528824",
+ "modified": "2026-01-02 16:00:51.406511",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "User",

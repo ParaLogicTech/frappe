@@ -54,7 +54,7 @@ def make_test_image_file(private=False):
 		}
 	).insert()
 	# remove those flags
-	_test_file: "File" = frappe.get_doc("File", test_file.name)
+	_test_file: File = frappe.get_doc("File", test_file.name)
 
 	try:
 		yield _test_file
@@ -111,7 +111,7 @@ class TestBase64File(FrappeTestCase):
 	def setUp(self):
 		self.attached_to_doctype, self.attached_to_docname = make_test_doc()
 		self.test_content = base64.b64encode(test_content1.encode("utf-8"))
-		_file: "File" = frappe.get_doc(
+		_file: File = frappe.get_doc(
 			{
 				"doctype": "File",
 				"file_name": "test_base64.txt",
@@ -254,6 +254,66 @@ class TestSameContent(FrappeTestCase):
 		self.assertRaises(frappe.exceptions.AttachmentLimitReached, file2.insert)
 		limit_property.delete()
 		frappe.clear_cache(doctype="ToDo")
+
+	def test_create_attachment_copy(self):
+		doctype, docname = make_test_doc()
+		source_file = frappe.get_doc(
+			{
+				"doctype": "File",
+				"file_name": f"existing-file-{frappe.generate_hash(length=8)}.txt",
+				"content": "Existing attachment content",
+			}
+		).insert()
+		comment_count_before = frappe.db.count(
+			"Comment", {"reference_doctype": doctype, "reference_name": docname}
+		)
+
+		copied_file = source_file.create_attachment_copy(doctype, docname)
+		comment_count_after = frappe.db.count(
+			"Comment", {"reference_doctype": doctype, "reference_name": docname}
+		)
+
+		self.assertNotEqual(copied_file.name, source_file.name)
+		self.assertEqual(copied_file.file_url, source_file.file_url)
+		self.assertEqual(copied_file.attached_to_doctype, doctype)
+		self.assertEqual(copied_file.attached_to_name, docname)
+		self.assertEqual(
+			copied_file.folder,
+			frappe.db.get_value("File", {"is_attachments_folder": 1}),
+		)
+		self.assertEqual(comment_count_after, comment_count_before + 1)
+
+	def test_create_attachment_copy_respects_attachment_limit(self):
+		doctype, docname = make_test_doc()
+		from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+
+		limit_property = make_property_setter("ToDo", None, "max_attachments", 1, "int", for_doctype=True)
+		source_file_1 = frappe.get_doc(
+			{
+				"doctype": "File",
+				"file_name": f"existing-limit-file-{frappe.generate_hash(length=8)}.txt",
+				"content": "Existing attachment content 1",
+			}
+		).insert()
+		source_file_2 = frappe.get_doc(
+			{
+				"doctype": "File",
+				"file_name": f"existing-limit-file-{frappe.generate_hash(length=8)}.txt",
+				"content": "Existing attachment content 2",
+			}
+		).insert()
+
+		try:
+			source_file_1.create_attachment_copy(doctype, docname)
+			self.assertRaises(
+				frappe.exceptions.AttachmentLimitReached,
+				source_file_2.create_attachment_copy,
+				doctype,
+				docname,
+			)
+		finally:
+			limit_property.delete()
+			frappe.clear_cache(doctype="ToDo")
 
 
 class TestFile(FrappeTestCase):
@@ -442,7 +502,7 @@ class TestFile(FrappeTestCase):
 		self.assertRaises(OSError, file1.save)
 
 	def test_file_url_validation(self):
-		test_file: "File" = frappe.new_doc("File")
+		test_file: File = frappe.new_doc("File")
 		test_file.update({"file_name": "logo", "file_url": "https://frappe.io/files/frappe.png"})
 
 		self.assertIsNone(test_file.validate())
@@ -467,7 +527,7 @@ class TestFile(FrappeTestCase):
 
 	def test_make_thumbnail(self):
 		# test web image
-		test_file: "File" = frappe.get_doc(
+		test_file: File = frappe.get_doc(
 			{
 				"doctype": "File",
 				"file_name": "logo",
@@ -563,6 +623,138 @@ class TestFile(FrappeTestCase):
 			file._content = ""
 			file.save().reload()
 			self.assertIn("42", file.get_content())
+
+	def test_guest_upload_to_non_allowed_doctype(self):
+		"""Verify Guest cannot upload to a restricted DocType."""
+		from werkzeug.test import EnvironBuilder
+		from werkzeug.wrappers import Request
+
+		from frappe.handler import upload_file
+
+		old_allow_guests = frappe.db.get_single_value("System Settings", "allow_guests_to_upload_files")
+		old_allowed_doctypes = frappe.db.get_single_value(
+			"System Settings", "allowed_doctypes_for_guest_uploads"
+		)
+
+		frappe.db.set_single_value("System Settings", "allow_guests_to_upload_files", 1)
+		frappe.db.set_single_value("System Settings", "allowed_doctypes_for_guest_uploads", "ToDo")
+
+		builder = EnvironBuilder(path="/", base_url="http://localhost")
+		frappe.local.request = Request(builder.get_environ())
+
+		frappe.set_user("Guest")
+		frappe.form_dict.doctype = "User"
+		frappe.form_dict.docname = "Administrator"
+
+		try:
+			self.assertRaises(frappe.PermissionError, upload_file)
+		finally:
+			frappe.db.set_single_value("System Settings", "allow_guests_to_upload_files", old_allow_guests)
+			frappe.db.set_single_value(
+				"System Settings", "allowed_doctypes_for_guest_uploads", old_allowed_doctypes
+			)
+
+			frappe.set_user("Administrator")
+			frappe.form_dict.pop("doctype", None)
+			frappe.form_dict.pop("docname", None)
+			if hasattr(frappe.local, "request"):
+				del frappe.local.request
+
+	def test_guest_upload_to_allowed_doctype(self):
+		"""Verify Guest can upload to an explicitly whitelisted DocType."""
+		from werkzeug.test import EnvironBuilder
+		from werkzeug.wrappers import Request
+
+		from frappe.handler import upload_file
+
+		old_allow_guests = frappe.db.get_single_value("System Settings", "allow_guests_to_upload_files")
+		old_allowed_doctypes = frappe.db.get_single_value(
+			"System Settings", "allowed_doctypes_for_guest_uploads"
+		)
+
+		frappe.db.set_single_value("System Settings", "allow_guests_to_upload_files", 1)
+		frappe.db.set_single_value("System Settings", "allowed_doctypes_for_guest_uploads", "User\nToDo")
+
+		builder = EnvironBuilder(path="/", base_url="http://localhost")
+		frappe.local.request = Request(builder.get_environ())
+
+		frappe.set_user("Administrator")
+		todo = frappe.get_doc({"doctype": "ToDo", "description": "Test Target"}).insert()
+
+		frappe.set_user("Guest")
+		frappe.form_dict.doctype = "ToDo"
+		frappe.form_dict.docname = todo.name
+		frappe.form_dict.file_url = "https://frappe.io/assets/img/logo.png"
+		frappe.form_dict.file_name = "guest_logo.png"
+
+		file_doc = None
+		try:
+			file_doc = upload_file()
+			self.assertEqual(file_doc.attached_to_name, todo.name)
+		finally:
+			frappe.db.set_single_value("System Settings", "allow_guests_to_upload_files", old_allow_guests)
+			frappe.db.set_single_value(
+				"System Settings", "allowed_doctypes_for_guest_uploads", old_allowed_doctypes
+			)
+
+			frappe.set_user("Administrator")
+			if file_doc:
+				file_doc.delete()
+			todo.delete()
+
+			frappe.form_dict.pop("doctype", None)
+			frappe.form_dict.pop("docname", None)
+			frappe.form_dict.pop("file_url", None)
+			frappe.form_dict.pop("file_name", None)
+
+			if hasattr(frappe.local, "request"):
+				del frappe.local.request
+
+	def test_guest_upload_for_empty_whitelist(self):
+		"""Verify Guest can upload anywhere if the configuration whitelist string is left completely empty."""
+		from werkzeug.test import EnvironBuilder
+		from werkzeug.wrappers import Request
+
+		from frappe.handler import upload_file
+
+		old_allow_guests = frappe.db.get_single_value("System Settings", "allow_guests_to_upload_files")
+		old_allowed_doctypes = frappe.db.get_single_value(
+			"System Settings", "allowed_doctypes_for_guest_uploads"
+		)
+
+		frappe.db.set_single_value("System Settings", "allow_guests_to_upload_files", 1)
+		frappe.db.set_single_value("System Settings", "allowed_doctypes_for_guest_uploads", "")
+
+		builder = EnvironBuilder(path="/", base_url="http://localhost")
+		frappe.local.request = Request(builder.get_environ())
+
+		frappe.set_user("Guest")
+		frappe.form_dict.doctype = "User"
+		frappe.form_dict.docname = "Administrator"
+		frappe.form_dict.file_url = "https://frappe.io/assets/img/logo.png"
+		frappe.form_dict.file_name = "guest_fallback.png"
+
+		file_doc = None
+		try:
+			file_doc = upload_file()
+			self.assertEqual(file_doc.attached_to_name, "Administrator")
+		finally:
+			frappe.db.set_single_value("System Settings", "allow_guests_to_upload_files", old_allow_guests)
+			frappe.db.set_single_value(
+				"System Settings", "allowed_doctypes_for_guest_uploads", old_allowed_doctypes
+			)
+
+			frappe.set_user("Administrator")
+			if file_doc:
+				file_doc.delete()
+
+			frappe.form_dict.pop("doctype", None)
+			frappe.form_dict.pop("docname", None)
+			frappe.form_dict.pop("file_url", None)
+			frappe.form_dict.pop("file_name", None)
+
+			if hasattr(frappe.local, "request"):
+				del frappe.local.request
 
 
 @contextmanager
@@ -907,12 +1099,12 @@ class TestGuestFileAndAttachments(FrappeTestCase):
 		file_name = "test" + frappe.generate_hash()
 		content = file_name.encode()
 
-		doc_pub: "File" = frappe.new_doc("File")  # type: ignore
+		doc_pub: File = frappe.new_doc("File")  # type: ignore
 		doc_pub.file_url = f"/files/{file_name}.txt"
 		doc_pub.content = content
 		doc_pub.save()
 
-		doc_pri: "File" = frappe.new_doc("File")  # type: ignore
+		doc_pri: File = frappe.new_doc("File")  # type: ignore
 		doc_pri.file_url = f"/private/files/{file_name}.txt"
 		doc_pri.is_private = False
 		doc_pri.content = content

@@ -126,6 +126,7 @@ class MariaDBConnectionUtil:
 			"charset": "utf8mb4",
 			"collation": "utf8mb4_unicode_ci",
 			"use_unicode": True,
+			"local_infile": False,
 		}
 
 		if self.cur_db_name:
@@ -141,15 +142,19 @@ class MariaDBConnectionUtil:
 		if self.password:
 			conn_settings["password"] = self.password
 
-		if frappe.conf.local_infile:
-			conn_settings["local_infile"] = frappe.conf.local_infile
-
-		if frappe.conf.db_ssl_ca and frappe.conf.db_ssl_cert and frappe.conf.db_ssl_key:
-			conn_settings["ssl"] = {
+		# Configure SSL settings
+		if frappe.conf.db_ssl_ca:
+			ssl_config = {
 				"ca": frappe.conf.db_ssl_ca,
-				"cert": frappe.conf.db_ssl_cert,
-				"key": frappe.conf.db_ssl_key,
+				"check_hostname": frappe.conf.db_ssl_check_hostname,
 			}
+
+			# Add client certificates for mutual SSL if available
+			if frappe.conf.db_ssl_cert and frappe.conf.db_ssl_key:
+				ssl_config.update({"cert": frappe.conf.db_ssl_cert, "key": frappe.conf.db_ssl_key})
+
+			conn_settings["ssl"] = ssl_config
+
 		return conn_settings
 
 

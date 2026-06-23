@@ -30,10 +30,12 @@ from frappe.utils import (
 	format_timedelta,
 	get_bench_path,
 	get_file_timestamp,
-	get_gravatar,
+	get_identicon,
+	get_safe_filters,
 	get_site_info,
 	get_sites,
 	get_url,
+	is_valid_iban,
 	money_in_words,
 	parse_timedelta,
 	random_string,
@@ -54,10 +56,12 @@ from frappe.utils.data import (
 	add_years,
 	cast,
 	cint,
+	compare,
 	cstr,
 	duration_to_seconds,
 	evaluate_filters,
 	expand_relative_urls,
+	format_duration,
 	get_datetime,
 	get_first_day_of_week,
 	get_time,
@@ -223,6 +227,133 @@ class TestFilters(FrappeTestCase):
 		}
 		self.assertFalse(evaluate_filters(doc, [("last_password_reset_date", "Timespan", "today")]))
 
+	def test_is_operator(self):
+		"""Test 'is' operator for checking if values are set or not set."""
+		# Test "is set" with different fieldtypes and values
+		self.assertTrue(compare("1", "is", "set", "Int"))
+		self.assertTrue(compare(1, "is", "set", "Int"))
+		self.assertTrue(compare(0, "is", "set", "Int"))  # 0 is considered "set"
+		self.assertTrue(compare("hello", "is", "set", "Data"))
+		self.assertTrue(compare(0.0, "is", "set", "Float"))
+
+		# Test "is set" with unset values - None should always be "not set" regardless of fieldtype
+		self.assertFalse(compare(None, "is", "set", "Int"))
+		self.assertFalse(compare(None, "is", "set", "Float"))
+		self.assertFalse(compare(None, "is", "set", "Check"))
+		self.assertFalse(compare(None, "is", "set", "Data"))
+		self.assertFalse(compare("", "is", "set"))
+		self.assertFalse(compare("", "is", "set", "Data"))
+		self.assertFalse(compare(None, "is", "set"))
+
+		# Test "is not set" with set values
+		self.assertFalse(compare("1", "is", "not set", "Int"))
+		self.assertFalse(compare(1, "is", "not set", "Int"))
+		self.assertFalse(compare(0, "is", "not set", "Int"))
+		self.assertFalse(compare("hello", "is", "not set", "Data"))
+		self.assertFalse(compare(0.0, "is", "not set", "Float"))
+
+		# Test "is not set" with unset values - None should always be "not set" regardless of fieldtype
+		self.assertTrue(compare(None, "is", "not set", "Int"))
+		self.assertTrue(compare(None, "is", "not set", "Float"))
+		self.assertTrue(compare(None, "is", "not set", "Check"))
+		self.assertTrue(compare(None, "is", "not set", "Data"))
+		self.assertTrue(compare("", "is", "not set"))
+		self.assertTrue(compare("", "is", "not set", "Data"))
+		self.assertTrue(compare(None, "is", "not set"))
+
+	def test_in_operators(self):
+		"""Test 'in' and 'not in' operators with and without fieldtype casting."""
+		test_list = ["a", "b", "c"]
+
+		# Test "in" operator without fieldtype
+		self.assertTrue(compare("a", "in", test_list))
+		self.assertFalse(compare("", "in", test_list))
+		self.assertFalse(compare("d", "in", test_list))
+		self.assertFalse(compare(None, "in", test_list))
+
+		# Test "not in" operator without fieldtype
+		self.assertFalse(compare("a", "not in", test_list))
+		self.assertTrue(compare("", "not in", test_list))
+		self.assertTrue(compare("d", "not in", test_list))
+		self.assertTrue(compare(None, "not in", test_list))
+
+		# Test "in" operator with fieldtype casting - only first value should be cast
+		string_list = ["1", "2", "3"]
+		self.assertTrue(compare(1, "in", string_list, "Data"))
+		self.assertTrue(compare("2", "in", string_list, "Data"))
+		self.assertFalse(compare(4, "in", string_list, "Data"))
+
+		# Test type mismatch: Int fieldtype with string list (val2 is NOT cast)
+		mixed_list = ["1", "2", "3"]
+		self.assertFalse(compare("1", "in", mixed_list, "Int"))
+		self.assertFalse(compare(1, "in", mixed_list, "Int"))
+
+		# Test with matching types: Int fieldtype with int list
+		int_list = [1, 2, 3]
+		self.assertTrue(compare("1", "in", int_list, "Int"))
+		self.assertTrue(compare(2, "in", int_list, "Int"))
+		self.assertFalse(compare("4", "in", int_list, "Int"))
+
+		# Test "not in" operator with fieldtype casting
+		self.assertFalse(compare(1, "not in", string_list, "Data"))
+		self.assertFalse(compare("2", "not in", string_list, "Data"))
+		self.assertTrue(compare(4, "not in", string_list, "Data"))
+
+		# Test "not in" with type mismatch
+		self.assertTrue(compare("1", "not in", mixed_list, "Int"))
+		self.assertFalse(compare("1", "not in", int_list, "Int"))
+
+		# Test with Float fieldtype
+		float_list = [1.5, 2.5, 3.5]
+		self.assertTrue(compare("1.5", "in", float_list, "Float"))
+		self.assertFalse(compare("4.5", "in", float_list, "Float"))
+
+		# Test None with "in"/"not in" operators - None should not be cast
+		self.assertFalse(compare(None, "in", [""], "Data"))
+		self.assertFalse(compare(None, "in", [0], "Int"))
+		self.assertFalse(compare(None, "in", [0.0], "Float"))
+		self.assertFalse(compare(None, "in", ["", "test"], "Data"))
+		self.assertTrue(compare(None, "in", [None, "test"], "Data"))
+
+		# Test "not in" with None
+		self.assertTrue(compare(None, "not in", [""], "Data"))
+		self.assertTrue(compare(None, "not in", [0], "Int"))
+		self.assertTrue(compare(None, "not in", [0.0], "Float"))
+		self.assertTrue(compare(None, "not in", ["", "test"], "Data"))
+		self.assertFalse(compare(None, "not in", [None, "test"], "Data"))
+
+	def test_is_operator_case_insensitive(self):
+		"""Test that 'is' operator patterns are case insensitive."""
+		self.assertTrue(compare("value", "is", "SET"))
+		self.assertTrue(compare("value", "is", "Set"))
+		self.assertTrue(compare("value", "is", "set"))
+
+		self.assertTrue(compare(None, "is", "NOT SET"))
+		self.assertTrue(compare(None, "is", "Not Set"))
+		self.assertTrue(compare(None, "is", "not set"))
+
+	def test_safe_filters_scientific_notation(self):
+		self.assertEqual(get_safe_filters("3E002"), "3E002")
+		self.assertEqual(get_safe_filters("1E5"), "1E5")
+		self.assertEqual(get_safe_filters("2e10"), "2e10")
+		self.assertEqual(get_safe_filters("1.5"), "1.5")
+		self.assertEqual(get_safe_filters("Infinity"), "Infinity")
+		self.assertEqual(get_safe_filters("NaN"), "NaN")
+
+	def test_safe_filters_json(self):
+		self.assertEqual(get_safe_filters('{"name": "ABC"}'), {"name": "ABC"})
+		self.assertEqual(get_safe_filters('[["name", "=", "ABC"]]'), [["name", "=", "ABC"]])
+		# FrappeClient encodes scalar filters via frappe.as_json — must still unwrap
+		self.assertEqual(get_safe_filters('"ABC"'), "ABC")
+		self.assertIsNone(get_safe_filters("null"))
+		self.assertIs(get_safe_filters("true"), True)
+		self.assertIs(get_safe_filters("false"), False)
+
+	def test_safe_filters_non_string(self):
+		self.assertEqual(get_safe_filters({"name": "ABC"}), {"name": "ABC"})
+		self.assertEqual(get_safe_filters([["name", "=", "ABC"]]), [["name", "=", "ABC"]])
+		self.assertIsNone(get_safe_filters(None))
+
 
 class TestMoney(FrappeTestCase):
 	def test_money_in_words(self):
@@ -340,7 +471,7 @@ class TestMathUtils(FrappeTestCase):
 		self.assertEqual(floor(22.7330), 22)
 		self.assertEqual(floor("24.7"), 24)
 		self.assertEqual(floor("26.7"), 26)
-		self.assertEqual(floor(Decimal(29.45)), 29)
+		self.assertEqual(floor(Decimal("29.45")), 29)
 
 	def test_ceil(self):
 		from decimal import Decimal
@@ -350,7 +481,7 @@ class TestMathUtils(FrappeTestCase):
 		self.assertEqual(ceil(22.7330), 23)
 		self.assertEqual(ceil("24.7"), 25)
 		self.assertEqual(ceil("26.7"), 27)
-		self.assertEqual(ceil(Decimal(29.45)), 30)
+		self.assertEqual(ceil(Decimal("29.45")), 30)
 
 
 class TestHTMLUtils(FrappeTestCase):
@@ -450,6 +581,26 @@ class TestValidationUtils(FrappeTestCase):
 		invalid_names = ["asd$wat", "asasd/ads"]
 		for name in invalid_names:
 			self.assertRaises(frappe.InvalidNameError, validate_name, name, True)
+
+	def test_validate_iban(self):
+		valid_ibans = [
+			"GB82 WEST 1234 5698 7654 32",
+			"DE91 1000 0000 0123 4567 89",
+			"FR76 3000 6000 0112 3456 7890 189",
+		]
+
+		invalid_ibans = [
+			# wrong checksum (3rd place)
+			"GB72 WEST 1234 5698 7654 32",
+			"DE81 1000 0000 0123 4567 89",
+			"FR66 3000 6000 0112 3456 7890 189",
+		]
+
+		for iban in valid_ibans:
+			self.assertTrue(is_valid_iban(iban))
+
+		for not_iban in invalid_ibans:
+			self.assertFalse(is_valid_iban(not_iban))
 
 
 class TestImage(FrappeTestCase):
@@ -614,6 +765,24 @@ class TestDateUtils(FrappeTestCase):
 		self.assertEqual(duration_to_seconds("110m"), 110 * 60)
 		self.assertEqual(duration_to_seconds("110m"), 110 * 60)
 
+	def test_format_duration(self):
+		# Basic positive durations
+		self.assertEqual(format_duration(0), "")
+		self.assertEqual(format_duration(45.7), "45s")
+		self.assertEqual(format_duration(90.9), "1m 30s")
+		self.assertEqual(format_duration(3600), "1h")
+		self.assertEqual(format_duration("12885"), "3h 34m 45s")
+		self.assertEqual(format_duration(86400), "1d")
+		self.assertEqual(format_duration(86401), "1d 1s")
+
+		# Negative durations
+		self.assertEqual(format_duration(-45.3), "-45s")
+		self.assertEqual(format_duration(-12885), "-3h 34m 45s")
+
+		# hide_days parameter
+		self.assertEqual(format_duration(86400, hide_days=True), "24h")
+		self.assertEqual(format_duration(90061, hide_days=True), "25h 1m 1s")
+
 	def test_get_timespan_date_range(self):
 		supported_timespans = [
 			"last week",
@@ -724,7 +893,7 @@ class TestResponse(FrappeTestCase):
 				timedelta(days=10, hours=12, minutes=120, seconds=10),
 			],
 			"float": [
-				Decimal(29.21),
+				Decimal("29.21"),
 			],
 			"doc": [
 				frappe.get_doc("System Settings"),
@@ -935,18 +1104,14 @@ class TestLazyLoader(FrappeTestCase):
 
 
 class TestIdenticon(FrappeTestCase):
-	def test_get_gravatar(self):
-		# developers@frappe.io has a gravatar linked so str URL will be returned
-		frappe.flags.in_test = False
-		gravatar_url = get_gravatar("developers@frappe.io")
-		frappe.flags.in_test = True
-		self.assertIsInstance(gravatar_url, str)
-		self.assertTrue(gravatar_url.startswith("http"))
+	def test_get_identicon(self):
+		identicon = get_identicon("developers@frappe.io")
+		self.assertIsInstance(identicon, str)
+		self.assertTrue(identicon.startswith("data:image/png;base64,"))
 
-		# random email will require Identicon to be generated, which will be a base64 string
-		gravatar_url = get_gravatar(f"developers{random_string(6)}@frappe.io")
-		self.assertIsInstance(gravatar_url, str)
-		self.assertTrue(gravatar_url.startswith("data:image/png;base64,"))
+		identicon = get_identicon(f"developers{random_string(6)}@frappe.io")
+		self.assertIsInstance(identicon, str)
+		self.assertTrue(identicon.startswith("data:image/png;base64,"))
 
 	def test_generate_identicon(self):
 		identicon = Identicon(random_string(6))
@@ -991,7 +1156,7 @@ class TestMiscUtils(FrappeTestCase):
 		self.assertIsInstance(get_file_timestamp(__file__), str)
 
 	def test_execute_in_shell(self):
-		err, out = execute_in_shell("ls")
+		_err, out = execute_in_shell("ls")
 		self.assertIn("apps", cstr(out))
 
 	def test_get_all_sites(self):
@@ -1216,6 +1381,16 @@ class TestRounding(FrappeTestCase):
 		self.assertEqual(flt(-1.15, 1, rounding_method=rounding_method), -1.2)
 		self.assertEqual(flt(-2.25, 1, rounding_method=rounding_method), -2.2)
 		self.assertEqual(flt(-3.35, 1, rounding_method=rounding_method), -3.4)
+
+		# Sign-symmetry regression.
+		for value, expected in [
+			(647.325, 647.32),
+			(647.315, 647.32),
+			(0.125, 0.12),
+			(0.135, 0.14),
+		]:
+			self.assertEqual(flt(value, 2, rounding_method=rounding_method), expected)
+			self.assertEqual(flt(-value, 2, rounding_method=rounding_method), -expected)
 
 	@change_settings("System Settings", {"rounding_method": "Banker's Rounding"})
 	@given(st.decimals(min_value=-1e8, max_value=1e8), st.integers(min_value=-2, max_value=4))

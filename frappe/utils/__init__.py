@@ -91,8 +91,10 @@ def get_formatted_email(user, mail=None):
 		return cstr(make_header(decode_header(formataddr((fullname, mail)))))
 
 
-def extract_email_id(email):
+def extract_email_id(email: str) -> str:
 	"""fetch only the email part of the Email Address"""
+	if not email:
+		return ""
 	return cstr(parse_addr(email)[1])
 
 
@@ -127,6 +129,9 @@ def validate_phone_number(phone_number, throw=False):
 	"""Returns True if valid phone number"""
 	if not phone_number:
 		return False
+
+	if not isinstance(phone_number, str):
+		phone_number = str(phone_number)
 
 	phone_number = phone_number.strip()
 	match = PHONE_NUMBER_PATTERN.match(phone_number)
@@ -244,43 +249,76 @@ def validate_url(
 	return is_valid
 
 
+def validate_iban(iban: str, throw: bool = False) -> bool:
+	from frappe import _
+
+	valid = is_valid_iban(iban)
+	if not valid and throw:
+		frappe.throw(frappe._("'{0}' is not a valid IBAN").format(frappe.bold(iban)))
+
+	return valid
+
+
+def is_valid_iban(iban: str) -> bool:
+	"""
+	Algorithm: https://en.wikipedia.org/wiki/International_Bank_Account_Number#Validating_the_IBAN
+	"""
+	if not iban:
+		return False
+
+	def encode_char(c):
+		# Position in the alphabet (A=1, B=2, ...) plus nine
+		return str(9 + ord(c) - 64)
+
+	# remove whitespaces, upper case to get the right number from ord()
+	iban = iban.replace(" ", "").upper()
+
+	# Move country code and checksum from the start to the end
+	flipped = iban[4:] + iban[:4]
+
+	# Encode characters as numbers
+	encoded = [encode_char(c) if ord(c) >= 65 and ord(c) <= 90 else c for c in flipped]
+
+	try:
+		to_check = int("".join(encoded))
+	except ValueError:
+		return False
+
+	return to_check % 97 == 1
+
+
 def random_string(length: int) -> str:
 	"""generate a random string"""
+	import secrets
 	import string
-	from random import choice
 
-	return "".join(choice(string.ascii_letters + string.digits) for i in range(length))
+	alphabet = string.ascii_letters + string.digits
+	return "".join(secrets.choice(alphabet) for i in range(length))
 
 
+@deprecated
 def has_gravatar(email: str) -> str:
-	"""Returns gravatar url if user has set an avatar at gravatar.com"""
-	import requests
-
-	if frappe.flags.in_import or frappe.flags.in_install or frappe.flags.in_test:
-		# no gravatar if via upload
-		# since querying gravatar for every item will be slow
-		return ""
-
-	gravatar_url = get_gravatar_url(email, "404")
-	try:
-		res = requests.get(gravatar_url, timeout=5)
-		if res.status_code == 200:
-			return gravatar_url
-		else:
-			return ""
-	except requests.exceptions.RequestException:
-		return ""
+	"""Deprecated: Gravatar integration has been removed. Always returns empty string."""
+	return ""
 
 
-def get_gravatar_url(email: str, default: Literal["mm", "404"] = "mm") -> str:
-	hexdigest = hashlib.md5(frappe.as_unicode(email).encode("utf-8"), usedforsecurity=False).hexdigest()
-	return f"https://secure.gravatar.com/avatar/{hexdigest}?d={default}&s=200"
+@deprecated
+def get_gravatar_url(email: str, default: str = "mm") -> str:
+	"""Deprecated: Gravatar integration has been removed. Always returns empty string."""
+	return ""
 
 
+@deprecated
 def get_gravatar(email: str) -> str:
+	"""Return an identicon image (base64) for the given email."""
+	return get_identicon(email)
+
+
+def get_identicon(email: str) -> str:
+	"""Return an identicon image (base64) for the given email."""
 	from frappe.utils.identicon import Identicon
 
-	return has_gravatar(email) or Identicon(email).base64()
+	return Identicon(email).base64()
 
 
 def get_traceback(with_context=False) -> str:
@@ -561,7 +599,7 @@ def get_disk_usage():
 	files_path = get_files_path()
 	if not os.path.exists(files_path):
 		return 0
-	err, out = execute_in_shell(f"du -hsm {files_path}")
+	_err, out = execute_in_shell(f"du -hsm {files_path}")
 	return cint(out.split("\n")[-2].split("\t")[0])
 
 
@@ -905,16 +943,15 @@ def gzip_decompress(data):
 
 def get_safe_filters(filters):
 	try:
-		filters = json.loads(filters)
-
-		if isinstance(filters, int | float):
-			filters = frappe.as_unicode(filters)
-
+		parsed = json.loads(filters)
 	except (TypeError, ValueError):
 		# filters are not passed, not json
-		pass
-
-	return filters
+		return filters
+	# numeric JSON is ambiguous: docnames like "3E002" parse as floats and
+	# would be corrupted by stringifying back, so keep the original string
+	if isinstance(parsed, int | float) and not isinstance(parsed, bool):
+		return filters
+	return parsed
 
 
 def create_batch(iterable: Iterable, size: int) -> Generator[Iterable, None, None]:
@@ -1189,3 +1226,14 @@ class CallbackManager:
 
 	def reset(self):
 		self._functions.clear()
+
+
+def get_frappe_version() -> str:
+	return getattr(frappe, "__version__", "unknown")
+
+
+def get_app_version(app_name: str) -> str:
+	try:
+		return frappe.get_attr(app_name + ".__version__")
+	except Exception:
+		return "0.0.1"

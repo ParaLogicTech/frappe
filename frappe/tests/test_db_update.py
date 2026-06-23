@@ -150,6 +150,37 @@ class TestDBUpdate(FrappeTestCase):
 		doctype.delete()
 		frappe.db.commit()
 
+	@run_only_if(db_type_is.MARIADB)
+	def test_unique_index_on_field_with_search_index(self):
+		"""Unique index must be created even when the field already has a search index"""
+
+		doctype = new_doctype(
+			fields=[{"fieldname": "bill_no", "fieldtype": "Data", "search_index": 1}]
+		).insert()
+		try:
+			doctype.fields[0].unique = 1
+			doctype.save()
+			self.check_unique_indexes(doctype.name, "bill_no")
+
+			frappe.get_doc(doctype=doctype.name, bill_no="INV-001").insert()
+			with self.assertRaises(frappe.UniqueValidationError):
+				frappe.get_doc(doctype=doctype.name, bill_no="INV-001").insert()
+		finally:
+			doctype.delete(force=True)
+			frappe.db.commit()  # nosemgrep
+
+	@run_only_if(db_type_is.MARIADB)
+	def test_varchar_length(self):
+		from frappe.database.schema import add_column
+
+		test_doc = new_doctype().insert()
+		col_name = f"col_{frappe.generate_hash(length=4)}"
+		add_column(test_doc.name, fieldtype="Data", column_name=col_name, length=50)
+		length = frappe.db.sql(
+			f"SELECT CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'tab{test_doc.name}' AND COLUMN_NAME = '{col_name}' ",
+		)[0][0]
+		self.assertEqual(length, 64)
+
 
 def get_fieldtype_from_def(field_def):
 	fieldtuple = frappe.db.type_map.get(field_def.fieldtype, ("", 0))

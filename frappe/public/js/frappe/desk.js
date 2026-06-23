@@ -278,6 +278,8 @@ frappe.Application = class Application {
 			if (frappe.boot.print_css) {
 				frappe.dom.set_style(frappe.boot.print_css, "print-style");
 			}
+
+			frappe.boot.setup_complete = frappe.boot.sysdefaults["setup_complete"];
 			frappe.user.name = frappe.boot.user.name;
 			frappe.router.setup();
 		} else {
@@ -371,15 +373,17 @@ frappe.Application = class Application {
 	logout() {
 		var me = this;
 		me.logged_out = true;
-		return frappe.call({
-			method: "logout",
-			callback: function (r) {
-				if (r.exc) {
-					return;
-				}
+		frappe.confirm(__("Are you sure you want to log out?"), function () {
+			return frappe.call({
+				method: "logout",
+				callback: function (r) {
+					if (r.exc) {
+						return;
+					}
 
-				me.redirect_to_login();
-			},
+					me.redirect_to_login();
+				},
+			});
 		});
 	}
 	handle_session_expired() {
@@ -524,6 +528,8 @@ frappe.Application = class Application {
 							delete doc.name;
 							newdoc.idx = null;
 							newdoc.__run_link_triggers = false;
+							newdoc.on_paste_event = true;
+							newdoc = JSON.parse(JSON.stringify(newdoc));
 							frappe.set_route("Form", newdoc.doctype, newdoc.name);
 							frappe.dom.unfreeze();
 						});

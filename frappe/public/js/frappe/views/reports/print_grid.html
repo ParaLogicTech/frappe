@@ -1,24 +1,26 @@
 <!-- title -->
 {% if title %}
-<h2>{{ __(title) }}</h2>
+<h2 class="text-center">{{ __(title) }}</h2>
 <hr>
 {% endif %}
+
 {% if subtitle %}
-{{ subtitle }}
-<hr>
+	{{ subtitle }}
 {% endif %}
+
 <table class="table table-bordered">
 	<!-- heading -->
 	<thead>
 		<tr>
-		<th> # </th>
+			<th> # </th>
+
 		{% for col in columns %}
 			{% if col.name && col._id !== "_check" %}
 			<th
 				{% if col.minWidth %}
 					style="min-width: {{ col.minWidth }}px"
 				{% endif %}
-				{% if col.docfield && frappe.model.is_numeric_field(col.docfield) %}
+				{% if frappe.model.is_numeric_field(col.fieldtype) %}
 					class="text-right"
 				{% endif %}
 			>
@@ -34,6 +36,7 @@
 			<td {% if row.bold == 1 %} style="font-weight: bold" {% endif %}>
 				<span> {{ row._index + 1 }} </span>
 			</td>
+
 			{% for col in columns %}
 				{% if col.name && col._id !== "_check" %}
 
@@ -44,6 +47,8 @@
 							{% format_data = row.is_total_row && ["Currency", "Float"].includes(col.fieldtype) ? data[0] : row %}
 							{% if (row.is_total_row && col._index == 0) { %}
 								{{ __("Total") }}
+							{% } else if (col.fieldtype == "Check") { %}
+								{{ value == 1 ? "✓" : "✗" }}
 							{% } else { %}
 								{{
 									col.formatter

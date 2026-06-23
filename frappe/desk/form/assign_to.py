@@ -40,7 +40,7 @@ def get(args=None):
 
 
 @frappe.whitelist()
-def add(args=None, *, ignore_permissions=False):
+def add(args=None):
 	"""add in someone's to do list
 	args = {
 	        "assign_to": [],
@@ -51,6 +51,10 @@ def add(args=None, *, ignore_permissions=False):
 	}
 
 	"""
+	return _add(args, ignore_permissions=False)
+
+
+def _add(args=None, *, ignore_permissions=False):
 	if not args:
 		args = frappe.local.form_dict
 
@@ -72,7 +76,7 @@ def add(args=None, *, ignore_permissions=False):
 		else:
 			from frappe.utils import nowdate
 
-			description = str(args.get("description", ""))
+			description = args.get("description") or ""
 			has_content = strip_html(description) or "<img" in description
 			if not has_content:
 				args["description"] = _("Assignment for {0} {1}").format(args["doctype"], args["name"])
@@ -110,7 +114,7 @@ def add(args=None, *, ignore_permissions=False):
 					)
 					frappe.throw(msg, title=_("Missing Permission"))
 				else:
-					frappe.share.add(doc.doctype, doc.name, assign_to)
+					frappe.share.add(doc.doctype, str(doc.name), assign_to)
 					shared_with_users.append(assign_to)
 
 			# make this document followed by assigned user
@@ -156,7 +160,7 @@ def close_all_assignments(doctype, name, ignore_permissions=False):
 	assignments = frappe.get_all(
 		"ToDo",
 		fields=["allocated_to", "name"],
-		filters=dict(reference_type=doctype, reference_name=name, status=("!=", "Cancelled")),
+		filters=dict(reference_type=doctype, reference_name=name, status=("not in", ["Cancelled", "Closed"])),
 	)
 	if not assignments:
 		return False
@@ -175,12 +179,16 @@ def close_all_assignments(doctype, name, ignore_permissions=False):
 
 
 @frappe.whitelist()
-def remove(doctype, name, assign_to, ignore_permissions=False):
+def remove(doctype, name, assign_to):
+	return _remove(doctype, name, assign_to, ignore_permissions=False)
+
+
+def _remove(doctype, name, assign_to, ignore_permissions=False):
 	return set_status(doctype, name, "", assign_to, status="Cancelled", ignore_permissions=ignore_permissions)
 
 
 @frappe.whitelist()
-def remove_multiple(doctype, names, ignore_permissions=False):
+def remove_multiple(doctype, names):
 	docname_list = json.loads(names)
 
 	for name in docname_list:
@@ -190,15 +198,15 @@ def remove_multiple(doctype, names, ignore_permissions=False):
 			continue
 
 		for assignment in assignments:
-			remove(doctype, name, assignment.get("owner"), ignore_permissions)
+			remove(doctype, name, assignment.get("owner"))
 
 
 @frappe.whitelist()
-def close(doctype: str, name: str, assign_to: str, ignore_permissions=False):
+def close(doctype, name, assign_to):
 	if assign_to != frappe.session.user:
 		frappe.throw(_("Only the assignee can complete this to-do."))
 
-	return set_status(doctype, name, "", assign_to, status="Closed", ignore_permissions=ignore_permissions)
+	return set_status(doctype, name, "", assign_to, status="Closed", ignore_permissions=False)
 
 
 def set_status(doctype, name, todo=None, assign_to=None, status="Cancelled", ignore_permissions=False):

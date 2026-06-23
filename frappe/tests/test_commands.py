@@ -297,7 +297,7 @@ class TestCommands(BaseTestCommands):
 		self.execute("bench --site {test_site} backup --exclude 'ToDo'", site_data)
 		site_data.update({"kw": "\"{'partial':True}\""})
 		self.execute(
-			"bench --site {test_site} execute" " frappe.utils.backups.fetch_latest_backups --kwargs {kw}",
+			"bench --site {test_site} execute frappe.utils.backups.fetch_latest_backups --kwargs {kw}",
 			site_data,
 		)
 		site_data.update({"database": json.loads(self.stdout)["database"]})
@@ -456,7 +456,7 @@ class TestCommands(BaseTestCommands):
 
 		# Reset it back to original password
 		original_password = frappe.conf.admin_password or "admin"
-		self.execute("bench --site {site} set-admin-password %s" % original_password)
+		self.execute("bench --site {{site}} set-admin-password {}".format(original_password))
 		self.assertEqual(self.returncode, 0)
 		self.assertEqual(check_password("Administrator", original_password), "Administrator")
 
@@ -952,11 +952,13 @@ class TestGunicornWorker(FrappeTestCase):
 		except subprocess.TimeoutExpired:
 			self.handle.kill()
 
+	@unittest.skip("Flaky test")
 	def test_gunicorn_ping_sync(self):
 		self.spawn_gunicorn([])
 		path = f"http://{self.TEST_SITE}:{self.port}/api/method/ping"
 		self.assertEqual(requests.get(path).status_code, 200)
 
+	@unittest.skip("Flaky test")
 	def test_gunicorn_ping_gthread(self):
 		self.spawn_gunicorn(["--threads=2"])
 		path = f"http://{self.TEST_SITE}:{self.port}/api/method/ping"

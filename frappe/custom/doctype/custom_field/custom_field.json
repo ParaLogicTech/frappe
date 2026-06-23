@@ -85,6 +85,7 @@
    "fieldtype": "Data",
    "in_filter": 1,
    "label": "Label",
+   "length": 255,
    "no_copy": 1,
    "oldfieldname": "label",
    "oldfieldtype": "Data"
@@ -470,7 +471,7 @@
  "idx": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-17 14:16:17.182673",
+ "modified": "2025-10-10 11:10:23.862393",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Custom Field",
@@ -499,6 +500,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "search_fields": "dt,label,fieldtype,options",
  "sort_field": "modified",
  "sort_order": "DESC",

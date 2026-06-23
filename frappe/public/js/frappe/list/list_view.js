@@ -501,7 +501,9 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 	get_documentation_link() {
 		if (this.meta.documentation) {
-			return `<a href="${this.meta.documentation}" target="blank" class="meta-description small text-muted">Need Help?</a>`;
+			return `<a href="${
+				this.meta.documentation
+			}" target="blank" class="meta-description small text-muted">${__("Need Help?")}</a>`;
 		}
 		return "";
 	}
@@ -873,7 +875,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 			if (df.fieldtype === "Image") {
 				html = df.options
-					? `<img src="${doc[df.options]}"
+					? `<img src="${frappe.utils.escape_html(doc[df.options])}"
 					style="max-height: 30px; max-width: 100%;">`
 					: `<div class="missing-image small">
 						${frappe.utils.icon("restriction")}
@@ -1714,14 +1716,18 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 	get_search_params() {
 		let search_params = new URLSearchParams();
-
 		this.get_filters_for_args().forEach((filter) => {
-			if (filter[2] === "=") {
-				search_params.append(filter[1], filter[3]);
-			} else {
-				search_params.append(filter[1], JSON.stringify([filter[2], filter[3]]));
-			}
+			const doctype = filter[0];
+			const field = filter[1];
+			const operator = filter[2];
+			const value = filter[3];
+
+			const query_key = doctype === this.doctype ? field : `${doctype}.${field}`;
+			const query_value = operator === "=" ? value : JSON.stringify([operator, value]);
+
+			search_params.append(query_key, query_value);
 		});
+
 		return search_params;
 	}
 
@@ -1872,8 +1878,11 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			})
 			.then((actions) => {
 				Object.keys(this.workflow_action_items).forEach((key) => {
-					this.workflow_action_items[key].removeClass("disabled");
-					this.workflow_action_items[key].toggle(actions.includes(key));
+					const $link = this.workflow_action_items[key];
+					const $item = $link?.closest("li");
+					$link?.removeClass("disabled");
+					$link?.toggle(actions.includes(key));
+					$item?.toggle(actions.includes(key));
 				});
 			});
 	}
@@ -2091,6 +2100,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 					this.disable_list_update = true;
 					bulk_operations.edit(this.get_checked_items(true), field_mappings, () => {
 						this.disable_list_update = false;
+						this.clear_checked_items();
 						this.refresh();
 					});
 				},

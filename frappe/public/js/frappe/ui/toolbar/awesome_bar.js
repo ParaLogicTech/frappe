@@ -303,7 +303,7 @@ frappe.search.AwesomeBar = class AwesomeBar {
 					<kbd>↵</kbd>
 				</span>
 			`,
-			value: __("Search for {0}", [txt]),
+			value: __("Search for {0}", [frappe.utils.xss_sanitise(txt)]),
 			match: txt,
 			index: 100,
 			default: "Search",
@@ -328,7 +328,7 @@ frappe.search.AwesomeBar = class AwesomeBar {
 					frappe.utils.xss_sanitise(txt).bold(),
 					__(route[1]).bold(),
 				]),
-				value: __("Find {0} in {1}", [txt, __(route[1])]),
+				value: __("Find {0} in {1}", [frappe.utils.xss_sanitise(txt), __(route[1])]),
 				route_options: options,
 				onclick: function () {
 					cur_list.show();

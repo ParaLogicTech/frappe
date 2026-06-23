@@ -79,8 +79,8 @@ def get_assets_link(frappe_head) -> str:
 	import requests
 
 	tag = getoutput(
-		r"cd ../apps/frappe && git show-ref --tags -d | grep %s | sed -e 's,.*"
-		r" refs/tags/,,' -e 's/\^{}//'" % frappe_head
+		r"cd ../apps/frappe && git show-ref --tags -d | grep {} | sed -e 's,.*"
+		r" refs/tags/,,' -e 's/\^{{}}//'".format(frappe_head)
 	)
 
 	if tag:
@@ -255,7 +255,7 @@ def bundle(
 	frappe.commands.popen(command, cwd=frappe_app_path, env=get_node_env(), raise_err=True)
 
 	with suppress(Exception):
-		frappe.cache.flushall()
+		frappe.cache.flushdb()
 
 
 def watch(apps=None):

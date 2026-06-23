@@ -20,6 +20,7 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 		this.make();
 
 		this.selected_fields = new Set();
+		this.selected_items = {};
 	}
 
 	get_fields() {
@@ -194,7 +195,7 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 	get_child_datatable_columns() {
 		const parent = this.doctype;
 		return [parent, ...this.child_columns].map((d) => ({
-			name: frappe.unscrub(d),
+			name: __(frappe.unscrub(d)),
 			editable: false,
 		}));
 	}
@@ -620,7 +621,7 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 					filters[df.fieldname] = ['between', value];
 				} else if (
 					df.fieldtype == "Link"
-					&& frappe.boot.nested_set_doctypes.includes(df.options)
+					&& frappe.boot.treeviews.includes(df.options)
 					&& value
 				) {
 					filters[df.fieldname] = ['subtree of', value];
@@ -641,7 +642,7 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 					filters[setter] = ["like", "%" + value + "%"];
 				} else if (
 					setter_field.df.fieldtype == "Link"
-					&& frappe.boot.nested_set_doctypes.includes(setter_field.df.options)
+					&& frappe.boot.treeviews.includes(setter_field.df.options)
 					&& value
 				) {
 					filters[setter] = ["subtree of", value];

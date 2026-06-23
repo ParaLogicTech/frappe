@@ -11,6 +11,7 @@ import frappe
 import frappe.sessions
 import frappe.utils
 from frappe import _, is_whitelisted, ping
+from frappe.core.doctype.file.utils import find_file_by_url
 from frappe.core.doctype.server_script.server_script_utils import get_server_script_map
 from frappe.monitor import add_data_to_monitor
 from frappe.permissions import check_doctype_permission
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
 ALLOWED_MIMETYPES = (
 	"image/png",
 	"image/jpeg",
+	"image/gif",
 	"application/pdf",
 	"application/msword",
 	"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -72,7 +74,7 @@ def execute_cmd(cmd, from_async=False):
 	try:
 		method = get_attr(cmd)
 	except Exception as e:
-		frappe.throw(_("Failed to get method for command {0} with {1}").format(cmd, e))
+		frappe.throw(_("Failed to get method for command {0} with {1}").format(cmd, str(e)))
 
 	if from_async:
 		method = method.queue
@@ -96,6 +98,10 @@ def run_server_script(server_script):
 
 def is_valid_http_method(method):
 	if frappe.flags.in_safe_exec:
+		return
+
+	# Skip HTTP method validation when running in a background job
+	if hasattr(frappe.local, "job"):
 		return
 
 	http_method = frappe.local.request.method
@@ -171,10 +177,20 @@ def upload_file():
 	if frappe.session.user == "Guest":
 		if frappe.get_system_settings("allow_guests_to_upload_files"):
 			ignore_permissions = True
+			guest_allowed_docs = frappe.get_system_settings("allowed_doctypes_for_guest_uploads")
+			if guest_allowed_docs:
+				target_doctype = frappe.form_dict.doctype
+				allowed_docs = guest_allowed_docs.splitlines()
+				allowed_docs = [doc.strip() for doc in allowed_docs if doc.strip()]
+				if allowed_docs and target_doctype not in allowed_docs:
+					frappe.throw(
+						_("Guests are not allowed to upload files for {0} Doctype").format(target_doctype),
+						frappe.PermissionError,
+					)
 		else:
 			raise frappe.PermissionError
 	else:
-		user: "User" = frappe.get_doc("User", frappe.session.user)
+		user: User = frappe.get_doc("User", frappe.session.user)
 		ignore_permissions = False
 
 	files = frappe.request.files
@@ -225,7 +241,7 @@ def upload_file():
 	if content is not None and (frappe.session.user == "Guest" or (user and not user.has_desk_access())):
 		filetype = guess_type(filename)[0]
 		if filetype not in ALLOWED_MIMETYPES:
-			frappe.throw(_("You can only upload JPG, PNG, PDF, TXT, CSV or Microsoft documents."))
+			frappe.throw(_("You can only upload JPG, PNG, GIF, PDF, TXT, CSV or Microsoft documents."))
 
 	if method:
 		method = frappe.get_attr(method)
@@ -276,8 +292,8 @@ def download_file(file_url: str):
 	Endpoints : download_file, frappe.core.doctype.file.file.download_file
 	URL Params : file_name = /path/to/file relative to site path
 	"""
-	file: "File" = frappe.get_doc("File", {"file_url": file_url})
-	if not file.is_downloadable():
+	file = find_file_by_url(file_url)
+	if not file:
 		raise frappe.PermissionError
 
 	frappe.local.response.filename = os.path.basename(file_url)
@@ -307,6 +323,10 @@ def run_doc_method(method, docs=None, dt=None, dn=None, arg=None, args=None):
 	if dt:  # not called from a doctype (from a page)
 		if not dn:
 			dn = dt  # single
+
+		if not isinstance(dn, str | int):
+			frappe.throw("'dn' must be a string or an integer")
+
 		doc = frappe.get_doc(dt, dn)
 
 	else:

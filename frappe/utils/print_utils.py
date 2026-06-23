@@ -84,6 +84,18 @@ def get_print(
 			)
 			# if hook returns a value, assume it was the correct pdf_generator and return it
 			if pdf:
+				if output and isinstance(pdf, bytes):
+					from io import BytesIO
+
+					from pypdf import PdfReader
+
+					reader = PdfReader(BytesIO(pdf))
+					for page in reader.pages:
+						output.add_page(page)
+					return output
 				return pdf
+
+	for hook in frappe.get_hooks("on_print_pdf"):
+		frappe.call(hook, doctype=doctype, name=name, print_format=print_format)
 
 	return get_pdf(html, options=pdf_options, output=output)

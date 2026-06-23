@@ -25,6 +25,7 @@ from frappe.model.delete_doc import delete_doc
 from frappe.tests.test_api import FrappeAPITestCase
 from frappe.tests.utils import FrappeTestCase, change_settings
 from frappe.utils import get_url
+from frappe.www.login import sanitize_redirect
 
 user_module = frappe.core.doctype.user.user
 test_records = frappe.get_test_records("User")
@@ -40,7 +41,7 @@ class TestUser(FrappeTestCase):
 
 	@staticmethod
 	def reset_password(user) -> str:
-		link = user.reset_password()
+		link = user._reset_password()
 		return parse_qs(urlparse(link).query)["key"][0]
 
 	def test_user_type(self):
@@ -291,7 +292,7 @@ class TestUser(FrappeTestCase):
 		c = FrappeClient(url)
 		res1 = c.session.post(url, data=data, verify=c.verify, headers=c.headers)
 		res2 = c.session.post(url, data=data, verify=c.verify, headers=c.headers)
-		self.assertEqual(res1.status_code, 404)
+		self.assertEqual(res1.status_code, 200)
 		self.assertEqual(res2.status_code, 429)
 
 	def test_user_rename(self):
@@ -333,7 +334,9 @@ class TestUser(FrappeTestCase):
 			sign_up(random_user, random_user_name, "/welcome"),
 			(1, "Please check your email for verification"),
 		)
-		self.assertEqual(frappe.cache.hget("redirect_after_login", random_user), "/welcome")
+		self.assertEqual(
+			frappe.cache.hget("redirect_after_login", random_user), sanitize_redirect("/welcome")
+		)
 
 		# re-register
 		self.assertTupleEqual(sign_up(random_user, random_user_name, "/welcome"), (0, "Already Registered"))
@@ -412,6 +415,12 @@ class TestUser(FrappeTestCase):
 
 		# test API endpoint
 		with patch.object(user_module.frappe, "sendmail") as sendmail:
+			from unittest.mock import MagicMock
+
+			mock_q = MagicMock()
+			mock_q.name = "test-email-queue-name"
+			mock_q.message = "Subject: Test\n\nDear User, here is your link"
+			sendmail.return_value = mock_q
 			frappe.clear_messages()
 			test_user = frappe.get_doc("User", "test2@example.com")
 			self.assertEqual(reset_password(user="test2@example.com"), None)
@@ -422,15 +431,28 @@ class TestUser(FrappeTestCase):
 			update_password(old_password, old_password=new_password)
 			self.assertEqual(
 				frappe.message_log[0].get("message"),
-				"Password reset instructions have been sent to your email",
+				"If this email is registered with us, we have sent password reset instructions to it. Please check your inbox.",
 			)
 
 		sendmail.assert_called_once()
 		self.assertEqual(sendmail.call_args[1]["recipients"], "test2@example.com")
 
-		self.assertEqual(reset_password(user="test2@example.com"), None)
-		self.assertEqual(reset_password(user="Administrator"), "not allowed")
-		self.assertEqual(reset_password(user="random"), "not found")
+		# Constant-response guarantee: every path — existing user, Administrator,
+		# and non-existent user — must return None AND enqueue the same generic
+		# message, so callers cannot distinguish between them.
+		_GENERIC_MSG = "If this email is registered with us, we have sent password reset instructions to it. Please check your inbox."
+
+		frappe.clear_messages()
+		self.assertIsNone(reset_password(user="test2@example.com"))
+		self.assertEqual(frappe.message_log[0].get("message"), _GENERIC_MSG)
+
+		frappe.clear_messages()
+		self.assertIsNone(reset_password(user="Administrator"))
+		self.assertEqual(frappe.message_log[0].get("message"), _GENERIC_MSG)
+
+		frappe.clear_messages()
+		self.assertIsNone(reset_password(user="random"))
+		self.assertEqual(frappe.message_log[0].get("message"), _GENERIC_MSG)
 
 	def test_user_onload_modules(self):
 		from frappe.config import get_modules_from_all_apps
@@ -443,6 +465,21 @@ class TestUser(FrappeTestCase):
 			sorted(doc.get("__onload").get("all_modules", [])),
 			sorted(m.get("module_name") for m in get_modules_from_all_apps()),
 		)
+
+	def test_default_app(self):
+		from frappe.apps import get_default_path
+
+		with test_user(roles=["System Manager"]) as user:
+			user.default_app = "next_erp"
+			user.save()
+			self.assertFalse(user.default_app)
+
+			frappe.set_user(user.name)
+			user.db_set("default_app", "next_erp")
+			user.reload()
+			self.assertTrue(user.default_app)
+
+			get_default_path()  # defaults will also trigger hooks logic
 
 	@change_settings("System Settings", reset_password_link_expiry_duration=1)
 	def test_reset_password_link_expiry(self):

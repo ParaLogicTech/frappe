@@ -89,6 +89,7 @@ Object.assign(frappe.model, {
 		// add child docs to locals
 		if (!is_table) {
 			for (var i in doc) {
+				if (i.startsWith("__")) continue;
 				var value = doc[i];
 
 				if ($.isArray(value)) {
@@ -158,6 +159,10 @@ Object.assign(frappe.model, {
 				// literal
 				local_doc[fieldname] = doc[fieldname];
 			}
+		}
+
+		if ((local_doc?.on_paste_event || local_doc?.__islocal) && local_doc?.__newname) {
+			doc.__newname = local_doc.__newname;
 		}
 
 		// clear keys on parent

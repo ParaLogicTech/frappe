@@ -1197,7 +1197,7 @@ body {
 				}
 
 				.ce-header b {
-					font-weight: 600 !important;
+					font-weight: var(--weight-bold) !important;
 				}
 
 				.new-block-button {
@@ -1431,10 +1431,6 @@ body {
 			}
 		}
 
-		svg {
-			fill: none;
-		}
-
 		.ce-toolbar {
 			&.ce-toolbar--opened {
 				display: none;
@@ -1490,8 +1486,16 @@ body {
 			}
 		}
 
+		.ce-inline-toolbar {
+			background-color: var(--bg-color);
+		}
+
 		.ce-inline-tool,
 		.ce-inline-toolbar__dropdown {
+			&:hover {
+				background-color: var(--fg-hover-color);
+			}
+
 			.icon {
 				fill: currentColor;
 			}

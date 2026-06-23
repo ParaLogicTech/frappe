@@ -2,7 +2,6 @@
 # License: MIT. See LICENSE
 
 import datetime
-import re
 
 from dateutil.parser import ParserError
 
@@ -19,8 +18,6 @@ from frappe.utils import (
 	format_timedelta,
 	formatdate,
 )
-
-BLOCK_TAGS_PATTERN = re.compile(r"(<br|<div|<p)")
 
 
 def format_value(value, df=None, doc=None, currency=None, translated=False, format=None, precision=None):
@@ -114,8 +111,7 @@ def format_value(value, df=None, doc=None, currency=None, translated=False, form
 		return f"{rounded}%"
 
 	elif df.get("fieldtype") in ("Text", "Small Text"):
-		if not BLOCK_TAGS_PATTERN.search(cstr(value)):
-			return frappe.safe_decode(cstr(value)).replace("\n", "<br>")
+		return frappe.utils.escape_html(frappe.safe_decode(value)).replace("\n", "<br>")
 
 	elif df.get("fieldtype") == "Markdown Editor":
 		return frappe.utils.markdown(value)
@@ -150,7 +146,6 @@ def format_value(value, df=None, doc=None, currency=None, translated=False, form
 			meta = frappe.get_meta(df.parent)
 			_field = meta.get_field(df.options)
 			doctype = _field.options
-
 		return doc.__link_titles.get(f"{doctype}::{value}", value)
 
 	elif df.get("fieldtype") == "Select":

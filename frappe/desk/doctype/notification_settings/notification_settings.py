@@ -74,7 +74,7 @@ def create_notification_settings(user):
 		return _doc
 
 
-def toggle_notifications(user: str, enable: bool = False):
+def toggle_notifications(user: str, enable: bool = False, ignore_permissions=False):
 	try:
 		settings = frappe.get_doc("Notification Settings", user)
 	except frappe.DoesNotExistError:
@@ -83,7 +83,7 @@ def toggle_notifications(user: str, enable: bool = False):
 
 	if settings.enabled != enable:
 		settings.enabled = enable
-		settings.save()
+		settings.save(ignore_permissions=ignore_permissions)
 
 
 @frappe.whitelist()

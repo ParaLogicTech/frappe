@@ -53,6 +53,12 @@
 			margin-left: 10px;
 			position: relative;
 			padding: 0px;
+			&:focus-visible {
+				outline: 1px solid #c9c9c9;
+			}
+		}
+		&:focus-visible {
+			outline: 1px solid #c9c9c9;
 		}
 	}
 
@@ -264,7 +270,7 @@
 			border-radius: 0px 3px 3px 0px;
 		}
 		.inline-graph-bar-inner.dark {
-			background-color: var(--primary-color);
+			background-color: var(--text-color);
 		}
 	}
 	.inline-graph-half:first-child {
@@ -370,6 +376,7 @@
 	margin-top: 4px;
 	margin-bottom: 8px;
 	line-height: 1.6;
+	word-break: break-word;
 }
 
 .checkbox .help-box:empty {
@@ -446,11 +453,16 @@
 				color: var(--text-muted);
 				padding: 10px 0;
 				margin: 0 var(--margin-md);
-
+				background-color: var(--card-bg);
+				border: 0;
 				&.active {
 					font-weight: 600;
 					border-bottom: 2px solid var(--primary);
 					color: var(--text-color);
+				}
+				&:focus-visible {
+					outline: none;
+					font-weight: 600;
 				}
 			}
 		}

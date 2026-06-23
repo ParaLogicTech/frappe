@@ -40,7 +40,11 @@ context("Web Form", () => {
 		cy.url().should("include", "/note/new");
 
 		cy.fill_field("title", "Guest Note 1");
-		cy.get(".web-form-actions button").contains("Save").click();
+		cy.window()
+			.its("__")
+			.then((__) => {
+				cy.get(".web-form-actions button").contains(__("Save")).click();
+			});
 
 		cy.url().should("include", "/note/new");
 
@@ -62,10 +66,8 @@ context("Web Form", () => {
 
 		cy.call("logout");
 
-		cy.visit("/note");
-		cy.get_open_dialog()
-			.get(".modal-message")
-			.contains("You are not permitted to access this page without login.");
+		cy.visit("/note", { failOnStatusCode: false });
+		cy.contains("You must be logged in to use this form.");
 	});
 
 	it("Show List", () => {

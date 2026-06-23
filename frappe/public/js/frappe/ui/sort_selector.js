@@ -202,7 +202,7 @@ frappe.ui.SortSelector = class SortSelector {
 		// build string like `tabTask`.`subject` desc
 		var sql = '`tab' + this.doctype + '`.`' + this.sort_by + '` ' +  this.sort_order
 
-		if (this.sort_by !== 'name') {
+		if (!["name", "creation", "modified"].includes(this.sort_by)) {
 			sql += ', `tab' + this.doctype + '`.`creation` ' +  this.sort_order
 		}
 

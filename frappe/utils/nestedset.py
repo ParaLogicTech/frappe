@@ -216,10 +216,14 @@ def rebuild_node(doctype, parent, left, parent_field):
 	table = DocType(doctype)
 	column = getattr(table, parent_field)
 
-	result = (frappe.qb.from_(table).where(column == parent).select(table.name)).run()
+	children = (
+		(frappe.qb.from_(table).where(column == parent).select(table.name))
+		.orderby(table.name, order=Order.asc)
+		.run(pluck=True)
+	)
 
-	for r in result:
-		right = rebuild_node(doctype, r[0], right, parent_field)
+	for child in children:
+		right = rebuild_node(doctype, child, right, parent_field)
 
 	# we've got the left value, and now that we've processed
 	# the children of this node we also know the right value
@@ -288,6 +292,19 @@ class NestedSet(Document):
 	def __setup__(self):
 		if self.meta.get("nsm_parent_field"):
 			self.nsm_parent_field = self.meta.nsm_parent_field
+
+	def after_insert(self):
+		if (
+			frappe.flags.in_import
+			or frappe.flags.in_patch
+			or frappe.flags.in_migrate
+			or frappe.flags.in_install
+		):
+			return
+
+		# Clear user permissions cache, otherwise user can't access the new document
+		if frappe.db.exists("User Permission", {"user": frappe.session.user, "allow": self.doctype}):
+			frappe.cache.hdel("user_permissions", frappe.session.user)
 
 	def on_update(self):
 		update_nsm(self)

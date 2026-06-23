@@ -47,8 +47,10 @@
   "message_examples",
   "view_properties",
   "column_break_25",
-  "attach_print",
   "print_format",
+  "attach_files",
+  "from_attach_field",
+  "attach_print",
   "column_break_ie5e",
   "timeline_field"
  ],
@@ -197,7 +199,7 @@
   {
    "fieldname": "html_7",
    "fieldtype": "HTML",
-   "options": "<p><strong>Condition Examples:</strong></p>\n<pre>doc.status==\"Open\"<br>doc.due_date==nowdate()<br>doc.total &gt; 40000\n</pre>\n"
+   "options": "<p><strong>{{ __(\"Condition Examples\") }}:</strong></p>\n<pre><code class=\"language-python\">doc.status==\"Open\"<br>doc.due_date==nowdate()<br>doc.total &gt; 40000\n</code></pre>\n"
   },
   {
    "collapsible": 1,
@@ -340,13 +342,26 @@
    "fieldname": "with_container",
    "fieldtype": "Check",
    "label": "With Container"
+  },
+  {
+   "fieldname": "attach_files",
+   "fieldtype": "Select",
+   "label": "Attach Files",
+   "options": "\nFrom Field\nAll"
+  },
+  {
+   "depends_on": "eval:doc.attach_files === \"From Field\"",
+   "fieldname": "from_attach_field",
+   "fieldtype": "Select",
+   "label": "From Attach Field",
+   "mandatory_depends_on": "eval:doc.attach_files === \"From Field\""
   }
  ],
  "grid_page_length": 500,
  "icon": "fa fa-envelope",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-04 00:43:36.716231",
+ "modified": "2026-06-22 13:06:41.542265",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Notification",
@@ -365,6 +380,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

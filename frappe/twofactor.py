@@ -10,7 +10,7 @@ import frappe
 import frappe.defaults
 from frappe import _
 from frappe.permissions import ALL_USER_ROLE
-from frappe.utils import cint, get_datetime, get_url, time_diff_in_seconds
+from frappe.utils import cint, cstr, get_datetime, get_url, time_diff_in_seconds
 from frappe.utils.background_jobs import enqueue
 from frappe.utils.password import decrypt, encrypt
 
@@ -330,14 +330,35 @@ def send_token_via_sms(otpsecret, token=None, phone_no=None):
 		return False
 
 	hotp = pyotp.HOTP(otpsecret)
-	args = {
-		"message": f"Your verification code is {hotp.at(int(token))}",
+	otp = hotp.at(int(token))
+	message = get_rendered_otp_message(otp)
+
+	sms_args = {
+		"message": message,
 		"receiver_list": [phone_no],
 		"sms_log_message": "***Verification Message Hidden***",
 	}
 
-	send_via_gateway(args)
+	enqueue(
+		method=send_via_gateway,
+		queue="short",
+		timeout=300,
+		event=None,
+		is_async=True,
+		job_name=None,
+		now=False,
+		**sms_args,
+	)
+
 	return True
+
+
+def get_rendered_otp_message(otp: str) -> str:
+	default_template = "Your verification code is {{otp}}"
+	custom_template = frappe.get_system_settings("otp_sms_template")
+	template = cstr(custom_template).strip() or default_template
+
+	return frappe.render_template(template, {"otp": otp})
 
 
 def send_token_via_email(user, token, otp_secret, otp_issuer, subject=None, message=None):

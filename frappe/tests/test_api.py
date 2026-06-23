@@ -137,14 +137,25 @@ class FrappeAPITestCase(FrappeTestCase):
 
 class TestResourceAPI(FrappeAPITestCase):
 	DOCTYPE = "ToDo"
-	GENERATED_DOCUMENTS: typing.ClassVar = []
+	GENERATED_DOCUMENTS: typing.ClassVar[list] = []
+	TEST_USER = "test@restapi.com"
 
 	@classmethod
 	def setUpClass(cls):
 		super().setUpClass()
+		cls.GENERATED_DOCUMENTS = []
+		user = frappe.get_doc(
+			{"doctype": "User", "email": cls.TEST_USER, "first_name": "Test User", "send_welcome_email": 0}
+		).insert(ignore_permissions=True)
+
 		for _ in range(20):
-			doc = frappe.get_doc({"doctype": "ToDo", "description": frappe.mock("paragraph")}).insert()
-			cls.GENERATED_DOCUMENTS = []
+			doc = frappe.get_doc(
+				{
+					"doctype": "ToDo",
+					"description": frappe.mock("paragraph"),
+					"allocated_to": user.name,
+				}
+			).insert()
 			cls.GENERATED_DOCUMENTS.append(doc.name)
 		frappe.db.commit()
 
@@ -153,6 +164,7 @@ class TestResourceAPI(FrappeAPITestCase):
 		frappe.db.commit()
 		for name in cls.GENERATED_DOCUMENTS:
 			frappe.delete_doc_if_exists(cls.DOCTYPE, name)
+		frappe.delete_doc_if_exists("User", cls.TEST_USER)
 		frappe.db.commit()
 
 	def test_unauthorized_call(self):
@@ -166,6 +178,35 @@ class TestResourceAPI(FrappeAPITestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertIsInstance(response.json, dict)
 		self.assertIn("data", response.json)
+
+	def test_get_list_expand(self):
+		response = self.get(
+			self.resource(self.DOCTYPE),
+			{
+				"sid": self.sid,
+				"filters": json.dumps([["name", "=", self.GENERATED_DOCUMENTS[0]]]),
+				"fields": json.dumps(["allocated_to", "name"]),
+				"expand": json.dumps(["allocated_to"]),
+			},
+		)
+		self.assertEqual(response.status_code, 200)
+		self.assertIsInstance(response.json, dict)
+		self.assertIn("data", response.json)
+		self.assertIn("allocated_to", response.json["data"][0])
+		self.assertIsInstance(response.json["data"][0]["allocated_to"], dict)
+		self.assertIn("name", response.json["data"][0]["allocated_to"])
+
+	def test_get_doc_expand(self):
+		response = self.get(
+			self.resource(self.DOCTYPE, self.GENERATED_DOCUMENTS[0]),
+			{
+				"expand_links": json.dumps(True),
+			},
+		)
+		self.assertEqual(response.status_code, 200)
+		self.assertIsInstance(response.json, dict)
+		self.assertIn("data", response.json)
+		self.assertIsInstance(response.json["data"]["allocated_to"], dict)
 
 	def test_get_list_limit(self):
 		# test 3: fetch data with limit
@@ -442,7 +483,9 @@ class TestResponse(FrappeAPITestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.headers["content-type"], "application/octet-stream")
 		self.assertGreater(cint(response.headers["content-length"]), 0)
-		self.assertEqual(response.headers["content-disposition"], f'filename="{encoded_filename}"')
+		self.assertEqual(
+			response.headers["content-disposition"], f'attachment; filename="{encoded_filename}"'
+		)
 
 	def test_download_private_file_with_unique_url(self):
 		test_content = frappe.generate_hash()
@@ -461,15 +504,17 @@ class TestResponse(FrappeAPITestCase):
 
 	def test_login_redirects(self):
 		expected_redirects = {
-			"/app/user": "/app/user",
-			"/app/user?enabled=1": "/app/user?enabled=1",
-			"http://example.com": "/app",  # No external redirect
-			"https://google.com": "/app",
-			"http://localhost:8000": "/app",
+			"/app/user": "http://localhost/app/user",
+			"/app/user?enabled=1": "http://localhost/app/user?enabled=1",
+			"http://example.com": "http://localhost/app",  # No external redirect
+			"https://google.com": "http://localhost/app",
+			"http://localhost:8000": "http://localhost/app",
 			"http://localhost/app": "http://localhost/app",
+			"////example.com": "http://localhost//example.com",  # malicious redirect attempt
 		}
+
 		for redirect, expected_redirect in expected_redirects.items():
-			response = self.get(f"/login?{urlencode({'redirect-to':redirect})}", {"sid": self.sid})
+			response = self.get(f"/login?{urlencode({'redirect-to': redirect})}", {"sid": self.sid})
 			self.assertEqual(response.location, expected_redirect)
 
 

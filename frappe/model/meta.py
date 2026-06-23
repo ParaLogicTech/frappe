@@ -14,6 +14,7 @@ Example:
 
 
 """
+
 import json
 import os
 from datetime import datetime
@@ -153,7 +154,7 @@ class Meta(Document):
 
 	def as_dict(self, no_nulls=False):
 		def serialize(doc):
-			out = {}
+			out = frappe._dict()
 			for key, value in doc.__dict__.items():
 				if isinstance(value, list | tuple):
 					if not value or not isinstance(value[0], BaseDocument):
@@ -598,7 +599,7 @@ class Meta(Document):
 	def get_high_permlevel_fields(self):
 		"""Build list of fields with high perm level and all the higher perm levels defined."""
 		if not hasattr(self, "high_permlevel_fields"):
-			self.high_permlevel_fields = [df for df in self.fields if df.permlevel > 0]
+			self.high_permlevel_fields = [df for df in self.fields if (df.permlevel or 0) > 0]
 		return self.high_permlevel_fields
 
 	def get_permitted_fieldnames(
@@ -632,7 +633,8 @@ class Meta(Document):
 		)
 
 		if 0 not in permlevel_access and permission_type in ("read", "select"):
-			if frappe.share.get_shared(self.name, user, rights=[permission_type], limit=1):
+			check_doctype = parenttype if self.istable and parenttype else self.name
+			if frappe.share.get_shared(check_doctype, user, rights=["read"], limit=1):
 				permlevel_access.add(0)
 
 		permitted_fieldnames.extend(
@@ -762,7 +764,7 @@ def is_single(doctype):
 	try:
 		return frappe.db.get_value("DocType", doctype, "issingle")
 	except IndexError:
-		raise Exception("Cannot determine whether %s is single" % doctype)
+		raise Exception("Cannot determine whether {} is single".format(doctype))
 
 
 def get_parent_dt(dt):
@@ -840,7 +842,7 @@ def get_field_precision(df, doc=None, currency=None):
 		precision = cint(frappe.db.get_default("currency_precision"))
 		if not precision:
 			number_format = frappe.db.get_default("number_format") or "#,###.##"
-			decimal_str, comma_str, precision = get_number_format_info(number_format)
+			_decimal_str, _comma_str, precision = get_number_format_info(number_format)
 	else:
 		precision = cint(frappe.db.get_default("float_precision")) or 3
 
