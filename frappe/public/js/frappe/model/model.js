@@ -788,7 +788,7 @@ $.extend(frappe.model, {
 		}
 		if (!fieldnames) {
 			fieldnames = frappe.meta.get_fieldnames(doc.doctype, doc.parent, {
-				fieldtype: ["in", ["Currency", "Float"]],
+				fieldtype: ["in", ["Currency", "Float", "Percent"]],
 			});
 		}
 		for (var i = 0, j = fieldnames.length; i < j; i++) {
