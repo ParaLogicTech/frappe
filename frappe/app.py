@@ -262,6 +262,7 @@ def process_response(response):
 	# CORS headers
 	if hasattr(frappe.local, "conf"):
 		set_cors_headers(response)
+		set_csp_headers(response)
 
 
 def set_cors_headers(response):
@@ -297,6 +298,20 @@ def set_cors_headers(response):
 			cors_headers["Access-Control-Max-Age"] = "86400"
 
 	response.headers.extend(cors_headers)
+
+
+def set_csp_headers(response):
+	allowed_embedding_domains = frappe.conf.allowed_embedding_domains
+	if not allowed_embedding_domains:
+		return
+
+	if allowed_embedding_domains != "*":
+		if not isinstance(allowed_embedding_domains, list):
+			allowed_embedding_domains = [allowed_embedding_domains]
+		allowed_embedding_domains = " ".join(allowed_embedding_domains)
+
+	csp_headers = {"Content-Security-Policy": f"frame-ancestors 'self' {allowed_embedding_domains}"}
+	response.headers.extend(csp_headers)
 
 
 def make_form_dict(request: Request):
