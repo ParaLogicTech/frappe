@@ -1763,7 +1763,7 @@ frappe.ui.form.Form = class FrappeForm {
 				if ($.isPlainObject(r.message)) {
 					if (opts.child) {
 						// update child doc
-						opts.child = locals[opts.child.doctype][opts.child.name];
+						opts.child = frappe.get_doc(opts.child.doctype, opts.child.name)
 						// if child row is deleted, don't update
 						if (opts.child) {
 							var std_field_list = ["doctype"]
