@@ -347,7 +347,7 @@ def send_token_via_sms(otpsecret, token=None, phone_no=None):
 		is_async=True,
 		job_name=None,
 		now=False,
-		**sms_args,
+		args=sms_args,
 	)
 
 	return True
