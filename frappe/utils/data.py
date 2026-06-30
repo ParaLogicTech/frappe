@@ -1051,11 +1051,36 @@ def cstr(s, encoding="utf-8"):
 
 def clean_whitespace(s):
 	s = cstr(s)
-	s = s.replace("\xa0", " ")
-	s = s.replace("\u202f", " ")
+	s = sanitize_whitespace(s)
 	s = s.strip()
 	s = re.sub(r'\n\s*\n', '\n', s)
 	s = re.sub(r' +', ' ', s)
+	return s
+
+
+ILLEGAL_WHITESPACES = [
+	"\xa0",  # Non-breaking space
+	"\u202f",  # Narrow Non-breaking space
+	"\u200a",  # Hair space
+	"\u200b",  # Zero width space
+	"\u2006",  # Six-per-em space
+	"\u2009",  # Thin space
+	"\u2008",  # Punctuation space
+	"\u2005",  # Four-per-em space
+	"\u2004",  # Three-per-space
+	"\u2007",  # Figure space
+	"\u2002",  # En space
+	"\u2003",  # Em space
+	"\u2800",  # Braille blank
+]
+ILLEGAL_WHITESPACE_RE = re.compile(rf"[{''.join(ILLEGAL_WHITESPACES)}]")
+
+
+def sanitize_whitespace(s):
+	if not isinstance(s, str):
+		return s
+
+	s = ILLEGAL_WHITESPACE_RE.sub(" ", s)
 	return s
 
 
