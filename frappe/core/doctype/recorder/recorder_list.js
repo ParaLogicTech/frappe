@@ -141,7 +141,7 @@ frappe.listview_settings["Recorder"] = {
 					fieldname: "record_jobs",
 					fieldtype: "Check",
 					label: "Record Background Jobs",
-					default: 1,
+					default: 0,
 				},
 				{
 					fieldname: "jobs_filter",
