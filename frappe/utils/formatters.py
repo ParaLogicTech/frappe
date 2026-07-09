@@ -114,7 +114,8 @@ def format_value(value, df=None, doc=None, currency=None, translated=False, form
 		return f"{rounded}%"
 
 	elif df.get("fieldtype") in ("Text", "Small Text", "Long Text"):
-		if not BLOCK_TAGS_PATTERN.search(cstr(value)):
+		value = cstr(value)
+		if not BLOCK_TAGS_PATTERN.search(value):
 			return frappe.safe_decode(value).replace("\n", "<br>")
 
 	elif df.get("fieldtype") == "Markdown Editor":
