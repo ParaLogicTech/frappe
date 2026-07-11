@@ -127,10 +127,8 @@ frappe.ui.form.on("Auto Email Report", {
 				report_filters = reference_report.filters;
 			}
 
-			frm.set_value(
-				"filter_meta",
-				report_filters && report_filters.length > 0 ? JSON.stringify(report_filters) : ""
-			);
+			frm.doc.filter_meta = report_filters && report_filters.length > 0 ? JSON.stringify(report_filters) : "";
+			frm.refresh_field("filter_meta");
 
 			var report_filters_list = [];
 			$.each(report_filters, function (key, val) {
@@ -177,6 +175,7 @@ frappe.ui.form.on("Auto Email Report", {
 			);
 			table.on("click", function () {
 				dialog = new frappe.ui.Dialog({
+					title: __("Edit Filters"),
 					fields: dialog_filter_fields,
 					primary_action: function () {
 						var values = this.get_values();
