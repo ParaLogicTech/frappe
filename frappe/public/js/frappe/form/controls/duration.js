@@ -123,6 +123,13 @@ frappe.ui.form.ControlDuration = class ControlDuration extends frappe.ui.form.Co
 		return !value ? "" : value;
 	}
 
+	validate(value) {
+		if (value === 0) {
+			return 0;
+		}
+		return super.validate(value);
+	}
+
 	refresh_input() {
 		super.refresh_input();
 		this.set_duration_options();
