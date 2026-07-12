@@ -142,7 +142,7 @@
   },
   {
    "fieldname": "error",
-   "fieldtype": "Small Text",
+   "fieldtype": "Code",
    "label": "Error",
    "read_only": 1
   },
@@ -187,10 +187,11 @@
    "read_only": 1
   }
  ],
+ "grid_page_length": 500,
  "icon": "fa fa-mobile-phone",
  "in_create": 1,
  "links": [],
- "modified": "2025-05-22 21:57:40.734623",
+ "modified": "2026-07-12 18:14:20.794561",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "SMS Queue",
@@ -209,6 +210,8 @@
    "share": 1
   }
  ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

@@ -23,7 +23,7 @@ class SMSQueue(Document):
 		child_doctype: DF.Link | None
 		child_name: DF.Data | None
 		communication: DF.Link | None
-		error: DF.SmallText | None
+		error: DF.Code | None
 		is_promotional: DF.Check
 		message: DF.SmallText | None
 		notification_type: DF.Data | None
