@@ -1025,6 +1025,20 @@ class Document(BaseDocument):
 
 		return children
 
+	@staticmethod
+	def has_method(doctype: str, method: str):
+		try:
+			controller = get_controller(doctype)
+			if hasattr(controller, method):
+				return True
+		except Exception:
+			pass
+
+		if frappe.get_doc_hooks().get(doctype, {}).get(method):
+			return True
+
+		return False
+
 	def run_method(self, method: str, *args, **kwargs):
 		"""run standard triggers, plus those in hooks"""
 

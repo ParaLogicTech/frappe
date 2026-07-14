@@ -735,7 +735,10 @@ def run_validate_notification(doc, notification_type=None, child_doctype=None, c
 		return cint(validation)
 
 
-def has_notification(reference_doctype, notification_type=None):
+def has_notification(reference_doctype, notification_type=None, trigger_method=None):
+	if trigger_method and Document.has_method(reference_doctype, trigger_method):
+		return True
+
 	notification_type = cstr(notification_type)
 
 	template = frappe.db.sql_list("""
@@ -746,7 +749,7 @@ def has_notification(reference_doctype, notification_type=None):
 		limit 1
 	""", [reference_doctype, notification_type])
 
-	return len(template)
+	return len(template) > 0
 
 
 def get_context(doc):
