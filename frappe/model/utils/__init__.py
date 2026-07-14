@@ -91,7 +91,7 @@ def render_include(content):
 	return content
 
 
-def get_fetch_values(doctype, fieldname, value):
+def get_fetch_values(doctype, fieldname, value, skip_fetch_if_empty=False):
 	"""Returns fetch value dict for the given object
 
 	:param doctype: Target doctype
@@ -104,7 +104,9 @@ def get_fetch_values(doctype, fieldname, value):
 
 	# fieldname in target doctype: fieldname in source doctype
 	fields_to_fetch = {
-		df.fieldname: df.fetch_from.split(".", 1)[1] for df in meta.get_fields_to_fetch(fieldname)
+		df.fieldname: df.fetch_from.split(".", 1)[1]
+		for df in meta.get_fields_to_fetch(fieldname)
+		if not df.fetch_if_empty or not skip_fetch_if_empty
 	}
 
 	# nothing to fetch
