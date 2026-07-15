@@ -390,9 +390,17 @@ class CookieManager:
 		expires=None,
 		secure=False,
 		httponly=False,
-		samesite="Lax",
+		samesite=None,
 		max_age=None,
 	):
+		if not samesite:
+			samesite = frappe.conf.get("default_cookie_samesite") or "Lax"
+			if samesite not in ("Lax", "None", "Strict"):
+				samesite = "Lax"
+
+			if samesite == "None" and frappe.local.request.scheme != "https":
+				samesite = "Lax"
+
 		if not secure and hasattr(frappe.local, "request"):
 			secure = frappe.local.request.scheme == "https"
 
