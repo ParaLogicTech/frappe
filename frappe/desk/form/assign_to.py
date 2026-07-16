@@ -305,7 +305,7 @@ def notify_assignment(assigned_by, allocated_to, doc_type, doc_name, action="CLO
 		"email_content": description_html,
 	}
 
-	enqueue_create_notification(allocated_to, notification_doc)
+	enqueue_create_notification(allocated_to, notification_doc, enqueue_after_commit=True)
 
 
 def format_message_for_assign_to(users):

@@ -265,4 +265,4 @@ def notify_assignment(shared_by, doctype, doc_name, everyone, notify=0):
 		"from_user": frappe.session.user,
 	}
 
-	enqueue_create_notification(shared_by, notification_doc)
+	enqueue_create_notification(shared_by, notification_doc, enqueue_after_commit=True)

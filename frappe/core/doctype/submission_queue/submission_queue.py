@@ -148,7 +148,7 @@ class SubmissionQueue(Document):
 			}
 
 			notify_to = frappe.db.get_value("User", self.enqueued_by, fieldname="email")
-			enqueue_create_notification([notify_to], notification_doc)
+			enqueue_create_notification([notify_to], notification_doc, enqueue_after_commit=False)
 
 	@frappe.whitelist()
 	def unlock_doc(self):

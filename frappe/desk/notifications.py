@@ -424,7 +424,7 @@ def notify_mentions(ref_doctype, ref_name, content):
 			"email_content": content,
 		}
 
-		enqueue_create_notification(recipients, notification_doc)
+		enqueue_create_notification(recipients, notification_doc, enqueue_after_commit=True)
 
 
 def extract_mentions(txt):

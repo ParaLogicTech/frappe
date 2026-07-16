@@ -73,7 +73,7 @@ class EnergyPointLog(Document):
 				"email_content": f"<div>{self.reason}</div>" if self.reason else None,
 			}
 
-			enqueue_create_notification(self.user, notification_doc)
+			enqueue_create_notification(self.user, notification_doc, enqueue_after_commit=True)
 
 	def on_trash(self):
 		if self.type == "Revert":

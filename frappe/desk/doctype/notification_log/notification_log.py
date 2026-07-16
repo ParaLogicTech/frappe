@@ -77,6 +77,7 @@ def enqueue_create_notification(
 	notification_type=None,
 	child_doctype=None,
 	child_name=None,
+	enqueue_after_commit=True,
 ):
 	"""Send notification to users.
 
@@ -104,6 +105,7 @@ def enqueue_create_notification(
 		child_doctype=child_doctype,
 		child_name=child_name,
 		now=frappe.flags.in_test,
+		enqueue_after_commit=enqueue_after_commit,
 	)
 
 

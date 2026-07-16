@@ -294,6 +294,7 @@ def get_context(context):
 			notification_type=notification_type,
 			child_doctype=context.get("child_doctype"),
 			child_name=context.get("child_name"),
+			enqueue_after_commit=True,
 		)
 
 	def send_an_email(self, doc, context):
