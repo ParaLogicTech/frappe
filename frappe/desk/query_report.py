@@ -75,7 +75,13 @@ def get_report_result(report, filters):
 
 @frappe.read_only()
 def generate_report_result(
-	report, filters=None, user=None, custom_columns=None, is_tree=False, parent_field=None
+	report,
+	filters=None,
+	user=None,
+	custom_columns=None,
+	is_tree=False,
+	parent_field=None,
+	with_total_row=True,
 ):
 	user = user or frappe.session.user
 	filters = filters or []
@@ -110,7 +116,7 @@ def generate_report_result(
 	if result:
 		result = get_filtered_data(report.ref_doctype, columns, result, user)
 
-	if cint(report.add_total_row) and result and not skip_total_row:
+	if cint(report.add_total_row) and result and not skip_total_row and with_total_row:
 		result = add_total_row(result, columns, is_tree=is_tree, parent_field=parent_field)
 
 	if isinstance(filters, dict) and filters.get("translate_data"):
@@ -200,6 +206,7 @@ def run(
 	is_tree=False,
 	parent_field=None,
 	are_default_filters=True,
+	with_total_row=True,
 ):
 	if not user:
 		user = frappe.session.user
@@ -227,8 +234,18 @@ def run(
 				dn = ""
 			result = get_prepared_report_result(report, filters, dn, user)
 		else:
-			result = generate_report_result(report, filters, user, custom_columns, is_tree, parent_field)
+			result = generate_report_result(
+				report,
+				filters,
+				user,
+				custom_columns,
+				is_tree,
+				parent_field,
+				with_total_row=sbool(with_total_row),
+			)
 			add_data_to_monitor(report=report.reference_report or report.name)
+	except frappe.ValidationError:
+		raise
 	except Exception:
 		frappe.log_error("Report Error")
 		raise
