@@ -2334,7 +2334,7 @@ def guess_date_format(date_string: str) -> str:
 			return (date_format + " " + time_format).strip()
 		
 
-def validate_json_string(self, string: str, row_idx: Optional[int] = None, error_field: Optional[str] = None) -> None:
+def validate_json_string(string: str, row_idx: Optional[int] = None, error_field: Optional[str] = None) -> None:
 	try:
 		json.loads(string)
 	except (TypeError, ValueError, json.JSONDecodeError) as e:
