@@ -2332,13 +2332,19 @@ def guess_date_format(date_string: str) -> str:
 
 		if date_format and time_format:
 			return (date_format + " " + time_format).strip()
+		
 
-
-def validate_json_string(string: str) -> None:
+def validate_json_string(self, string: str, row_idx: Optional[int] = None, error_field: Optional[str] = None) -> None:
 	try:
 		json.loads(string)
-	except (TypeError, ValueError):
-		raise frappe.ValidationError
+	except (TypeError, ValueError, json.JSONDecodeError) as e:
+		message = f"Invalid JSON: {e}"
+		if row_idx is not None and error_field is not None:
+			message = f"Invalid JSON in {error_field} at row {row_idx}: {e}"
+		elif error_field is not None:
+			message = f"Invalid JSON in {error_field}: {e}"
+
+		frappe.throw(message, title="Invalid JSON")
 
 
 class _UserInfo(typing.TypedDict):
