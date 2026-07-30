@@ -76,12 +76,12 @@ dependencies = [
     "markdownify~=0.11.2",
 
     # integration dependencies
-    "boto3~=1.18.49",
+    "boto3~=1.34.143",
     "dropbox~=12.0.2",
-    "google-api-python-client~=2.2.0",
-    "google-auth-httplib2~=0.1.0",
-    "google-auth-oauthlib~=0.4.4",
-    "google-auth~=1.29.0",
+    "google-auth-httplib2~=0.2.1",
+    "google-api-python-client~=2.172.0",
+    "google-auth-oauthlib~=1.2.2",
+    "google-auth~=2.40.3",
     "posthog~=3.0.1",
 ]
 
