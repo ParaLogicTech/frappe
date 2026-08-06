@@ -33,7 +33,7 @@ def validate_duplicate_tax_id(
 	exclude=None,
 	throw=False,
 ):
-	_validate_duplicate_tax_id(doctype, fieldname, value, exclude, throw)
+	_validate_duplicate_tax_id(doctype, fieldname, value, exclude=exclude, throw=throw)
 
 
 def _validate_duplicate_tax_id(
@@ -48,7 +48,14 @@ def _validate_duplicate_tax_id(
 	if not value:
 		return
 
-	validate_duplicate_value(doctype, fieldname, value, exclude, throw, ignore_permissions=ignore_permissions)
+	validate_duplicate_value(
+		doctype,
+		fieldname,
+		value,
+		exclude=exclude,
+		throw=throw,
+		ignore_permissions=ignore_permissions,
+	)
 
 
 @frappe.whitelist()
@@ -59,7 +66,7 @@ def validate_duplicate_mobile_no(
 	exclude=None,
 	throw=False,
 ):
-	_validate_duplicate_mobile_no(doctype, fieldname, value, exclude, throw)
+	_validate_duplicate_mobile_no(doctype, fieldname, value, exclude=exclude, throw=throw)
 
 
 def _validate_duplicate_mobile_no(
@@ -67,6 +74,7 @@ def _validate_duplicate_mobile_no(
 	fieldname,
 	value,
 	exclude=None,
+	filters=None,
 	throw=False,
 	ignore_permissions=False,
 ):
@@ -77,7 +85,15 @@ def _validate_duplicate_mobile_no(
 		return
 
 	mobile_nos = get_all_mobile_formats(value)
-	validate_duplicate_value(doctype, fieldname, mobile_nos, exclude, throw, ignore_permissions=ignore_permissions)
+	validate_duplicate_value(
+		doctype,
+		fieldname,
+		mobile_nos,
+		exclude=exclude,
+		filters=filters,
+		throw=throw,
+		ignore_permissions=ignore_permissions,
+	)
 
 
 def get_all_mobile_formats(mobile_no):
@@ -147,6 +163,7 @@ def validate_duplicate_value(
 	fieldname,
 	value,
 	exclude=None,
+	filters=None,
 	throw=False,
 	ignore_permissions=False,
 ):
@@ -162,7 +179,7 @@ def validate_duplicate_value(
 
 	label = _(meta.get_field(fieldname).label)
 
-	filters = {}
+	filters = frappe._dict(filters) if filters else frappe._dict()
 	if isinstance(value, (list, tuple)):
 		filters[fieldname] = ["in", value]
 	else:
