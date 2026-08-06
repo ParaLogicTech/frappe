@@ -26,16 +26,50 @@ def validate_tax_ids(tax_id=None, tax_cnic=None, tax_strn=None):
 
 
 @frappe.whitelist()
-def validate_duplicate_tax_id(doctype, fieldname, value, exclude=None, throw=False):
+def validate_duplicate_tax_id(
+	doctype,
+	fieldname,
+	value,
+	exclude=None,
+	throw=False,
+):
+	_validate_duplicate_tax_id(doctype, fieldname, value, exclude, throw)
+
+
+def _validate_duplicate_tax_id(
+	doctype,
+	fieldname,
+	value,
+	exclude=None,
+	throw=False,
+	ignore_permissions=False,
+):
 	value = cstr(value).strip()
 	if not value:
 		return
 
-	validate_duplicate_value(doctype, fieldname, value, exclude, throw)
+	validate_duplicate_value(doctype, fieldname, value, exclude, throw, ignore_permissions=ignore_permissions)
 
 
 @frappe.whitelist()
-def validate_duplicate_mobile_no(doctype, fieldname, value, exclude=None, throw=False):
+def validate_duplicate_mobile_no(
+	doctype,
+	fieldname,
+	value,
+	exclude=None,
+	throw=False,
+):
+	_validate_duplicate_mobile_no(doctype, fieldname, value, exclude, throw)
+
+
+def _validate_duplicate_mobile_no(
+	doctype,
+	fieldname,
+	value,
+	exclude=None,
+	throw=False,
+	ignore_permissions=False,
+):
 	value = cstr(value).strip()
 	if not value:
 		return
@@ -43,7 +77,7 @@ def validate_duplicate_mobile_no(doctype, fieldname, value, exclude=None, throw=
 		return
 
 	mobile_nos = get_all_mobile_formats(value)
-	validate_duplicate_value(doctype, fieldname, mobile_nos, exclude, throw)
+	validate_duplicate_value(doctype, fieldname, mobile_nos, exclude, throw, ignore_permissions=ignore_permissions)
 
 
 def get_all_mobile_formats(mobile_no):
@@ -108,7 +142,14 @@ def local_to_international_mobile_no(mobile_no):
 	return mobile_no
 
 
-def validate_duplicate_value(doctype, fieldname, value, exclude=None, throw=False):
+def validate_duplicate_value(
+	doctype,
+	fieldname,
+	value,
+	exclude=None,
+	throw=False,
+	ignore_permissions=False,
+):
 	if not value or not doctype:
 		return
 
@@ -116,7 +157,8 @@ def validate_duplicate_value(doctype, fieldname, value, exclude=None, throw=Fals
 	if not fieldname or not meta.has_field(fieldname):
 		frappe.throw(_("Invalid fieldname {0}").format(fieldname))
 
-	frappe.has_permission(doctype, "read", throw=True)
+	if not ignore_permissions:
+		frappe.has_permission(doctype, "read", throw=True)
 
 	label = _(meta.get_field(fieldname).label)
 
