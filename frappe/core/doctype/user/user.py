@@ -558,6 +558,7 @@ class User(Document):
 
 		# Delete OAuth data
 		frappe.db.delete("OAuth Authorization Code", {"user": self.name})
+		frappe.db.delete("OAuth Bearer Token", {"user": self.name})
 		frappe.db.delete("Token Cache", {"user": self.name})
 
 		# Delete EPS data
