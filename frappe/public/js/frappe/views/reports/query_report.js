@@ -1790,8 +1790,9 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				const visible_columns = this.get_visible_columns();
 				const report_data = this.get_data_for_csv(include_indentation);
 
-				// Reduce row count if this causes 413 Request Entity Too Large
-				let pass_report_data = true;
+				// Reduce row count if this causes 413 Request Entity Too Large.
+				// Background exports re-run on the worker, so never ship data there.
+				let pass_report_data = !export_in_background;
 				if (!report_data || report_data.length >= 1000000) {
 					pass_report_data = false;
 				}
