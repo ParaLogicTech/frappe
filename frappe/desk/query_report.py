@@ -386,7 +386,7 @@ def _export_query(form_params, csv_params, populate_response=True):
 	visible_idx = frappe.parse_json(form_params.visible_idx or "[]")
 	include_hidden_columns = cint(form_params.include_hidden_columns)
 
-	report_data = frappe.parse_json(form_params.report_data)
+	report_data = frappe.parse_json(form_params.report_data or "null")
 	visible_columns = frappe.parse_json(form_params.visible_columns)
 
 	if report_data is not None:
@@ -1167,7 +1167,7 @@ def flatten_grouped_report_data(data, result=None, current_indent=None):
 				result.append(obj.get("totals"))
 
 			if obj.get("rows"):
-				flatten_grouped_report_data(obj.get("rows"), result=result, current_indent=current_indent + 1)
+				flatten_grouped_report_data(obj.get("rows"), result=result, current_indent=(current_indent or 0) + 1)
 		else:
 			if current_indent is not None:
 				obj["indent"] = current_indent + 1
