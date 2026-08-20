@@ -1156,7 +1156,8 @@ def _group_report_data(
 
 
 def flatten_grouped_report_data(data, result=None, current_indent=None):
-	result = result or []
+	if result is None:
+		result = []
 
 	for obj in data:
 		if isinstance(obj, dict) and obj.get("_isGroup"):
