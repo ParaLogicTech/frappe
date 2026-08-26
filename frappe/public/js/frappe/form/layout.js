@@ -450,7 +450,7 @@ frappe.ui.form.Layout = class Layout {
 			if (fieldnames.includes(fieldobj.df.fieldname)) {
 				fieldobj.refresh();
 				if (fieldobj.df["default"]) {
-					fieldobj.set_input(fieldobj.df["default"]);
+					fieldobj.set_model_value(fieldobj.df["default"]);
 				}
 			}
 		});
