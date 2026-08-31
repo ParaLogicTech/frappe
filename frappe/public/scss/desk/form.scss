@@ -314,12 +314,15 @@
 	}
 }
 
+.form-message-container {
+	margin-bottom: var(--margin-sm);
+}
+
 .form-message {
 	position: relative;
 	border-radius: var(--border-radius);
 	padding: 8px 10px;
 	font-size: var(--text-md, 13px);
-	margin-bottom: var(--margin-sm);
 
 	&.blue {
 		@include form-message-background("blue");
