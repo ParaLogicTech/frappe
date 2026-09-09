@@ -80,6 +80,7 @@ def _download_multi_pdf(
 	letterhead: str | None = None,
 	options: str | None = None,
 	task_id: str | None = None,
+	filename: str | None = None,
 ):
 	"""Return a PDF compiled by concatenating multiple documents.
 
@@ -117,15 +118,17 @@ def _download_multi_pdf(
 	Returns:
 	Publishes a link to the PDF to the given task ID
 	"""
+
+	provided_filename = filename
 	filename = ""
 
 	pdf_writer = PdfWriter()
 
 	if isinstance(options, str):
-		options = json.loads(options)
+		options = frappe.parse_json(options)
 
 	if not isinstance(doctype, dict):
-		result = json.loads(name)
+		result = frappe.parse_json(name)
 		total_docs = len(result)
 		filename = f"{doctype}_"
 
@@ -158,8 +161,8 @@ def _download_multi_pdf(
 				)
 
 		if task_id is None:
-			frappe.local.response.filename = "{doctype}.pdf".format(
-				doctype=doctype.replace(" ", "-").replace("/", "-")
+			frappe.local.response.filename = "{filename}.pdf".format(
+				filename=(provided_filename or doctype).replace(" ", "-").replace("/", "-")
 			)
 
 	else:
@@ -201,7 +204,7 @@ def _download_multi_pdf(
 						task_id=task_id,
 					)
 		if task_id is None:
-			frappe.local.response.filename = f"{name}.pdf"
+			frappe.local.response.filename = f"{provided_filename or name}.pdf"
 
 	with BytesIO() as merged_pdf:
 		pdf_writer.write(merged_pdf)
@@ -209,7 +212,7 @@ def _download_multi_pdf(
 			_file = frappe.get_doc(
 				{
 					"doctype": "File",
-					"file_name": f"{filename}{task_id}.pdf",
+					"file_name": f"{provided_filename or filename}{task_id}.pdf",
 					"content": merged_pdf.getvalue(),
 					"is_private": 1,
 				}
