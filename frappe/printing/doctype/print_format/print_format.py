@@ -23,6 +23,7 @@ class PrintFormat(Document):
 		absolute_value: DF.Check
 		align_labels_right: DF.Check
 		css: DF.Code | None
+		css_file_path: DF.Data | None
 		custom_format: DF.Check
 		default_print_language: DF.Link | None
 		disabled: DF.Check
@@ -37,9 +38,7 @@ class PrintFormat(Document):
 		margin_right: DF.Float
 		margin_top: DF.Float
 		module: DF.Link | None
-		page_number: DF.Literal[
-			"Hide", "Top Left", "Top Center", "Top Right", "Bottom Left", "Bottom Center", "Bottom Right"
-		]
+		page_number: DF.Literal["Hide", "Top Left", "Top Center", "Top Right", "Bottom Left", "Bottom Center", "Bottom Right"]
 		pdf_generator: DF.Literal["wkhtmltopdf"]
 		print_format_builder: DF.Check
 		print_format_builder_beta: DF.Check
@@ -50,7 +49,6 @@ class PrintFormat(Document):
 		report: DF.Link | None
 		show_section_headings: DF.Check
 		standard: DF.Literal["No", "Yes"]
-
 	# end: auto-generated types
 
 	def onload(self):
