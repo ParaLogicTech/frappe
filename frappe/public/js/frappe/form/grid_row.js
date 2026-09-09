@@ -1181,8 +1181,10 @@ export default class GridRow {
 				if (me.grid.grid_rows.length == 0) {
 					me.grid.add_new_row();
 				}
-				me.grid.grid_rows[me.grid.grid_rows.length - 1].toggle_editable_row(true);
-				me.grid.set_focus_on_row(0);
+				if (me.grid.grid_rows.length) {
+					me.grid.grid_rows[me.grid.grid_rows.length - 1].toggle_editable_row(true);
+					me.grid.set_focus_on_row(0);
+				}
 				$col.attr("tabIndex", "");
 			});
 		}
