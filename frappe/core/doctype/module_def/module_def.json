@@ -116,7 +116,7 @@
    "link_fieldname": "module"
   }
  ],
- "modified": "2023-12-08 15:52:37.525003",
+ "modified": "2026-09-12 23:39:47.714502",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Module Def",
@@ -151,7 +151,8 @@
    "select": 1
   }
  ],
- "show_name_in_global_search": 1,
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

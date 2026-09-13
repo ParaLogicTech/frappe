@@ -162,7 +162,6 @@
   {
    "fieldname": "full_name",
    "fieldtype": "Data",
-   "in_global_search": 1,
    "in_standard_filter": 1,
    "label": "Full Name",
    "read_only": 1
@@ -193,7 +192,6 @@
   {
    "fieldname": "username",
    "fieldtype": "Data",
-   "in_global_search": 1,
    "in_standard_filter": 1,
    "label": "Username",
    "unique": 1
@@ -867,7 +865,7 @@
   }
  ],
  "make_attachments_public": 1,
- "modified": "2026-07-20 05:20:50.476003",
+ "modified": "2026-09-12 23:41:40.862962",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "User",
@@ -902,7 +900,6 @@
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
  "search_fields": "full_name",
- "show_name_in_global_search": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

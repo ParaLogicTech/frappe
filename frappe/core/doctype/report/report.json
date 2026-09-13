@@ -212,7 +212,7 @@
  "idx": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-04 03:43:50.279111",
+ "modified": "2026-09-12 23:40:35.501047",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Report",
@@ -261,7 +261,7 @@
   }
  ],
  "row_format": "Dynamic",
- "show_name_in_global_search": 1,
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

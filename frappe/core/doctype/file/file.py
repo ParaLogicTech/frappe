@@ -59,6 +59,7 @@ class File(Document):
 		is_home_folder: DF.Check
 		is_private: DF.Check
 		old_parent: DF.Data | None
+		original_file_name: DF.Data | None
 		thumbnail_url: DF.SmallText | None
 		uploaded_to_dropbox: DF.Check
 		uploaded_to_google_drive: DF.Check

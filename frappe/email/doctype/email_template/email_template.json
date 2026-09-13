@@ -58,7 +58,7 @@
  "grid_page_length": 500,
  "icon": "fa fa-comment",
  "links": [],
- "modified": "2025-11-03 23:59:46.552837",
+ "modified": "2026-09-12 16:49:09.449236",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Email Template",
@@ -83,6 +83,8 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "show_name_in_global_search": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

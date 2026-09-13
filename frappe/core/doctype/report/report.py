@@ -49,7 +49,6 @@ class Report(Document):
 		report_type: DF.Literal["Report Builder", "Query Report", "Script Report", "Custom Report"]
 		roles: DF.Table[HasRole]
 		timeout: DF.Int
-
 	# end: auto-generated types
 	def validate(self):
 		"""only administrator can save standard report"""
