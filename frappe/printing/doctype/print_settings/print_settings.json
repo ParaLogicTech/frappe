@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2014-07-17 06:54:20.782907",
+ "creation": "2026-09-14 15:43:54.814757",
  "doctype": "DocType",
  "document_type": "System",
  "engine": "InnoDB",
@@ -8,6 +8,7 @@
   "pdf_settings",
   "send_print_as_pdf",
   "repeat_header_footer",
+  "print_as_primary_button",
   "column_break_4",
   "pdf_page_size",
   "pdf_page_height",
@@ -170,13 +171,19 @@
    "fieldname": "pdf_page_width",
    "fieldtype": "Float",
    "label": "PDF Page Width (in mm)"
+  },
+  {
+   "default": "0",
+   "fieldname": "print_as_primary_button",
+   "fieldtype": "Check",
+   "label": "Print as Primary Button"
   }
  ],
  "icon": "fa fa-cog",
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-05-30 14:55:25.740691",
+ "modified": "2026-09-14 16:09:12.989952",
  "modified_by": "Administrator",
  "module": "Printing",
  "name": "Print Settings",
@@ -191,6 +198,7 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

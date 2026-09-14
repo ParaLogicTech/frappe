@@ -64,9 +64,6 @@ frappe.ui.form.PrintView = class {
 	setup_toolbar() {
 		this.page.add_button(__("Back"), () => this.go_to_form_view(), { icon: "left" });
 
-		this.print_button = this.page.add_button(__("Print"), () => this.printit(), { icon: "printer" });
-		this.print_button.toggle(false);
-
 		this.page.add_button(__("Full Page"), () => this.render_page("/printview?"), {
 			icon: "full-page",
 		});
@@ -75,8 +72,19 @@ frappe.ui.form.PrintView = class {
 			icon: "refresh",
 		});
 
-		this.page.set_primary_action(__("PDF"), () => this.render_pdf(), { icon: "es-line-filetype" });
-		this.page.add_menu_item(__("Get PDF"), () => this.render_pdf(), true, "Ctrl+P");
+		let print_or_pdf = cint(this.print_settings.print_as_primary_button) ? "Print" : "PDF";
+
+		this.page.add_menu_item(__("Print Now"), () => this.printit(), true, print_or_pdf == "Print" ? "Ctrl+P" : null);
+		this.page.add_menu_item(__("Get PDF"), () => this.render_pdf(), true, print_or_pdf == "PDF" ? "Ctrl+P" : null);
+
+		if (print_or_pdf == "PDF") {
+			this.print_button = this.page.add_button(__("Print"), () => this.printit(), { icon: "printer" });
+			this.print_button.toggle(false);
+			this.page.set_primary_action(__("PDF"), () => this.render_pdf(), { icon: "es-line-filetype" });
+		} else {
+			this.page.add_button(__("Get PDF"), () => this.render_pdf(), { icon: "es-line-filetype" });
+			this.page.set_primary_action(__("Print"), () => this.printit(), { icon: "printer" });
+		}
 
 		// hide print view on pressing escape, only if there is no focus on any input
 		$(document).on("keydown", (e) => {
@@ -378,9 +386,9 @@ frappe.ui.form.PrintView = class {
 
 	toggle_raw_printing() {
 		const is_raw_printing = this.is_raw_printing();
-		this.wrapper.find(".btn-print-preview").toggle(!is_raw_printing);
-		this.wrapper.find(".btn-download-pdf").toggle(!is_raw_printing);
-		this.print_button?.toggle(Boolean(cint(this.print_settings.enable_print_server) || this.is_raw_printing()));
+		// this.wrapper.find(".btn-print-preview").toggle(!is_raw_printing);
+		// this.wrapper.find(".btn-download-pdf").toggle(!is_raw_printing);
+		this.print_button?.toggle(Boolean(cint(this.print_settings.enable_print_server) || is_raw_printing));
 	}
 
 	preview() {

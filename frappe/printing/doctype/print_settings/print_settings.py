@@ -25,45 +25,13 @@ class PrintSettings(Document):
 		font: DF.Literal["Default", "Helvetica Neue", "Arial", "Helvetica", "Inter", "Verdana", "Monospace"]
 		font_size: DF.Float
 		pdf_page_height: DF.Float
-		pdf_page_size: DF.Literal[
-			"A0",
-			"A1",
-			"A2",
-			"A3",
-			"A4",
-			"A5",
-			"A6",
-			"A7",
-			"A8",
-			"A9",
-			"B0",
-			"B1",
-			"B2",
-			"B3",
-			"B4",
-			"B5",
-			"B6",
-			"B7",
-			"B8",
-			"B9",
-			"B10",
-			"C5E",
-			"Comm10E",
-			"DLE",
-			"Executive",
-			"Folio",
-			"Ledger",
-			"Legal",
-			"Letter",
-			"Tabloid",
-			"Custom",
-		]
+		pdf_page_size: DF.Literal["A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "B0", "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "C5E", "Comm10E", "DLE", "Executive", "Folio", "Ledger", "Legal", "Letter", "Tabloid", "Custom"]
 		pdf_page_width: DF.Float
+		print_as_primary_button: DF.Check
 		print_style: DF.Link | None
 		repeat_header_footer: DF.Check
 		send_print_as_pdf: DF.Check
 		with_letterhead: DF.Check
-
 	# end: auto-generated types
 	def validate(self):
 		if self.pdf_page_size == "Custom" and not (self.pdf_page_height and self.pdf_page_width):
