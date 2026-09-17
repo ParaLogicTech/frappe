@@ -267,7 +267,8 @@ login.login_handlers = (function () {
 			if (data.verification && data.message != 'Logged In') {
 				login.set_status({{ _("Success") | tojson }}, 'green');
 
-				document.cookie = "tmp_id=" + data.tmp_id;
+				// document.cookie = "tmp_id=" + data.tmp_id;
+				localStorage.setItem("tmp_id", data.tmp_id);
 
 				if (data.verification.method == 'OTP App') {
 					continue_otp_app(data.verification.setup, data.verification.qrcode);
@@ -311,7 +312,8 @@ var verify_token = function (event) {
 		var args = {};
 		args.cmd = "login";
 		args.otp = $("#login_token").val();
-		args.tmp_id = frappe.get_cookie('tmp_id');
+		// args.tmp_id = frappe.get_cookie('tmp_id');
+		args.tmp_id = localStorage.getItem("tmp_id");
 		if (!args.otp) {
 			{# striptags is used to remove newlines, e is used for escaping #}
 			frappe.msgprint("{{ _('Login token required') | striptags | e }}");
