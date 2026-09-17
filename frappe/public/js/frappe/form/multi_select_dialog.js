@@ -147,7 +147,8 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 		this.$parent = $(this.dialog.body);
 		this.$wrapper = this.dialog.fields_dict.results_area.$wrapper
 			.append(`<div class="results mb-3"
-			style="border: 1px solid #d1d8dd; border-radius: 3px; height: 50vh; overflow: auto;"></div>`);
+			style="border: 1px solid #d1d8dd; border-radius: 3px; height: 50vh; overflow: auto;"></div>`)
+			.append(`<div class="grid-selection-toast" style="position: absolute; bottom: -38px; right: 0;"><span class="grid-selection-toast__message"></span></div>`);
 
 		this.$results = this.$wrapper.find(".results");
 		this.$results.append(this.make_list_row());
@@ -366,6 +367,7 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 				$(this).prop("checked", checked);
 			});
 			this.set_selected_fields();
+			this.update_selection_banner();
 		});
 
 		this.$results.on("change", ".list-item-container .list-row-check", function() {
@@ -412,6 +414,7 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 		}
 
 		this.set_selected_fields();
+		this.update_selection_banner();
 	}
 
 	set_selected_fields() {
@@ -425,6 +428,20 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 				me.selected_fields.delete(name);
 			}
 		});
+	}
+
+	update_selection_banner() {
+		const num_selected_rows = this.get_checked_items().length;
+
+		let $toast = this.$wrapper.find(".grid-selection-toast");
+		if (num_selected_rows > 0) {
+			$toast
+				.find(".grid-selection-toast__message")
+				.text(__("{0} row(s) selected", [num_selected_rows]));
+			$toast.show();
+		} else if ($toast.length) {
+			$toast.hide();
+		}
 	}
 
 	on_filter_change() {
