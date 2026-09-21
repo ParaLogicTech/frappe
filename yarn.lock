@@ -3147,6 +3147,11 @@ side-channel@^1.0.4:
     side-channel-map "^1.0.1"
     side-channel-weakmap "^1.0.2"
 
+signature_pad@^5.1.4:
+  version "5.1.4"
+  resolved "https://registry.yarnpkg.com/signature_pad/-/signature_pad-5.1.4.tgz#a406682c47d8d68b9db006c540fec867d9c12884"
+  integrity sha512-q0wO5a+U+AWPVcVmiNXz7FY4Ad1QiE8wto/3Yn41WVqepoVVYMvkb1CTokaWPUUAHWDLLabH3/acODeWM9jCrg==
+
 socket.io-adapter@~2.5.2:
   version "2.5.2"
   resolved "https://registry.yarnpkg.com/socket.io-adapter/-/socket.io-adapter-2.5.2.tgz#5de9477c9182fdc171cd8c8364b9a8894ec75d12"

@@ -95,6 +95,8 @@ import "./frappe/widgets/widget_group.js";
 import "./frappe/ui/sort_selector.html";
 import "./frappe/ui/sort_selector.js";
 
+import "./frappe/ui/signature_pad.js";
+
 import "./frappe/change_log.html";
 import "./frappe/ui/workspace_loading_skeleton.html";
 import "./frappe/ui/workspace_sidebar_loading_skeleton.html";

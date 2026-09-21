@@ -1,0 +1,70 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-18 23:58:40.371799",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "signatory",
+  "signatory_name_field",
+  "signatory_role",
+  "pen_color",
+  "optional"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "fieldname": "signatory",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Signatory",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "default": "0",
+   "fieldname": "optional",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Optional"
+  },
+  {
+   "columns": 2,
+   "fieldname": "signatory_role",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Signatory Role",
+   "options": "Role"
+  },
+  {
+   "columns": 2,
+   "fieldname": "pen_color",
+   "fieldtype": "Color",
+   "in_list_view": 1,
+   "label": "Pen Color"
+  },
+  {
+   "columns": 2,
+   "fieldname": "signatory_name_field",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Signatory Name Field"
+  }
+ ],
+ "grid_page_length": 500,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-21 11:24:18.462472",
+ "modified_by": "Administrator",
+ "module": "Printing",
+ "name": "Print Format Signatory",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

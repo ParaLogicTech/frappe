@@ -1,0 +1,150 @@
+{
+ "actions": [],
+ "allow_copy": 1,
+ "creation": "2026-09-20 13:45:48.468230",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "document_type",
+  "document_name",
+  "user",
+  "ip_address",
+  "user_agent",
+  "column_break_jevz",
+  "company_name",
+  "branch_name",
+  "signature_timestamp",
+  "signed_pdf",
+  "digitally_signed",
+  "section_break_gix5",
+  "signatories"
+ ],
+ "fields": [
+  {
+   "fieldname": "document_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Document Type",
+   "options": "DocType",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "document_name",
+   "fieldtype": "Dynamic Link",
+   "in_standard_filter": 1,
+   "label": "Document Name",
+   "options": "document_type",
+   "reqd": 1,
+   "search_index": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "label": "Company Name",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "User",
+   "options": "User",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_gix5",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "signatories",
+   "fieldtype": "Table",
+   "label": "Signatories",
+   "options": "Signed Document Signatory"
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "Device IP Address",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "user_agent",
+   "fieldtype": "Data",
+   "label": "Device User Agent",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "signed_pdf",
+   "fieldtype": "Attach",
+   "label": "Signed PDF",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "signature_timestamp",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Signature Timestamp",
+   "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "digitally_signed",
+   "fieldtype": "Check",
+   "label": "Digitally Signed",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_jevz",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "grid_page_length": 500,
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-22 01:13:51.454277",
+ "modified_by": "Administrator",
+ "module": "Printing",
+ "name": "Signed Document",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Desk User",
+   "share": 1
+  }
+ ],
+ "protect_attached_files": 1,
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "document_name"
+}

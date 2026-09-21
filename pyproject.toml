@@ -79,6 +79,7 @@ dependencies = [
     "xlrd~=2.0.1",
     "zxcvbn~=4.4.28",
     "markdownify~=0.14.1",
+    "pyhanko~=0.37.0",
 
     # integration dependencies
     "boto3~=1.34.143",

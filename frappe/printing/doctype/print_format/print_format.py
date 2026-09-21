@@ -18,6 +18,7 @@ class PrintFormat(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
+		from frappe.printing.doctype.print_format_signatory.print_format_signatory import PrintFormatSignatory
 		from frappe.types import DF
 
 		absolute_value: DF.Check
@@ -48,6 +49,7 @@ class PrintFormat(Document):
 		raw_printing: DF.Check
 		report: DF.Link | None
 		show_section_headings: DF.Check
+		signatories: DF.Table[PrintFormatSignatory]
 		standard: DF.Literal["No", "Yes"]
 	# end: auto-generated types
 

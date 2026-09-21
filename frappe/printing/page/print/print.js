@@ -77,6 +77,9 @@ frappe.ui.form.PrintView = class {
 		this.page.add_menu_item(__("Print Now"), () => this.printit(), true, print_or_pdf == "Print" ? "Ctrl+P" : null);
 		this.page.add_menu_item(__("Get PDF"), () => this.render_pdf(), true, print_or_pdf == "PDF" ? "Ctrl+P" : null);
 
+		this.sign_button = this.page.add_button(__("Sign"), () => this.show_signature_dialog(), { icon: "pen" });
+		this.sign_button.toggle(false);
+
 		if (print_or_pdf == "PDF") {
 			this.print_button = this.page.add_button(__("Print"), () => this.printit(), { icon: "printer" });
 			this.print_button.toggle(false);
@@ -141,6 +144,12 @@ frappe.ui.form.PrintView = class {
 				print_view.preview();
 			},
 		}).$input;
+
+		this.signed_documents_wrapper = this.add_sidebar_item({
+			fieldtype: "HTML",
+			fieldname: "signed_documents_html",
+		}).$wrapper;
+
 		this.sidebar_dynamic_section = $(`<div class="dynamic-settings"></div>`).appendTo(
 			this.sidebar
 		);
@@ -213,10 +222,13 @@ frappe.ui.form.PrintView = class {
 			this.set_default_print_language,
 			this.set_default_letterhead,
 			this.toggle_raw_printing,
+			this.toggle_sign_button,
 			this.preview,
 		].map((fn) => fn.bind(this));
 
 		this.setup_additional_settings();
+		this.refresh_signed_documents();
+
 		return frappe.run_serially(tasks);
 	}
 
@@ -233,6 +245,31 @@ frappe.ui.form.PrintView = class {
 				docname: this.frm.doc.name,
 			})
 			.then((settings) => this.add_settings_to_sidebar(settings));
+	}
+
+	refresh_signed_documents() {
+		this.signed_documents_wrapper.empty();
+		return frappe.db.get_list("Signed Document", {
+			filters: {
+				document_type: this.frm.doc.doctype,
+				document_name: this.frm.doc.name,
+			},
+			fields: ["name", "signed_pdf", "user", "signature_timestamp"],
+			order_by: "creation",
+		}).then((data) => {
+			if ((data || []).length) {
+				$(`<div class="control-label">Signed Documents</div>`).appendTo(this.signed_documents_wrapper);
+				this.signed_documents_list = $(`<div class="signed-document-list"></div>`).appendTo(this.signed_documents_wrapper);
+
+				for (let d of data || []) {
+					let $card = $(`<a class="btn btn-default signed-document-item" href="${encodeURI(d.signed_pdf)}" target="_blank"></a>`).appendTo(this.signed_documents_list);
+					$(`<div class="control-label">Signed On</div>`).appendTo($card);
+					$(`<div class="control-value">${frappe.datetime.str_to_user(d.signature_timestamp)}</div>`).appendTo($card);
+					$(`<div class="control-label">Signed By</div>`).appendTo($card);
+					$(`<div class="control-value">${d.user}</div>`).appendTo($card);
+				}
+			}
+		});
 	}
 
 	add_settings_to_sidebar(settings) {
@@ -311,6 +348,7 @@ frappe.ui.form.PrintView = class {
 	refresh_print_format() {
 		this.set_default_print_language();
 		this.toggle_raw_printing();
+		this.toggle_sign_button();
 		this.preview();
 	}
 
@@ -389,6 +427,12 @@ frappe.ui.form.PrintView = class {
 		// this.wrapper.find(".btn-print-preview").toggle(!is_raw_printing);
 		// this.wrapper.find(".btn-download-pdf").toggle(!is_raw_printing);
 		this.print_button?.toggle(Boolean(cint(this.print_settings.enable_print_server) || is_raw_printing));
+	}
+
+	toggle_sign_button() {
+		let print_format = this.get_print_format();
+		let can_sign = !!print_format.signatories?.length;
+		this.sign_button?.toggle(can_sign);
 	}
 
 	preview() {
@@ -793,6 +837,47 @@ frappe.ui.form.PrintView = class {
 
 	set_style(style) {
 		frappe.dom.set_style(style || frappe.boot.print_css, "print-style");
+	}
+
+	show_signature_dialog() {
+		let print_format = this.get_print_format();
+		if (!print_format.signatories?.length) {
+			frappe.msgprint(__("Selected print format does not support signing."));
+			return;
+		}
+
+		frappe.ui.signature_pad.show_signature_dialog({
+			signatories: print_format.signatories,
+			doc: this.frm.doc,
+			callback: (signature_data) => {
+				return this.sign_pdf(signature_data);
+			}
+		});
+	}
+
+	sign_pdf(signature_data) {
+		if (!signature_data?.length) {
+			return;
+		}
+		return frappe.call({
+			method: "frappe.printing.doctype.signed_document.signed_document.sign_pdf",
+			args: {
+				doctype: this.frm.doc.doctype,
+				name: this.frm.doc.name,
+				format: this.selected_format(),
+				no_letterhead: this.with_letterhead(),
+				letterhead: this.get_letterhead(),
+				settings: this.additional_settings,
+				_lang: this.lang_code,
+				signature_data: signature_data,
+			},
+			freeze: 1,
+			freeze_message: __("Signing PDF..."),
+			callback: (r) => {
+				window.open(r.message, '_blank');
+				this.refresh_signed_documents();
+			},
+		});
 	}
 
 	printer_setting_dialog() {

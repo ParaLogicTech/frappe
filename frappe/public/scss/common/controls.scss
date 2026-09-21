@@ -523,6 +523,54 @@ textarea.form-control {
 	max-height: 150px;
 }
 
+.signature-pad-wrapper {
+	margin-bottom: var(--margin-sm);
+
+	.control-label {
+		font-weight: bold;
+	}
+
+	.signature-pad {
+		position: relative;
+		border: 1px solid var(--border-color);
+		border-radius: var(--border-radius);
+		background: var(--control-bg);
+
+		canvas {
+			position: relative;
+			display: block;
+			width: 100%;
+			height: 250px;
+			margin: 0 auto;
+			z-index: 1;
+		}
+
+		.signature-pad-background {
+			position: absolute;
+			width: 70%;
+			bottom: 30%;
+			left: 15%;
+			height: 1px;
+			border-bottom: 2px solid var(--dark-border-color);
+			z-index: 0;
+		}
+
+		.signature-pad-btn-row {
+			position: absolute;
+			top: 12px;
+			right: 12px;
+			text-align: right;
+			z-index: 2;
+
+			.btn {
+				display: inline-flex;
+				align-items: center;
+				gap: 2px;
+			}
+		}
+	}
+}
+
 button.data-pill {
 	.icon {
 		margin-left: var(--margin-xs);

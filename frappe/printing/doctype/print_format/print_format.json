@@ -34,6 +34,8 @@
   "font_size",
   "font",
   "page_number",
+  "signature_section",
+  "signatories",
   "css_section",
   "css_file_path",
   "css",
@@ -295,12 +297,24 @@
    "label": "Report",
    "mandatory_depends_on": "eval:doc.print_format_for == \"Report\"",
    "options": "Report"
+  },
+  {
+   "fieldname": "signature_section",
+   "fieldtype": "Section Break",
+   "label": "Signature"
+  },
+  {
+   "depends_on": "eval:doc.standard == 'Yes' || doc.custom_format",
+   "fieldname": "signatories",
+   "fieldtype": "Table",
+   "label": "Signatories",
+   "options": "Print Format Signatory"
   }
  ],
  "icon": "fa fa-print",
  "idx": 1,
  "links": [],
- "modified": "2026-09-09 16:32:54.928683",
+ "modified": "2026-09-21 11:24:44.862410",
  "modified_by": "Administrator",
  "module": "Printing",
  "name": "Print Format",
