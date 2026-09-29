@@ -38,6 +38,7 @@ class CustomizeFormField(Document):
 		in_list_view: DF.Check
 		in_preview: DF.Check
 		in_standard_filter: DF.Check
+		include_in_bulk_edit: DF.Check
 		is_custom_field: DF.Check
 		is_system_generated: DF.Check
 		is_virtual: DF.Check
