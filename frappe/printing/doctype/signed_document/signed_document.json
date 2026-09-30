@@ -13,6 +13,7 @@
   "column_break_jevz",
   "company_name",
   "branch_name",
+  "print_format",
   "signature_timestamp",
   "signed_pdf",
   "digitally_signed",
@@ -79,7 +80,7 @@
   },
   {
    "fieldname": "user_agent",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Device User Agent",
    "set_only_once": 1
   },
@@ -106,13 +107,19 @@
   {
    "fieldname": "column_break_jevz",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "print_format",
+   "fieldtype": "Data",
+   "label": "Print Format",
+   "set_only_once": 1
   }
  ],
  "grid_page_length": 500,
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-22 01:13:51.454277",
+ "modified": "2026-09-22 14:02:27.422386",
  "modified_by": "Administrator",
  "module": "Printing",
  "name": "Signed Document",

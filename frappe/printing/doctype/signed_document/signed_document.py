@@ -29,17 +29,21 @@ class SignedDocument(Document):
 		document_name: DF.DynamicLink
 		document_type: DF.Link
 		ip_address: DF.Data | None
+		print_format: DF.Data | None
 		signatories: DF.Table[SignedDocumentSignatory]
 		signature_timestamp: DF.Datetime | None
 		signed_pdf: DF.Attach | None
 		user: DF.Link | None
-		user_agent: DF.Data | None
+		user_agent: DF.SmallText | None
 	# end: auto-generated types
 
 	def autoname(self):
 		timestamp = get_datetime(self.signature_timestamp)
 		timestamp_str = format_datetime(timestamp, "yyMMdd-HHmm")
 		self.name = f"{self.document_name}-{timestamp_str}-{frappe.generate_hash(length=4)}"
+
+	def send_notification(self):
+		self.run_method("notify_signatories")
 
 
 @frappe.whitelist()
@@ -186,6 +190,7 @@ def sign_pdf(
 	signed_document_doc.document_name = name
 	signed_document_doc.company_name = doc.get("company") or doc.get("company_name")
 	signed_document_doc.branch_name = doc.get("branch") or doc.get("branch_name")
+	signed_document_doc.print_format = print_format_doc.name
 	signed_document_doc.user = frappe.session.user
 	signed_document_doc.ip_address = frappe.local.request_ip
 	signed_document_doc.user_agent = user_agent
@@ -219,6 +224,8 @@ def sign_pdf(
 	file_doc.save()
 
 	signed_document_doc.db_set("signed_pdf", file_doc.file_url)
+
+	signed_document_doc.send_notification()
 
 	return file_doc.file_url
 
