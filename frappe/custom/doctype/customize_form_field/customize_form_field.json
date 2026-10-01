@@ -29,6 +29,7 @@
   "print_hide",
   "print_hide_if_no_value",
   "report_hide",
+  "include_in_bulk_edit",
   "translatable",
   "is_custom_field",
   "column_break_7",
@@ -245,6 +246,13 @@
    "fieldname": "allow_bulk_edit",
    "fieldtype": "Check",
    "label": "Allow Bulk Edit"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:!in_list(['Section Break', 'Column Break', 'Tab Break'], doc.fieldtype)",
+   "fieldname": "include_in_bulk_edit",
+   "fieldtype": "Check",
+   "label": "Include In Bulk Edit"
   },
   {
    "depends_on": "eval:doc.fieldtype==\"Section Break\"",
