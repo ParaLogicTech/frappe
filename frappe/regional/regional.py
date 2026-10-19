@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from frappe.utils import cstr
+from frappe.utils import cstr, validate_email_address
 
 
 def validate_mobile_no(mobile_no, throw=True):
@@ -89,6 +89,43 @@ def _validate_duplicate_mobile_no(
 		doctype,
 		fieldname,
 		mobile_nos,
+		exclude=exclude,
+		filters=filters,
+		throw=throw,
+		ignore_permissions=ignore_permissions,
+	)
+
+
+@frappe.whitelist()
+def validate_duplicate_email(
+	doctype,
+	fieldname,
+	value,
+	exclude=None,
+	throw=False,
+):
+	_validate_duplicate_email(doctype, fieldname, value, exclude=exclude, throw=throw)
+
+
+def _validate_duplicate_email(
+	doctype,
+	fieldname,
+	value,
+	exclude=None,
+	filters=None,
+	throw=False,
+	ignore_permissions=False,
+):
+	value = cstr(value).strip()
+	if not value:
+		return
+	if not validate_email_address(value, throw=False):
+		return
+
+	validate_duplicate_value(
+		doctype,
+		fieldname,
+		value,
 		exclude=exclude,
 		filters=filters,
 		throw=throw,

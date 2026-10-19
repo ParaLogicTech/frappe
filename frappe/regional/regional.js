@@ -107,4 +107,19 @@ Object.assign(frappe.regional, {
 			});
 		}
 	},
+
+	validate_duplicate_email: function (doc, fieldname) {
+		let value = doc[fieldname];
+		if (value) {
+			return frappe.call({
+				method: "frappe.regional.regional.validate_duplicate_email",
+				args: {
+					doctype: doc.doctype,
+					fieldname: fieldname,
+					value: value,
+					exclude: doc.__islocal ? null : doc.name
+				}
+			});
+		}
+	},
 });
