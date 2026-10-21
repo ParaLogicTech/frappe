@@ -175,6 +175,11 @@ class AutoEmailReport(Document):
 		if len(data) == 0 and self.send_if_data:
 			return None
 
+		if self.report_type == "Report Builder":
+			columns = [c for c in columns if c.get("fieldname") != "docstatus"]
+
+		columns = [c for c in columns if not c.get("hidden")]
+
 		if self.format == "HTML":
 			# add serial numbers
 			columns.insert(0, frappe._dict(fieldname="idx", label="", width="30px"))
