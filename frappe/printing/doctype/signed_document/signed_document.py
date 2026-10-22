@@ -42,8 +42,16 @@ class SignedDocument(Document):
 		timestamp_str = format_datetime(timestamp, "yyMMdd-HHmm")
 		self.name = f"{self.document_name}-{timestamp_str}-{frappe.generate_hash(length=4)}"
 
+	def validate(self):
+		self.validate_mobile_no()
+
 	def send_notification(self):
 		self.run_method("notify_signatories")
+
+	def validate_mobile_no(self):
+		from frappe.regional.regional import validate_mobile_no
+		for d in self.signatories:
+			validate_mobile_no(d.signatory_mobile)
 
 
 @frappe.whitelist()
@@ -202,8 +210,8 @@ def sign_pdf(
 			"signatory": s.get("signatory"),
 			"signatory_name": s.get("signatory_name"),
 			"signature_timestamp": s.get("signature_timestamp"),
-			"contact_email": s.get("contact_email"),
-			"contact_mobile": s.get("contact_mobile"),
+			"signatory_email": s.get("signatory_email"),
+			"signatory_mobile": s.get("signatory_mobile"),
 		})
 
 	signed_document_doc.flags.ignore_permissions = True

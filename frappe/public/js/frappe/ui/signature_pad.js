@@ -58,15 +58,32 @@ $.extend(frappe.ui.signature_pad, {
 			return;
 		}
 
+		let dialog_doc = {};
+
 		let fields = [];
 		for (let [i, signatory_data] of signatories.entries()) {
 			let name_field = "signatory_name_" + i;
 			let html_field = "signature_area_" + i;
+			let email_field = "signatory_email_" + i;
+			let mobile_field = "signatory_mobile_" + i;
 
 			let signatory_name = signatory_data.signatory_name;
 			if (!signatory_name && signatory_data.signatory_name_field && args.doc) {
 				signatory_name = args.doc[signatory_data.signatory_name_field];
 			}
+			dialog_doc[name_field] = signatory_name;
+
+			let signatory_email = signatory_data.signatory_email;
+			if (!signatory_email && signatory_data.signatory_email_field && args.doc) {
+				signatory_email = args.doc[signatory_data.signatory_email_field];
+			}
+			dialog_doc[email_field] = signatory_email;
+
+			let signatory_mobile = signatory_data.signatory_mobile;
+			if (!signatory_mobile && signatory_data.signatory_mobile_field && args.doc) {
+				signatory_mobile = args.doc[signatory_data.signatory_mobile_field];
+			}
+			dialog_doc[mobile_field] = signatory_mobile;
 
 			fields.push({
 				fieldtype: "Section Break",
@@ -75,8 +92,25 @@ $.extend(frappe.ui.signature_pad, {
 				label: `${signatory_data.signatory || ""} ${__("Name")}`,
 				fieldtype: "Data",
 				fieldname: name_field,
-				default: signatory_name || "",
 				reqd: signatory_data.optional ? 0 : 1,
+			});
+			fields.push({
+				label: `${signatory_data.signatory || ""} ${__("Email")}`,
+				fieldtype: "Data",
+				options: "Email",
+				fieldname: email_field,
+			});
+			fields.push({
+				label: `${signatory_data.signatory || ""} ${__("Mobile")}`,
+				fieldtype: "Data",
+				options: "Phone",
+				fieldname: mobile_field,
+				onchange: () => {
+					let value = dialog.get_value(mobile_field);
+					value = frappe.regional.get_formatted_mobile_no(value)
+					dialog.doc[mobile_field] = value;
+					dialog.get_field(mobile_field).refresh();
+				}
 			});
 			fields.push({
 				fieldtype: "HTML",
@@ -87,6 +121,7 @@ $.extend(frappe.ui.signature_pad, {
 		const dialog = new frappe.ui.Dialog({
 			title: args.title || __("Sign"),
 			fields: fields,
+			doc: dialog_doc,
 		});
 
 		let signature_pads = [];
@@ -117,6 +152,9 @@ $.extend(frappe.ui.signature_pad, {
 				}
 
 				let name_field = "signatory_name_" + i;
+				let email_field = "signatory_email_" + i;
+				let mobile_field = "signatory_mobile_" + i;
+
 				let signatory_name = values[name_field];
 				if (!pad.isEmpty() && !signatory_name) {
 					frappe.msgprint({
@@ -130,6 +168,8 @@ $.extend(frappe.ui.signature_pad, {
 				output.push({
 					"signatory": pad.signatoryData?.signatory || "",
 					"signatory_name": signatory_name,
+					"signatory_email": values[email_field],
+					"signatory_mobile": values[mobile_field],
 					"signature_image": pad.isEmpty() ? null : pad.toDataURL("image/png"),
 					"signature_timestamp": pad.signatoryData?.signature_timestamp || null,
 				});

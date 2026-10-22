@@ -20,6 +20,8 @@ class PrintFormatSignatory(Document):
 		parenttype: DF.Data
 		pen_color: DF.Color | None
 		signatory: DF.Data
+		signatory_email_field: DF.Data | None
+		signatory_mobile_field: DF.Data | None
 		signatory_name_field: DF.Data | None
 		signatory_role: DF.Link | None
 	# end: auto-generated types
