@@ -72,7 +72,7 @@ def sign_pdf(
 	validate_print_permission(doc)
 
 	if doc.meta.is_submittable and doc.docstatus != 1:
-		frappe.throw(_("Document must be submitted to sign it"))
+		frappe.throw(_("Document must be submitted for signing"))
 
 	if not format:
 		frappe.throw("Print Format not provided")
