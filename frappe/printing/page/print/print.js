@@ -431,7 +431,8 @@ frappe.ui.form.PrintView = class {
 
 	toggle_sign_button() {
 		let print_format = this.get_print_format();
-		let can_sign = !!print_format.signatories?.length;
+		let requires_submission = this.frm.meta.is_submittable && this.frm.doc.docstatus != 1;
+		let can_sign = !!print_format.signatories?.length && !requires_submission;
 		this.sign_button?.toggle(can_sign);
 	}
 
@@ -865,7 +866,7 @@ frappe.ui.form.PrintView = class {
 				doctype: this.frm.doc.doctype,
 				name: this.frm.doc.name,
 				format: this.selected_format(),
-				no_letterhead: this.with_letterhead(),
+				no_letterhead: !this.with_letterhead() ? 1 : 0,
 				letterhead: this.get_letterhead(),
 				settings: this.additional_settings,
 				_lang: this.lang_code,
