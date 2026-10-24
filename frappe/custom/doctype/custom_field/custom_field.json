@@ -53,6 +53,7 @@
   "in_preview",
   "bold",
   "report_hide",
+  "include_in_bulk_edit",
   "search_index",
   "allow_in_quick_entry",
   "ignore_xss_filter",
@@ -393,6 +394,13 @@
    "fieldname": "allow_in_quick_entry",
    "fieldtype": "Check",
    "label": "Allow in Quick Entry"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:!in_list(['Section Break', 'Column Break', 'Tab Break'], doc.fieldtype)",
+   "fieldname": "include_in_bulk_edit",
+   "fieldtype": "Check",
+   "label": "Include In Bulk Edit"
   },
   {
    "default": "0",
