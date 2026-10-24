@@ -387,6 +387,9 @@ def validate_rename(
 		if not (ignore_permissions or frappe.permissions.has_permission(**kwargs)):
 			frappe.throw(_("You need write permission on {0} {1} to merge").format(doctype, new))
 
+		if not ignore_permissions:
+			validate_workflow_permission_on_merge(doctype, old)
+
 	if not (force or ignore_permissions) and not meta.allow_rename:
 		frappe.throw(_("{0} not allowed to be renamed").format(_(doctype)))
 
@@ -397,6 +400,48 @@ def validate_rename(
 		frappe.db.rollback(save_point=_SAVE_POINT)
 
 	return new
+
+
+def validate_workflow_permission_on_merge(doctype: str, old: str) -> None:
+	"""Block a merge when a doctype linking to `doctype` is under a workflow the user
+	cannot edit in every state.
+
+	A merge rewrites every link field with plain SQL (see `update_link_field_values`),
+	so the linked documents are never loaded and the workflow's `allow_edit` roles are
+	never consulted.
+	"""
+	from frappe.model.workflow import get_workflow
+
+	user_roles = set(frappe.get_roles())
+	blocked = []
+
+	for linked_doctype in frappe.get_all("Workflow", filters={"is_active": 1}, pluck="document_type"):
+		metas = [frappe.get_meta(linked_doctype)]
+
+		for df in metas[0].get_table_fields():
+			try:
+				metas.append(frappe.get_meta(df.options))
+			except frappe.DoesNotExistError:
+				continue
+
+		if not any(meta.get("fields", {"fieldtype": "Link", "options": doctype}) for meta in metas):
+			continue
+
+		workflow = get_workflow(linked_doctype)
+		allowed_states = {d.state for d in workflow.states if d.allow_edit in user_roles}
+
+		if any(d.state not in allowed_states for d in workflow.states):
+			blocked.append(linked_doctype)
+
+	if not blocked:
+		return
+
+	msg = _(
+		"You cannot merge {0} because it is linked to documents under a workflow that you are not allowed to edit in every state:"
+	).format(bold(old))
+	msg += "<br><br>" + "<br>".join(bold(_(linked_doctype)) for linked_doctype in blocked)
+
+	frappe.throw(msg, title=_("Not Permitted"), exc=frappe.PermissionError)
 
 
 def rename_doctype(doctype: str, old: str, new: str) -> None:
