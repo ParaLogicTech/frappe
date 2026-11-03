@@ -48,7 +48,10 @@ def current_site_info():
 		return cached_data
 
 	res = {}
-	request = requests.post(f"{get_base_url()}/api/method/press.saas.api.site.info", headers=get_headers())
+	try:
+		request = requests.post(f"{get_base_url()}/api/method/press.saas.api.site.info", headers=get_headers())
+	except requests.RequestException:
+		return None
 	if request.status_code == 200:
 		res = request.json().get("message")
 		if not res or not isinstance(res, dict):
