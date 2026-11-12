@@ -1296,8 +1296,12 @@ export default class Grid {
 				data.push([]);
 				data.push(["----- Insert After This Line -----"]);
 				$.each(frappe.get_meta(this.df.options).fields, (i, df) => {
-					// don't include the read-only field in the template
-					if (frappe.model.is_value_type(df.fieldtype) && !df.read_only) {
+					// don't include the read-only field in the template,
+					// unless it is explicitly opted in via "Include In Bulk Edit"
+					if (
+						frappe.model.is_value_type(df.fieldtype) &&
+						(!df.read_only || df.include_in_bulk_edit)
+					) {
 						data[3].push(df.label);
 						data[4].push(df.fieldname);
 						let description = (df.description || "") + " ";
