@@ -7,7 +7,6 @@ from frappe import _
 from frappe.utils import now_datetime
 from frappe.model.document import Document
 from frappe.core.doctype.sms_settings.sms_settings import process_and_send
-from six import text_type
 
 
 class SMSQueue(Document):
@@ -156,10 +155,10 @@ def handle_error(e, sms_queue, recipients_list, auto_commit, now):
 		if sms_sent_to_any_recipient:
 			frappe.db.sql("""
 				update `tabSMS Queue` set status='Partially Errored', error=%s where name=%s
-			""", (text_type(e), sms_queue.name), auto_commit=auto_commit)
+			""", (str(e), sms_queue.name), auto_commit=auto_commit)
 		else:
 			frappe.db.sql("""update `tabSMS Queue` set status='Error', error=%s
-				where name=%s""", (text_type(e), sms_queue.name), auto_commit=auto_commit)
+				where name=%s""", (str(e), sms_queue.name), auto_commit=auto_commit)
 
 	if sms_queue.communication:
 		frappe.get_doc('Communication', sms_queue.communication).set_delivery_status(commit=auto_commit)
