@@ -141,9 +141,6 @@ class Report(Document):
 
 			self.create_report_py()
 
-	def before_export(self, newdoc):
-		newdoc.pop('letter_head', None)
-
 	def create_report_py(self):
 		if self.report_type == "Script Report":
 			make_boilerplate("controller.py", self, {"name": self.name})
@@ -162,7 +159,7 @@ class Report(Document):
 
 	def execute_script_report(self, filters):
 		# save the timestamp to automatically set to prepared
-		threshold = 15
+		# threshold = 15
 		res = []
 
 		start_time = datetime.datetime.now()

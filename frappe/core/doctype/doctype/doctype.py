@@ -1767,12 +1767,12 @@ def validate_permissions(doctype, for_remove=False, alert=False):
 
 	def check_level_zero_is_set(d):
 		if cint(d.permlevel) > 0 and d.role not in (ALL_USER_ROLE, SYSTEM_USER_ROLE):
-			has_zero_perm = False
-			for p in permissions:
-				if p.role == d.role and (p.permlevel or 0) == 0 and p != d:
-					has_zero_perm = True
-					break
-
+			# has_zero_perm = False
+			# for p in permissions:
+			# 	if p.role == d.role and (p.permlevel or 0) == 0 and p != d:
+			# 		has_zero_perm = True
+			# 		break
+			#
 			# if not has_zero_perm:
 			# 	frappe.throw(
 			# 		_("{0}: Permission at level 0 must be set before higher levels are set").format(

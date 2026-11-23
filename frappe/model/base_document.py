@@ -128,14 +128,13 @@ class BaseDocument:
 		)
 	)
 
-	dont_update_if_missing = []
-
 	def __init__(self, d):
 		if d.get("doctype"):
 			self.doctype = d["doctype"]
 
 		self._table_fieldnames = {df.fieldname for df in self._get_table_fields()}
 		self.update(d)
+		self.dont_update_if_missing = []
 
 		if hasattr(self, "__setup__"):
 			self.__setup__()

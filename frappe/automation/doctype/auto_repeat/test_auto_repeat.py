@@ -184,7 +184,7 @@ class TestAutoRepeat(FrappeTestCase):
 		new_todo = frappe.db.get_value("ToDo", {"auto_repeat": doc.name, "name": ("!=", todo.name)}, "name")
 
 		email_queue = frappe.db.exists("Email Queue", dict(reference_doctype="ToDo", reference_name=new_todo))
-		self.assertTrue(email_queue)
+		self.assertTrue(email_queue, get_email_notification_debug_info(doc.name, new_todo))
 
 	def test_next_schedule_date(self):
 		current_date = getdate(today())
@@ -281,3 +281,24 @@ def create_submittable_doctype(doctype, submit_perms=1):
 
 		doc.allow_auto_repeat = 1
 		doc.save()
+
+
+def get_email_notification_debug_info(auto_repeat: str, new_todo: str | None) -> str:
+	# Auto Repeat logs notification errors to Error Log instead of raising, so include them on failure
+	status = frappe.db.get_value("Auto Repeat", auto_repeat, ["status", "disabled"], as_dict=True)
+	communications = frappe.get_all(
+		"Communication",
+		filters={"reference_doctype": "ToDo", "reference_name": new_todo},
+		fields=["name", "communication_medium", "recipients"],
+	)
+	error_logs = frappe.get_all(
+		"Error Log",
+		fields=["method", "error"],
+		order_by="creation desc",
+		limit=3,
+	)
+	errors = "\n\n".join(f"{d.method}\n{d.error}" for d in error_logs)
+	return (
+		f"\nNew ToDo: {new_todo}\nAuto Repeat: {status}\nCommunications: {communications}"
+		f"\nLatest Error Logs:\n{errors}"
+	)

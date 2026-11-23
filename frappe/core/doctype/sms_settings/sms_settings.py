@@ -7,6 +7,7 @@ from frappe.utils import nowdate, cint, cstr
 from frappe.model.document import Document
 from frappe.core.doctype.notification_count.notification_count import add_notification_count
 import json
+from datetime import datetime
 
 
 class SMSSettings(Document):
@@ -33,22 +34,22 @@ class SMSSettings(Document):
 
 @frappe.whitelist()
 def send_sms(
-	receiver_list,
-	message,
-	success_msg=True,
-	notification_type=None,
-	reference_doctype=None,
-	reference_name=None,
-	child_doctype=None,
-	child_name=None,
-	party_doctype=None,
-	party=None,
-	is_promotional=False,
-	queue=False,
-	queue_separately=False,
-	send_after=None,
-	automated=False,
-	priority=1,
+	receiver_list: str | list[str],
+	message: str,
+	success_msg: bool = True,
+	notification_type: str | None = None,
+	reference_doctype: str | None = None,
+	reference_name: str | None = None,
+	child_doctype: str | None = None,
+	child_name: str | None = None,
+	party_doctype: str | None = None,
+	party: str | None = None,
+	is_promotional: bool = False,
+	queue: bool = False,
+	queue_separately: bool = False,
+	send_after: str | datetime | None = None,
+	automated: bool = False,
+	priority: int = 1,
 ):
 	notification_type = cstr(notification_type)
 
@@ -170,31 +171,31 @@ def run_after_send_methods(args):
 			child_doctype=args.get("child_doctype"), child_name=args.get("child_name"))
 
 
-def send_via_gateway(args):
+def send_via_gateway(sms_args):
 	ss = frappe.get_cached_doc('SMS Settings', None)
 	headers = get_headers(ss)
 	use_json = headers.get("Content-Type") == "application/json"
 
 	request_params = {
-		ss.message_parameter: args.get('message')
+		ss.message_parameter: sms_args.get('message')
 	}
 
 	for d in ss.get("parameters"):
 		if d.header:
 			continue
-		if d.promotional and not args.get("is_promotional"):
+		if d.promotional and not sms_args.get("is_promotional"):
 			continue
 
 		request_params[d.parameter] = d.value
 
 	frappe.utils.call_hook_method("update_sms_request_params",
-		params=request_params, headers=headers, args=args)
+		params=request_params, headers=headers, args=sms_args)
 
 	success_list = []
 	fail_list = []
-	for d in args.get('receiver_list'):
+	for d in sms_args.get('receiver_list'):
 		request_params[ss.receiver_parameter] = d
-		response = send_request(ss.sms_gateway_url, request_params, headers, ss.use_post)
+		response = send_request(ss.sms_gateway_url, request_params, headers, use_post=ss.use_post, use_json=use_json)
 
 		if validate_response(response, ss):
 			success_list.append(d)
@@ -204,8 +205,8 @@ def send_via_gateway(args):
 	fail_message_list = ["{0} ({1})".format(d.get('number'), d.get('error') or 'Unknown Error') for d in fail_list]
 
 	if len(success_list) > 0:
-		create_sms_log(args, success_list)
-		if args.get('success_msg'):
+		create_sms_log(sms_args, success_list)
+		if sms_args.get('success_msg'):
 			frappe.msgprint(_("SMS sent to the following numbers:<br>{0}").format("<br>".join(success_list)))
 			if fail_message_list:
 				frappe.msgprint(_("SMS failed for the following numbers:<br>{0}").format("<br>".join(fail_message_list)))
@@ -351,7 +352,9 @@ def clean_phone_no(number):
 
 
 @frappe.whitelist()
-def get_contact_number(contact_name=None, ref_doctype=None, ref_name=None):
+def get_contact_number(
+	contact_name: str | None = None, ref_doctype: str | None = None, ref_name: str | None = None
+):
 	mobile_no = None
 	if contact_name:
 		mobile_no = frappe.db.get_value("Contact", contact_name, "mobile_no")

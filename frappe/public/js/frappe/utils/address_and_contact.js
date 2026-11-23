@@ -173,7 +173,7 @@ $.extend(frappe.contacts, {
 					options: "Contact",
 					reqd: 1,
 					default: frm.doc[contact_field],
-					get_query: () => erpnext.queries.contact_query(frm.doc),
+					get_query: () => frappe.contacts.contact_query(frm.doc),
 					onchange: () => {
 						var contact = dialog.get_value('contact');
 						if (contact) {

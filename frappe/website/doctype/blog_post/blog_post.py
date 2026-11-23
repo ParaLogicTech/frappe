@@ -282,7 +282,6 @@ def get_list_context(context=None):
 
 
 def get_blog_categories():
-	from pypika import Order
 	from pypika.terms import ExistsCriterion
 
 	post, category = frappe.qb.DocType("Blog Post"), frappe.qb.DocType("Blog Category")

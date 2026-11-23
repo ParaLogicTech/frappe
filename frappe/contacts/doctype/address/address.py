@@ -1,7 +1,7 @@
 # Copyright (c) 2015, Frappe Technologies and contributors
 # License: MIT. See LICENSE
 
-from typing import Optional
+from typing import Any
 
 from jinja2 import TemplateSyntaxError
 
@@ -238,7 +238,6 @@ def get_list_context(context=None):
 def get_address_list(doctype, txt, filters, limit_start, limit_page_length=20, fields=None, order_by=None):
 	from frappe.www.list import get_list
 
-	user = frappe.session.user
 	ignore_permissions = True
 
 	if not filters:
@@ -315,7 +314,9 @@ def get_company_address(company, shipping_address=False):
 
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
-def address_query(doctype, txt, searchfield, start, page_len, filters):
+def address_query(
+	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict[str, Any]
+):
 	from frappe.desk.reportview import get_match_cond, get_filters_cond
 
 	doctype = "Address"
@@ -328,7 +329,7 @@ def address_query(doctype, txt, searchfield, start, page_len, filters):
 			(meta.get_field(searchfield) or searchfield in frappe.db.DEFAULT_COLUMNS):
 		searchfields.append(searchfield)
 
-	fields = ["name"] + searchfields
+	fields = ["name", *searchfields]
 	fields = frappe.utils.unique(fields)
 	fields = ", ".join(["`tabAddress`.{0}".format(f) for f in fields])
 
