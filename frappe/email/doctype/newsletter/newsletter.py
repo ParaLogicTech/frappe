@@ -305,7 +305,7 @@ def confirmed_unsubscribe(email, group):
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=10, seconds=60 * 60)
-def subscribe(email, email_group=None):
+def subscribe(email: str, email_group: str | None = None):
 	"""API endpoint to subscribe an email to a particular email group. Triggers a confirmation email."""
 
 	if not email_group:

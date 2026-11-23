@@ -35,7 +35,13 @@ class SMSTemplate(Document):
 
 @frappe.whitelist()
 def get_sms_defaults(
-	dt, dn, notification_type=None, contact=None, mobile_no=None, party_doctype=None, party=None
+	dt: str,
+	dn: str,
+	notification_type: str | None = None,
+	contact: str | None = None,
+	mobile_no: str | None = None,
+	party_doctype: str | None = None,
+	party: str | None = None,
 ):
 	if not mobile_no and (contact or party_doctype or party):
 		mobile_no = get_contact_number(contact, party_doctype, party)

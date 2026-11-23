@@ -63,12 +63,12 @@ def sign_pdf(
 	doctype: str,
 	name: str,
 	signature_data: str | dict,
-	format=None,
-	doc=None,
-	no_letterhead=0,
-	language=None,
-	letterhead=None,
-	pdf_generator=None,
+	format: str | None = None,
+	doc: Document | None = None,
+	no_letterhead: int = 0,
+	language: str | None = None,
+	letterhead: str | None = None,
+	pdf_generator: str | None = None,
 ):
 	from bs4 import BeautifulSoup
 

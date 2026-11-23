@@ -347,7 +347,9 @@ def get_html_and_style(
 
 
 @frappe.whitelist()
-def get_rendered_raw_commands(doc: str, name: str | None = None, print_format: str | None = None, args=None):
+def get_rendered_raw_commands(
+	doc: str, name: str | None = None, print_format: str | None = None, args: str | dict | None = None
+):
 	"""Returns Rendered Raw Commands of print format, used to send directly to printer"""
 
 	if isinstance(args, str):
