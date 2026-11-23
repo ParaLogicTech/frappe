@@ -1,6 +1,9 @@
 name: Patch (MariaDB)
 
 on:
+  push:
+    branches:
+      - version-15
   pull_request:
   workflow_dispatch:
 
