@@ -194,6 +194,8 @@ def prepare_options(html, options):
 	)
 
 	if pdf_page_size == "Custom":
+		# wkhtmltopdf has no "Custom" page size, it only needs the width and height
+		options.pop("page-size", None)
 		options["page-height"] = options.get("page-height") or frappe.db.get_single_value(
 			"Print Settings", "pdf_page_height"
 		)
@@ -231,7 +233,7 @@ def read_options_from_html(html):
 
 	toggle_visible_pdf(soup)
 
-	# valid_styles = get_print_format_styles(soup)
+	valid_styles = get_print_format_styles(soup)
 
 	attrs = (
 		"margin-top",
@@ -245,15 +247,7 @@ def read_options_from_html(html):
 		"page-width",
 		"page-height",
 	)
-	for attr in attrs:
-		try:
-			pattern = re.compile(r"(\.print-format)([\S|\s][^}]*?)(" + str(attr) + r":)(.*?)(mm;)")
-			match = pattern.findall(html)
-			if match:
-				options[attr] = str(match[-1][3]).strip()
-		except Exception:
-			pass
-
+	options |= {style.name: style.value for style in valid_styles if style.name in attrs}
 	return str(soup), options
 
 
@@ -279,11 +273,18 @@ def get_print_format_styles(soup: BeautifulSoup) -> list[cssutils.css.Property]:
 		stylesheet += cstr(style_tag.string)
 
 	# Use css parser to tokenize the classes and their styles
-	parsed_sheet = cssutils.parseString(stylesheet)
+	parsed_sheet = cssutils.CSSParser(fetcher=lambda url: (None, "")).parseString(stylesheet)
+
+	# Rules inside CSS comments are read too, so a print format can pass options to wkhtmltopdf
+	# without the browser applying them. Each comment is parsed separately as it may contain prose.
+	parsed_rules = list(parsed_sheet)
+	for comment in re.findall(r"/\*(.*?)\*/", stylesheet, re.S):
+		if ".print-format" in comment:
+			parsed_rules.extend(cssutils.CSSParser(fetcher=lambda url: (None, "")).parseString(comment))
 
 	# Get all styles that are only for .print-format
 	valid_styles = []
-	for rule in parsed_sheet:
+	for rule in parsed_rules:
 		if not isinstance(rule, cssutils.css.CSSStyleRule):
 			continue
 

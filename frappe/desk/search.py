@@ -67,11 +67,11 @@ def search_widget(
 	start: int = 0,
 	page_length: int = 20,
 	filters: str | None | dict | list = None,
-	filter_fields=None,
+	filter_fields: str | None = None,
 	as_dict: bool = False,
 	reference_doctype: str | None = None,
 	ignore_user_permissions: bool = False,
-	format_values=True,
+	format_values: bool = True,
 ):
 	start = cint(start)
 	format_values = cint(format_values)
@@ -188,6 +188,9 @@ def search_widget(
 		elif frappe.db.db_type == "postgres":
 			# Since we are sorting by alias postgres needs to know number of column we are sorting
 			order_by = f"{len(formatted_fields)} desc nulls last, {order_by}"
+
+		# relevance_sorter puts an exact match first, but only within the fetched page
+		order_by = f"`tab{doctype}`.`name` = {_txt} desc, {order_by}"
 
 	ignore_permissions = doctype == "DocType" or (
 		cint(ignore_user_permissions)
