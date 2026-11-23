@@ -67,11 +67,11 @@ def search_widget(
 	start: int = 0,
 	page_length: int = 20,
 	filters: str | None | dict | list = None,
-	filter_fields=None,
+	filter_fields: str | None = None,
 	as_dict: bool = False,
 	reference_doctype: str | None = None,
 	ignore_user_permissions: bool = False,
-	format_values=True,
+	format_values: bool = True,
 ):
 	start = cint(start)
 	format_values = cint(format_values)
