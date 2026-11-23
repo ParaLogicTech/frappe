@@ -189,6 +189,9 @@ def search_widget(
 			# Since we are sorting by alias postgres needs to know number of column we are sorting
 			order_by = f"{len(formatted_fields)} desc nulls last, {order_by}"
 
+		# relevance_sorter puts an exact match first, but only within the fetched page
+		order_by = f"`tab{doctype}`.`name` = {_txt} desc, {order_by}"
+
 	ignore_permissions = doctype == "DocType" or (
 		cint(ignore_user_permissions)
 		and has_permission(

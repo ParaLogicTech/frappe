@@ -401,8 +401,8 @@ class TestPermissions(FrappeTestCase):
 		add_user_permission("Salutation", "Mr", "test3@example.com")
 		self.set_strict_user_permissions(0)
 
-		allowed_contact = frappe.get_doc("Contact", "_Test Contact For _Test Customer")
-		other_contact = frappe.get_doc("Contact", "_Test Contact For _Test Supplier")
+		allowed_contact = frappe.get_doc("Contact", {"first_name": "_Test Contact For _Test Customer"})
+		other_contact = frappe.get_doc("Contact", {"first_name": "_Test Contact For _Test Supplier"})
 
 		frappe.set_user("test3@example.com")
 		self.assertTrue(allowed_contact.has_permission("read"))
