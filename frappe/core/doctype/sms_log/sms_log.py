@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2022, Frappe Technologies and contributors
 # For license information, please see license.txt
 
@@ -9,5 +8,5 @@ from frappe.model.document import Document
 
 class SMSLog(Document):
 	def on_trash(self):
-		if frappe.session.user != 'Administrator':
-			frappe.throw(_('Only Administrator can delete SMS Log'))
+		if frappe.session.user != "Administrator":
+			frappe.throw(_("Only Administrator can delete SMS Log"))

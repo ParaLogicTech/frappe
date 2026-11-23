@@ -33,7 +33,10 @@ export default class GridRow {
 				) {
 					return;
 				}
-				if ((me.grid.allow_on_grid_editing() && me.grid.is_editable()) || me.grid.template) {
+				if (
+					(me.grid.allow_on_grid_editing() && me.grid.is_editable()) ||
+					me.grid.template
+				) {
 					// pass
 				} else {
 					me.toggle_view();
@@ -57,12 +60,14 @@ export default class GridRow {
 		if (this.parent_df.options) {
 			let doc_docfields = this.grid.docfields || [];
 			if (!doc_docfields.length && this.frm) {
-				doc_docfields = frappe.meta.get_docfields(this.parent_df.options, this.frm.docname) || [];
+				doc_docfields =
+					frappe.meta.get_docfields(this.parent_df.options, this.frm.docname) || [];
 			}
 
 			let row_docfields = [];
 			if (this.doc) {
-				row_docfields = frappe.meta.get_docfields(this.parent_df.options, this.doc.name) || [];
+				row_docfields =
+					frappe.meta.get_docfields(this.parent_df.options, this.doc.name) || [];
 			}
 
 			let docfields = [];
@@ -71,7 +76,9 @@ export default class GridRow {
 			} else {
 				row_docfields.forEach((row_df) => {
 					if (!row_df.__row_df_initialized) {
-						let doc_df = doc_docfields.find((field) => field.fieldname == row_df.fieldname);
+						let doc_df = doc_docfields.find(
+							(field) => field.fieldname == row_df.fieldname
+						);
 						if (doc_df) {
 							Object.assign(row_df, doc_df);
 						}
@@ -94,7 +101,9 @@ export default class GridRow {
 			} else {
 				row_docfields.forEach((row_df) => {
 					if (!row_df.__row_df_initialized) {
-						let grid_df = grid_docfields.find((field) => field.fieldname == row_df.fieldname);
+						let grid_df = grid_docfields.find(
+							(field) => field.fieldname == row_df.fieldname
+						);
 						if (grid_df) {
 							row_df = Object.assign({}, grid_df);
 						}
@@ -133,12 +142,12 @@ export default class GridRow {
 		if (this.doc) {
 			checked = !!this.doc.__checked;
 		} else if (!this.show_search) {
-			checked = !!this.grid.grid_rows?.length && this.grid.grid_rows.every(d => d.doc?.__checked);
+			checked =
+				!!this.grid.grid_rows?.length &&
+				this.grid.grid_rows.every((d) => d.doc?.__checked);
 		}
 
-		this.wrapper
-			.find(".grid-row-check")
-			.prop("checked", checked);
+		this.wrapper.find(".grid-row-check").prop("checked", checked);
 		this.grid.debounced_refresh_remove_rows_button();
 	}
 	remove() {
@@ -294,28 +303,29 @@ export default class GridRow {
 				`<div class="row-index sortable-handle col">
 					<span>${idx_txt}</span>
 				</div>`
-			).appendTo(this.row).on("click", function (e) {
-				if (!$(e.target).hasClass("grid-row-check")) {
-					me.toggle_view();
-				}
-			});
+			)
+				.appendTo(this.row)
+				.on("click", function (e) {
+					if (!$(e.target).hasClass("grid-row-check")) {
+						me.toggle_view();
+					}
+				});
 		}
 
-		if (typeof this.grid.template === 'function') {
-			this.grid.template(
-				this.doc,
-				this
-			);
+		if (typeof this.grid.template === "function") {
+			this.grid.template(this.doc, this);
 		} else {
 			if (this.row_display) {
 				this.row_display.remove();
 			}
 
-			this.row_display = $(frappe.render(this.grid.template, {
-				doc: this.doc ? frappe.get_format_helper(this.doc) : null,
-				frm: this.frm,
-				row: this,
-			})).appendTo(this.row);
+			this.row_display = $(
+				frappe.render(this.grid.template, {
+					doc: this.doc ? frappe.get_format_helper(this.doc) : null,
+					frm: this.frm,
+					row: this,
+				})
+			).appendTo(this.row);
 		}
 
 		this.refresh_check();
@@ -1137,7 +1147,7 @@ export default class GridRow {
 					var out = me.toggle_editable_row();
 				}
 				var col = this;
-				let first_input_field = $(col).find('input:first, textarea:first, select:first');
+				let first_input_field = $(col).find("input:first, textarea:first, select:first");
 				let input_in_focus = false;
 
 				$(col)
@@ -1214,7 +1224,11 @@ export default class GridRow {
 			this.row.toggleClass("editable-row", true);
 
 			if (this.frm) {
-				this.frm.script_manager.trigger(this.doc.parentfield + "_before_row_focused", this.doc.doctype, this.doc.name);
+				this.frm.script_manager.trigger(
+					this.doc.parentfield + "_before_row_focused",
+					this.doc.doctype,
+					this.doc.name
+				);
 			}
 
 			// setup controls
@@ -1226,14 +1240,22 @@ export default class GridRow {
 
 			frappe.ui.form.editable_row = this;
 			if (this.frm) {
-				this.frm.script_manager.trigger(this.doc.parentfield + "_row_focused", this.doc.doctype, this.doc.name);
+				this.frm.script_manager.trigger(
+					this.doc.parentfield + "_row_focused",
+					this.doc.doctype,
+					this.doc.name
+				);
 			}
 			return false;
 		} else {
 			this.row.toggleClass("editable-row", false);
 
 			if (this.frm && this.doc) {
-				this.frm.script_manager.trigger(this.doc.parentfield + "_before_row_blurred", this.doc.doctype, this.doc.name);
+				this.frm.script_manager.trigger(
+					this.doc.parentfield + "_before_row_blurred",
+					this.doc.doctype,
+					this.doc.name
+				);
 			}
 
 			this.columns_list.forEach((column, index) => {
@@ -1255,7 +1277,11 @@ export default class GridRow {
 			});
 			frappe.ui.form.editable_row = null;
 			if (this.frm && this.doc) {
-				this.frm.script_manager.trigger(this.doc.parentfield + "_row_blurred", this.doc.doctype, this.doc.name);
+				this.frm.script_manager.trigger(
+					this.doc.parentfield + "_row_blurred",
+					this.doc.doctype,
+					this.doc.name
+				);
 			}
 		}
 	}
@@ -1352,16 +1378,21 @@ export default class GridRow {
 				// TAB
 				if (e.which === TAB) {
 					if (!e.shiftKey) {
-						let last_column = me.wrapper.find('input,textarea,select')
-							.filter(":visible:enabled:last").get(0);
-						let is_last_column = $(this).attr("data-last-input") || last_column === this;
+						let last_column = me.wrapper
+							.find("input,textarea,select")
+							.filter(":visible:enabled:last")
+							.get(0);
+						let is_last_column =
+							$(this).attr("data-last-input") || last_column === this;
 
 						if (is_last_column) {
 							// last row
 							if (me.doc.idx === values.length) {
 								setTimeout(function () {
 									me.grid.add_new_row(null, null, true);
-									me.grid.grid_rows[me.grid.grid_rows.length - 1].toggle_editable_row();
+									me.grid.grid_rows[
+										me.grid.grid_rows.length - 1
+									].toggle_editable_row();
 									me.grid.set_focus_on_row();
 								}, 100);
 							} else {
@@ -1375,16 +1406,18 @@ export default class GridRow {
 							}
 						}
 					} else {
-						let first_column = me.wrapper.find('input,textarea,select')
-							.filter(":not(.grid-row-check):visible:enabled:first").get(0);
+						let first_column = me.wrapper
+							.find("input,textarea,select")
+							.filter(":not(.grid-row-check):visible:enabled:first")
+							.get(0);
 						let is_first_column = first_column === this;
 						if (is_first_column && me.doc.idx > 1) {
 							// first column of non first row
 							if (e.target) {
 								e.target.blur();
 							}
-							me.grid.grid_rows[me.doc.idx-2].toggle_editable_row();
-							me.grid.set_focus_on_row(me.doc.idx-2, true);
+							me.grid.grid_rows[me.doc.idx - 2].toggle_editable_row();
+							me.grid.set_focus_on_row(me.doc.idx - 2, true);
 							return false;
 						}
 					}
@@ -1526,7 +1559,11 @@ export default class GridRow {
 		}
 
 		if (this.frm) {
-			this.frm.script_manager.trigger(this.doc.parentfield + "_on_form_rendered", this.doc.doctype, this.doc.name);
+			this.frm.script_manager.trigger(
+				this.doc.parentfield + "_on_form_rendered",
+				this.doc.doctype,
+				this.doc.name
+			);
 			this.frm.script_manager.trigger("form_render", this.doc.doctype, this.doc.name);
 		}
 	}
@@ -1642,7 +1679,7 @@ export default class GridRow {
 						me.refresh_field(df.fieldname);
 					}
 				}
-			}
+			};
 
 			df.onchange_modified = true;
 		}

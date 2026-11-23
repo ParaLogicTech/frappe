@@ -1,10 +1,12 @@
 import ast
 import copy
+import datetime
 import inspect
 import io
 import json
 import mimetypes
 import types
+from collections import OrderedDict
 from contextlib import contextmanager
 from functools import lru_cache
 from itertools import chain
@@ -35,8 +37,6 @@ from frappe.utils.inplacevar import protected_inplacevar
 from frappe.utils.response import json_handler
 from frappe.website.utils import get_next_link, get_toc
 from frappe.www.printview import get_visible_columns
-from collections import OrderedDict
-import datetime
 
 
 class ServerScriptNotEnabled(frappe.PermissionError):

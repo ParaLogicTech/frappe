@@ -442,7 +442,9 @@ export default class ChartWidget extends Widget {
 	create_filter_group_and_add_filters() {
 		this.filter_group = new frappe.ui.FilterGroup({
 			doctype: this.chart_doc.parent_document_type || this.chart_doc.document_type,
-			child_doctype: this.chart_doc.parent_document_type ? this.chart_doc.document_type : null,
+			child_doctype: this.chart_doc.parent_document_type
+				? this.chart_doc.document_type
+				: null,
 			parent_doctype: this.chart_doc.parent_document_type,
 			filter_button: this.filter_button,
 			on_change: () => {
@@ -470,8 +472,8 @@ export default class ChartWidget extends Widget {
 			() => {
 				return frappe.model.with_doctype(this.chart_doc.document_type, () => {
 					callback && callback();
-				})
-			}
+				});
+			},
 		]);
 	}
 
@@ -605,9 +607,13 @@ export default class ChartWidget extends Widget {
 			let doctype_meta = frappe.get_meta(this.chart_doc.document_type);
 			let field;
 			if (this.chart_doc.value_based_on) {
-				field = doctype_meta.fields.find((x) => x.fieldname == this.chart_doc.value_based_on);
+				field = doctype_meta.fields.find(
+					(x) => x.fieldname == this.chart_doc.value_based_on
+				);
 			} else if (this.chart_doc.aggregate_function_based_on) {
-				field = doctype_meta.fields.find((x) => x.fieldname == this.chart_doc.aggregate_function_based_on);
+				field = doctype_meta.fields.find(
+					(x) => x.fieldname == this.chart_doc.aggregate_function_based_on
+				);
 			}
 
 			if (field) {

@@ -245,8 +245,8 @@ frappe.views.BaseList = class BaseList {
 					this.refresh();
 				},
 				{
-					"icon": "es-line-reload",
-				},
+					icon: "es-line-reload",
+				}
 			);
 		}
 	}
@@ -718,19 +718,13 @@ class FilterArea {
 			// don't set like filter on link fields (gets reset)
 			if (
 				fields_dict[fieldname] &&
-				(
-					condition === "=" ||
+				(condition === "=" ||
 					(condition === "like" && fields_dict[fieldname]?.df?.fieldtype != "Link") ||
-					(
-						["descendants of (inclusive)", "subtree of"].includes(condition) &&
-						fields_dict[fieldname]?.df?.fieldtype == "Link"
-					) ||
-					(
-						condition === "in"
-						&& fieldname == "docstatus"
-						&& fields_dict[fieldname]?.df?.fieldtype == "Select"
-					)
-				)
+					(["descendants of (inclusive)", "subtree of"].includes(condition) &&
+						fields_dict[fieldname]?.df?.fieldtype == "Link") ||
+					(condition === "in" &&
+						fieldname == "docstatus" &&
+						fields_dict[fieldname]?.df?.fieldtype == "Select"))
 			) {
 				// standard filter
 				out.promise = out.promise.then(() => fields_dict[fieldname].set_value(value));
@@ -813,7 +807,7 @@ class FilterArea {
 		const child_tables = this.list_view.meta.fields.filter((df) => {
 			return ["Table", "Table MultiSelect"].includes(df.fieldtype);
 		});
-		child_tables.forEach(df => {
+		child_tables.forEach((df) => {
 			const child_meta = frappe.get_meta(df.options);
 			if (child_meta) {
 				doctype_fields.push(...child_meta.fields.slice(0));
@@ -821,30 +815,32 @@ class FilterArea {
 		});
 
 		doctype_fields = doctype_fields.filter((df) => {
-			return df.in_standard_filter && frappe.model.is_value_type(df.fieldtype)
+			return df.in_standard_filter && frappe.model.is_value_type(df.fieldtype);
 		});
 
-		let submittable_doctype_fields = [{
-			fieldtype: 'Select',
-			label: 'Document Status',
-			doctype: this.list_view.doctype,
-			fieldname: 'docstatus',
-			filter_condition: 'in',
-			options: [
-				'',
-				{label: `${__('Draft Only')}`, value: [0]},
-				{label: `${__('Submitted Only')}`, value: [1]},
-				{label: `${__('Cancelled Only')}`, value: [2]},
-				{label: `${__('Hide Cancelled')}`, value: [0, 1]},
-			]
-		}];
+		let submittable_doctype_fields = [
+			{
+				fieldtype: "Select",
+				label: "Document Status",
+				doctype: this.list_view.doctype,
+				fieldname: "docstatus",
+				filter_condition: "in",
+				options: [
+					"",
+					{ label: `${__("Draft Only")}`, value: [0] },
+					{ label: `${__("Submitted Only")}`, value: [1] },
+					{ label: `${__("Cancelled Only")}`, value: [2] },
+					{ label: `${__("Hide Cancelled")}`, value: [0, 1] },
+				],
+			},
+		];
 
 		fields = fields.concat(doctype_fields);
 		if (this.list_view.meta.is_submittable) {
 			fields = fields.concat(submittable_doctype_fields);
 		}
 
-		fields = fields.map(df => {
+		fields = fields.map((df) => {
 			let options = df.options;
 			let condition = df.filter_condition || "=";
 			let fieldtype = df.fieldtype;
@@ -878,18 +874,23 @@ class FilterArea {
 			if (df.fieldtype == "Check" && !df.force_checkbox_filter) {
 				fieldtype = "Select";
 				options = [
-					'',
-					{label: `${__('Yes')}: ${__(df.label)}`, value: 1},
-					{label: `${__('No')}: ${__(df.label)}`, value: 0}
+					"",
+					{ label: `${__("Yes")}: ${__(df.label)}`, value: 1 },
+					{ label: `${__("No")}: ${__(df.label)}`, value: 0 },
 				];
 			}
 
-			if (df.fieldtype === "Link" && df.options && frappe.boot.treeviews.includes(df.options)) {
-				condition = 'subtree of';
+			if (
+				df.fieldtype === "Link" &&
+				df.options &&
+				frappe.boot.treeviews.includes(df.options)
+			) {
+				condition = "subtree of";
 			}
 
-			let default_value = (fieldtype === 'Link') ? frappe.defaults.get_user_default(options, true) : null;
-			if (['__default', '__global'].includes(default_value)) {
+			let default_value =
+				fieldtype === "Link" ? frappe.defaults.get_user_default(options, true) : null;
+			if (["__default", "__global"].includes(default_value)) {
 				default_value = null;
 			}
 
@@ -902,7 +903,7 @@ class FilterArea {
 				condition: condition,
 				default: default_value,
 				onchange: () => this.refresh_list_view(),
-				ignore_link_validation: fieldtype === 'Dynamic Link',
+				ignore_link_validation: fieldtype === "Dynamic Link",
 				is_filter: 1,
 			};
 		});

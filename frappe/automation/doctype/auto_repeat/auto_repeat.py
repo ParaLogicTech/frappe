@@ -444,10 +444,12 @@ class AutoRepeat(Document):
 	def disable_auto_repeat(self):
 		self.disabled = 1
 		self.update_status()
-		self.db_set({
-			"disabled": self.disabled,
-			"status": self.status,
-		})
+		self.db_set(
+			{
+				"disabled": self.disabled,
+				"status": self.status,
+			}
+		)
 
 	def notify_error_to_user(self, error_log):
 		recipients = list(get_system_managers())

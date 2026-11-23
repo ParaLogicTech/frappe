@@ -1248,7 +1248,9 @@ def clear_document_cache(doctype: str, name: str | None = None) -> None:
 		delattr(local, "website_settings")
 
 
-def get_cached_value(doctype: str, name: str, fieldname: str | list | tuple = "name", as_dict: bool | int = False) -> Any:
+def get_cached_value(
+	doctype: str, name: str, fieldname: str | list | tuple = "name", as_dict: bool | int = False
+) -> Any:
 	try:
 		doc = get_cached_doc(doctype, name)
 	except DoesNotExistError:
@@ -2301,11 +2303,15 @@ def catch_realtime_msgprint(exc=ValidationError):
 			try:
 				return fn(*args, **kwargs)
 			except exc:
-				message = message_log[-1] if message_log else {
-					"message": _("There was an error processing your action in background"),
-					"title": _("Background Task Error"),
-					"indicator": "red",
-				}
+				message = (
+					message_log[-1]
+					if message_log
+					else {
+						"message": _("There was an error processing your action in background"),
+						"title": _("Background Task Error"),
+						"indicator": "red",
+					}
+				)
 				publish_realtime("msgprint", message, user=session.user)
 				raise
 
@@ -2359,6 +2365,7 @@ def logger(module=None, with_more_info=False, allow_site=True, filter=None, max_
 
 def get_desk_link(doctype, name, show_title_with_name=False, open_in_new_tab=False):
 	from frappe.utils import get_url_to_form
+
 	url = get_url_to_form(doctype, name)
 
 	title = name

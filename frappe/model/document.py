@@ -956,12 +956,17 @@ class Document(BaseDocument):
 		# TODO check only allowed values are updated
 
 	def apply_auto_value_setters(self):
-		if self.doctype in ('Auto Value Setter', 'DocType'):
+		if self.doctype in ("Auto Value Setter", "DocType"):
 			return
-		if not self.meta.get("allow_auto_value_setter") or frappe.flags.ignore_auto_value_setters or self.flags.ignore_auto_value_setters:
+		if (
+			not self.meta.get("allow_auto_value_setter")
+			or frappe.flags.ignore_auto_value_setters
+			or self.flags.ignore_auto_value_setters
+		):
 			return
 
 		from frappe.core.doctype.auto_value_setter.auto_value_setter import apply_auto_value_setters
+
 		apply_auto_value_setters(self)
 		for d in self.get_all_children():
 			apply_auto_value_setters(d, self)
@@ -994,7 +999,7 @@ class Document(BaseDocument):
 			return
 
 		if self._action != "submit":
-			self.run_method('before_validate_links')
+			self.run_method("before_validate_links")
 
 		invalid_links, cancelled_links = self.get_invalid_links()
 
@@ -1373,7 +1378,9 @@ class Document(BaseDocument):
 					self._return_value = {}
 				self._return_value.update(new_return_value)
 			else:
-				self._return_value = new_return_value if new_return_value is not None else self.get("_return_value")
+				self._return_value = (
+					new_return_value if new_return_value is not None else self.get("_return_value")
+				)
 
 		def compose(fn, *hooks):
 			def runner(self, method, *args, **kwargs):

@@ -146,9 +146,13 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 	setup_results() {
 		this.$parent = $(this.dialog.body);
 		this.$wrapper = this.dialog.fields_dict.results_area.$wrapper
-			.append(`<div class="results mb-3"
-			style="border: 1px solid #d1d8dd; border-radius: 3px; height: 50vh; overflow: auto;"></div>`)
-			.append(`<div class="grid-selection-toast" style="position: absolute; bottom: -38px; right: 0;"><span class="grid-selection-toast__message"></span></div>`);
+			.append(
+				`<div class="results mb-3"
+			style="border: 1px solid #d1d8dd; border-radius: 3px; height: 50vh; overflow: auto;"></div>`
+			)
+			.append(
+				`<div class="grid-selection-toast" style="position: absolute; bottom: -38px; right: 0;"><span class="grid-selection-toast__message"></span></div>`
+			);
 
 		this.$results = this.$wrapper.find(".results");
 		this.$results.append(this.make_list_row());
@@ -284,7 +288,7 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 				df.onchange = (e) => {
 					field_on_change_function && field_on_change_function.apply(this, [e]);
 					this.on_filter_change();
-				}
+				};
 			}
 		}
 
@@ -370,7 +374,7 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 			this.update_selection_banner();
 		});
 
-		this.$results.on("change", ".list-item-container .list-row-check", function() {
+		this.$results.on("change", ".list-item-container .list-row-check", function () {
 			me.on_check(this);
 		});
 
@@ -536,20 +540,23 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 				label = me.name_label;
 			}
 
-			let formatted_value = df && !head && result[column] ?
-				frappe.format(result[column], df, {only_value: 1}, result)
-				: result[column] || "";
+			let formatted_value =
+				df && !head && result[column]
+					? frappe.format(result[column], df, { only_value: 1 }, result)
+					: result[column] || "";
 
-			contents += `<div class="list-item__content ellipsis ${column != 'name' ? 'list-item__content--flex-2' : ''}">
+			contents += `<div class="list-item__content ellipsis ${
+				column != "name" ? "list-item__content--flex-2" : ""
+			}">
 				${
 					head
-						? `<span class="ellipsis text-muted" title="${__(
+						? `<span class="ellipsis text-muted" title="${__(label)}">${__(
 								label
-						  )}">${__(label)}</span>`
+						  )}</span>`
 						: column !== "name"
-						? `<span class="ellipsis result-row" title="${__(
+						? `<span class="ellipsis result-row" title="${__(formatted_value)}">${__(
 								formatted_value
-						  )}">${__(formatted_value)}</span>`
+						  )}</span>`
 						: `<a href="${
 								"/app/" + frappe.router.slug(me.doctype) + "/" + result[column] ||
 								""
@@ -635,13 +642,13 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 			for (let df of this.setters) {
 				let value = me.dialog.fields_dict[df.fieldname].get_value();
 				if (df.fieldtype == "DateRange" && value) {
-					filters[df.fieldname] = ['between', value];
+					filters[df.fieldname] = ["between", value];
 				} else if (
-					df.fieldtype == "Link"
-					&& frappe.boot.treeviews.includes(df.options)
-					&& value
+					df.fieldtype == "Link" &&
+					frappe.boot.treeviews.includes(df.options) &&
+					value
 				) {
-					filters[df.fieldname] = ['subtree of', value];
+					filters[df.fieldname] = ["subtree of", value];
 				} else if (df.fieldtype == "Data" && value) {
 					filters[df.fieldname] = ["like", "%" + value + "%"];
 				} else {
@@ -658,9 +665,9 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 				if (setter_field.df.fieldtype == "Data" && value) {
 					filters[setter] = ["like", "%" + value + "%"];
 				} else if (
-					setter_field.df.fieldtype == "Link"
-					&& frappe.boot.treeviews.includes(setter_field.df.options)
-					&& value
+					setter_field.df.fieldtype == "Link" &&
+					frappe.boot.treeviews.includes(setter_field.df.options) &&
+					value
 				) {
 					filters[setter] = ["subtree of", value];
 				} else {

@@ -47,6 +47,7 @@ def get_contact_list(txt, page_length=20, extra_filters: str | None = None) -> l
 
 def get_system_managers():
 	from frappe.utils.user import get_system_managers
+
 	return get_system_managers()
 
 

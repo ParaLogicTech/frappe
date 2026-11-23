@@ -347,7 +347,9 @@ frappe.views.TreeView = class TreeView {
 			fields: me.fields,
 		});
 
-		let parent_field = me.opts.meta.nsm_parent_field || "parent_" + me.doctype.toLowerCase().replace(/ /g, "_");
+		let parent_field =
+			me.opts.meta.nsm_parent_field ||
+			"parent_" + me.doctype.toLowerCase().replace(/ /g, "_");
 		let parent = node?.data?.value || me.args["parent"];
 
 		let args = $.extend({}, me.args);
@@ -359,7 +361,7 @@ frappe.views.TreeView = class TreeView {
 		if (!add_child_args) {
 			add_child_args = {};
 		}
-		args = $.extend(add_child_args, args)
+		args = $.extend(add_child_args, args);
 		d.set_values(args);
 
 		// create

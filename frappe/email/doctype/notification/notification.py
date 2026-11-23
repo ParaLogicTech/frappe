@@ -7,22 +7,28 @@ from collections import namedtuple
 
 import frappe
 from frappe import _
+from frappe.core.doctype.notification_count.notification_count import (
+	get_notification_last_scheduled,
+	set_notification_last_scheduled,
+)
 from frappe.core.doctype.role.role import get_info_based_on_role, get_user_info
-from frappe.core.doctype.sms_settings.sms_settings import send_sms, clean_receiver_nos
+from frappe.core.doctype.sms_settings.sms_settings import clean_receiver_nos, send_sms
 from frappe.desk.doctype.notification_log.notification_log import enqueue_create_notification
 from frappe.integrations.doctype.slack_webhook_url.slack_webhook_url import send_slack_message
+from frappe.model.base_document import get_controller
 from frappe.model.document import Document
 from frappe.modules.utils import export_module_json, get_doc_module
-from frappe.utils import add_to_date, cast, nowdate, validate_email_address, cstr, cint
+from frappe.utils import add_to_date, cast, cint, cstr, nowdate, validate_email_address
 from frappe.utils.jinja import validate_template
 from frappe.utils.safe_exec import get_safe_globals
-from frappe.core.doctype.notification_count.notification_count import (
-	get_notification_last_scheduled, set_notification_last_scheduled
-)
-from frappe.model.base_document import get_controller
 
 FORMATS = {"HTML": ".html", "Markdown": ".md", "Plain Text": ".txt"}
-FORBIDDEN_DOCUMENT_TYPES = frozenset(("Email Queue", "SMS Queue",))
+FORBIDDEN_DOCUMENT_TYPES = frozenset(
+	(
+		"Email Queue",
+		"SMS Queue",
+	)
+)
 DATE_BASED_EVENTS = frozenset(("Days Before", "Days After"))
 
 
@@ -45,7 +51,18 @@ class Notification(Document):
 		document_type: DF.Link
 		email_template: DF.Link | None
 		enabled: DF.Check
-		event: DF.Literal["", "New", "Save", "Submit", "Cancel", "Days After", "Days Before", "Value Change", "Method", "Custom"]
+		event: DF.Literal[
+			"",
+			"New",
+			"Save",
+			"Submit",
+			"Cancel",
+			"Days After",
+			"Days Before",
+			"Value Change",
+			"Method",
+			"Custom",
+		]
 		from_attach_field: DF.Literal[None]
 		is_standard: DF.Check
 		message: DF.Code | None
@@ -525,7 +542,7 @@ def get_context(context):
 
 		hooked_attachment = doc.run_method("get_notification_attachment", self.get_notification_type())
 		if hooked_attachment is not None:
-			return hooked_attachment		
+			return hooked_attachment
 
 		attachments = []
 
@@ -567,7 +584,8 @@ def get_context(context):
 				"name": doc.name,
 				"print_format": self.print_format,
 				"print_letterhead": print_settings.with_letterhead,
-				"lang": doc.get("language") or frappe.db.get_value("Print Format", self.print_format, "default_print_language")
+				"lang": doc.get("language")
+				or frappe.db.get_value("Print Format", self.print_format, "default_print_language")
 				if self.print_format
 				else "en",
 			}
@@ -727,8 +745,13 @@ def get_doc_for_notification_triggers(reference_doctype, reference_name):
 
 def run_validate_notification(doc, notification_type=None, child_doctype=None, child_name=None, throw=True):
 	notification_type = cstr(notification_type)
-	validation = doc.run_method("validate_notification",
-		notification_type=notification_type, child_doctype=child_doctype, child_name=child_name, throw=throw)
+	validation = doc.run_method(
+		"validate_notification",
+		notification_type=notification_type,
+		child_doctype=child_doctype,
+		child_name=child_name,
+		throw=throw,
+	)
 
 	if validation is None:
 		return True
@@ -742,13 +765,16 @@ def has_notification(reference_doctype, notification_type=None, trigger_method=N
 
 	notification_type = cstr(notification_type)
 
-	template = frappe.db.sql_list("""
+	template = frappe.db.sql_list(
+		"""
 		select name
 		from `tabNotification`
 		where document_type = %s and ifnull(notification_type, '') = %s
 			and enabled = 1
 		limit 1
-	""", [reference_doctype, notification_type])
+	""",
+		[reference_doctype, notification_type],
+	)
 
 	return len(template) > 0
 

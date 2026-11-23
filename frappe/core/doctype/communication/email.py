@@ -173,10 +173,13 @@ def _make(
 	)
 
 	if timeline_doctype and timeline_name:
-		comm.append("timeline_links", {
-			"link_doctype": timeline_doctype,
-			"link_name": timeline_name,
-		})
+		comm.append(
+			"timeline_links",
+			{
+				"link_doctype": timeline_doctype,
+				"link_name": timeline_name,
+			},
+		)
 
 	comm.flags.skip_add_signature = not add_signature
 	comm.insert(ignore_permissions=True)

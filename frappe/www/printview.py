@@ -368,7 +368,9 @@ def get_rendered_raw_commands(doc: str, name: str | None = None, print_format: s
 		)
 
 	return {
-		"raw_commands": get_rendered_template(doc=document, print_format=print_format, meta=document.meta, args=args)
+		"raw_commands": get_rendered_template(
+			doc=document, print_format=print_format, meta=document.meta, args=args
+		)
 	}
 
 
@@ -617,9 +619,9 @@ def get_print_style(
 		css += "\n\n" + print_format.css
 
 	hooks = frappe.get_hooks()
-	if hooks.get('print_include_css'):
-		for hook_css_file_path in hooks['print_include_css']:
-			css += '\n' + frappe.get_template(hook_css_file_path).render(context)
+	if hooks.get("print_include_css"):
+		for hook_css_file_path in hooks["print_include_css"]:
+			css += "\n" + frappe.get_template(hook_css_file_path).render(context)
 
 	return css
 

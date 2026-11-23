@@ -562,11 +562,13 @@ class Meta(Document):
 
 		permissions = frappe.get_hooks("additional_doctype_permissions", {}).get(self.name, [])
 		for d in permissions:
-			d.update({
-				"doctype": "Custom DocPerm",
-				"name": None,
-				"parent": self.name,
-			})
+			d.update(
+				{
+					"doctype": "Custom DocPerm",
+					"name": None,
+					"parent": self.name,
+				}
+			)
 			self.permissions.append(frappe.get_doc(d))
 
 	def get_fieldnames_with_value(self, with_field_meta=False, with_virtual_fields=False):

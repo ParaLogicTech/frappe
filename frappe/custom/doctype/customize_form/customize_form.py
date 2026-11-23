@@ -276,7 +276,9 @@ class CustomizeForm(Document):
 			meta_df = meta.get("fields", {"fieldname": df.fieldname})
 			if not meta_df:
 				continue
-			if meta_df[0].get("is_custom_field") and (not meta_df[0].get("is_system_generated") or frappe.conf.get("developer_mode")):
+			if meta_df[0].get("is_custom_field") and (
+				not meta_df[0].get("is_system_generated") or frappe.conf.get("developer_mode")
+			):
 				continue
 
 			self.set_property_setters_for_docfield(meta, df, meta_df)
@@ -289,7 +291,9 @@ class CustomizeForm(Document):
 			return
 
 		new_order = [df.fieldname for df in self.fields]
-		new_order_without_custom_fields = [df.fieldname for df in self.fields if not getattr(df, "is_custom_field", False)]
+		new_order_without_custom_fields = [
+			df.fieldname for df in self.fields if not getattr(df, "is_custom_field", False)
+		]
 
 		default_order_without_custom_fields = [
 			fieldname for fieldname, df in meta._fields.items() if not getattr(df, "is_custom_field", False)
@@ -470,7 +474,9 @@ class CustomizeForm(Document):
 
 	def update_custom_fields(self):
 		for i, df in enumerate(self.get("fields")):
-			if df.get("is_custom_field") and (frappe.conf.get("developer_mode") or not df.get("is_system_generated")):
+			if df.get("is_custom_field") and (
+				frappe.conf.get("developer_mode") or not df.get("is_system_generated")
+			):
 				if not frappe.db.exists("Custom Field", {"dt": self.doc_type, "fieldname": df.fieldname}):
 					self.add_custom_field(df, i)
 					self.flags.update_db = True

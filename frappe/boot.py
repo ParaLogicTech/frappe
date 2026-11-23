@@ -99,7 +99,7 @@ def get_bootinfo():
 		bootinfo.lang = str(bootinfo.lang)
 	bootinfo.versions = {k: v["version"] for k, v in get_versions().items()}
 
-	bootinfo.error_report_email = frappe.conf.error_report_email or 'info@paralogic.io'
+	bootinfo.error_report_email = frappe.conf.error_report_email or "info@paralogic.io"
 	bootinfo.calendars = sorted(frappe.get_hooks("calendars"))
 	bootinfo.treeviews = frappe.get_hooks("treeviews") or []
 	bootinfo.lang_dict = get_lang_dict()
@@ -170,9 +170,7 @@ def get_letter_heads():
 		except Exception:
 			footer = letter_head.footer
 
-		letter_heads.setdefault(
-			letter_head.name, {"header": content, "footer": footer}
-		)
+		letter_heads.setdefault(letter_head.name, {"header": content, "footer": footer})
 
 	return letter_heads
 
@@ -445,7 +443,10 @@ def get_notification_settings():
 	try:
 		return frappe.get_cached_doc("Notification Settings", frappe.session.user)
 	except frappe.DoesNotExistError:
-		from frappe.desk.doctype.notification_settings.notification_settings import create_notification_settings
+		from frappe.desk.doctype.notification_settings.notification_settings import (
+			create_notification_settings,
+		)
+
 		return create_notification_settings(frappe.session.user)
 
 

@@ -667,7 +667,9 @@ $.extend(frappe.model, {
 		var doc = locals[doctype] && locals[doctype][name];
 		if (!doc) return;
 
-		var parent = null, parenttype = null, parentfield = null;
+		var parent = null,
+			parenttype = null,
+			parentfield = null;
 		if (doc.parenttype) {
 			parent = doc.parent;
 			parenttype = doc.parenttype;
@@ -782,7 +784,7 @@ $.extend(frappe.model, {
 		d.show();
 	},
 
-	round_floats_in: function(doc, fieldnames, excluding) {
+	round_floats_in: function (doc, fieldnames, excluding) {
 		if (!doc) {
 			return;
 		}

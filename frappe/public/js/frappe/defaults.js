@@ -3,7 +3,9 @@
 
 frappe.defaults = {
 	get_user_default: function (key, without_global_defaults) {
-		let defaults = without_global_defaults ? frappe.boot.user.defaults_user_only : frappe.boot.user.defaults;
+		let defaults = without_global_defaults
+			? frappe.boot.user.defaults_user_only
+			: frappe.boot.user.defaults;
 		let d = defaults[key];
 		if (!d && frappe.defaults.is_a_user_permission_key(key)) {
 			d = defaults[frappe.model.scrub(key)];
@@ -41,7 +43,9 @@ frappe.defaults = {
 	},
 
 	get_user_defaults: function (key, without_global_defaults) {
-		var defaults = without_global_defaults ? frappe.boot.user.defaults_user_only : frappe.boot.user.defaults;
+		var defaults = without_global_defaults
+			? frappe.boot.user.defaults_user_only
+			: frappe.boot.user.defaults;
 		var d = defaults[key];
 
 		if (frappe.defaults.is_a_user_permission_key(key)) {

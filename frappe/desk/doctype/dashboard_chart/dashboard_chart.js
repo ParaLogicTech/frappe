@@ -274,10 +274,15 @@ frappe.ui.form.on("Dashboard Chart", {
 							date_fields.push({ label: df.label, value: df.fieldname });
 						}
 						if (
-							["Int", "Float", "Currency", "Percent", "Duration"].includes(df.fieldtype)
+							["Int", "Float", "Currency", "Percent", "Duration"].includes(
+								df.fieldtype
+							)
 						) {
 							value_fields.push({ label: df.label, value: df.fieldname });
-							aggregate_function_fields.push({ label: df.label, value: df.fieldname });
+							aggregate_function_fields.push({
+								label: df.label,
+								value: df.fieldname,
+							});
 						}
 						if (["Link", "Select"].includes(df.fieldtype)) {
 							group_by_fields.push({ label: df.label, value: df.fieldname });

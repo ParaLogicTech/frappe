@@ -62,10 +62,10 @@ frappe.ui.form.QuickEntryForm = class QuickEntryForm {
 
 		this.mandatory = fields.filter((df) => {
 			return (
-				(df.reqd || df.bold || df.allow_in_quick_entry)
-				&& (!df.read_only || df.allow_in_quick_entry)
-				&& !df.is_virtual
-				&& df.fieldtype !== "Tab Break"
+				(df.reqd || df.bold || df.allow_in_quick_entry) &&
+				(!df.read_only || df.allow_in_quick_entry) &&
+				!df.is_virtual &&
+				df.fieldtype !== "Tab Break"
 			);
 		});
 	}

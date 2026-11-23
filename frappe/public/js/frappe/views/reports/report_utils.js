@@ -171,24 +171,31 @@ frappe.report_utils = {
 	},
 
 	get_filters_html_for_print(applied_filters, fields_dict) {
-		let filtered_items =  Object.keys(applied_filters).filter((fieldname) => {
-			const df = fields_dict[fieldname];
-			const value = applied_filters[fieldname];
-			if (!value) {
-				return false;
-			}
-			if (Array.isArray(value) && !value.length) {
-				return false;
-			}
-			if (df && df.print_hide) {
-				return false;
-			}
-			return true;
-		}).map((fieldname) => {
-			const df = fields_dict[fieldname];
-			const value = applied_filters[fieldname];
-			return `<div><b>${__(df.label)}</b>: ${frappe.format(value, df, null, applied_filters)}</div>`;
-		});
+		let filtered_items = Object.keys(applied_filters)
+			.filter((fieldname) => {
+				const df = fields_dict[fieldname];
+				const value = applied_filters[fieldname];
+				if (!value) {
+					return false;
+				}
+				if (Array.isArray(value) && !value.length) {
+					return false;
+				}
+				if (df && df.print_hide) {
+					return false;
+				}
+				return true;
+			})
+			.map((fieldname) => {
+				const df = fields_dict[fieldname];
+				const value = applied_filters[fieldname];
+				return `<div><b>${__(df.label)}</b>: ${frappe.format(
+					value,
+					df,
+					null,
+					applied_filters
+				)}</div>`;
+			});
 
 		let column_size = Math.ceil(filtered_items.length / 3);
 		let columns = [];
@@ -201,7 +208,9 @@ frappe.report_utils = {
 			return `<div class="pull-left" style="width:33.33%;">${items.join("")}</div>`;
 		});
 
-		return columns_with_container.length ? `<div class="clearfix">${columns_with_container.join("")}</div>` : "";
+		return columns_with_container.length
+			? `<div class="clearfix">${columns_with_container.join("")}</div>`
+			: "";
 	},
 
 	get_export_dialog(report_name, extra_fields, callback) {

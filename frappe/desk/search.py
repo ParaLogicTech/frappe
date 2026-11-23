@@ -320,10 +320,7 @@ def relevance_sorter(key, query, as_dict):
 
 	query = cstr(query).casefold()
 
-	return (
-		value != query,
-		not value.startswith(query)
-	)
+	return (value != query, not value.startswith(query))
 
 
 @frappe.whitelist()

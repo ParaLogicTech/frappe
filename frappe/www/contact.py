@@ -1,13 +1,13 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 
+import json
 from contextlib import suppress
 
 import frappe
 from frappe import _, unscrub
 from frappe.rate_limiter import rate_limit
-from frappe.utils import escape_html, validate_email_address, cint
-import json
+from frappe.utils import cint, escape_html, validate_email_address
 
 sitemap = 1
 
@@ -72,7 +72,9 @@ def send_message(sender, message, subject="Website Query", args=None, create_com
 
 			forward_email_content = "<br>".join(forward_email_content)
 
-			frappe.sendmail(recipients=forward_to_email, reply_to=sender, content=forward_email_content, subject=subject)
+			frappe.sendmail(
+				recipients=forward_to_email, reply_to=sender, content=forward_email_content, subject=subject
+			)
 
 		# Acknowledgement / Confirmation Email
 		subject = "We've received your query!"
@@ -82,8 +84,8 @@ def send_message(sender, message, subject="Website Query", args=None, create_com
 			email_template_doc = frappe.get_cached_doc("Email Template", email_template)
 			formatted_template = email_template_doc.get_formatted_email(context)
 
-			subject = formatted_template['subject']
-			content = formatted_template['message']
+			subject = formatted_template["subject"]
+			content = formatted_template["message"]
 
 		frappe.sendmail(
 			recipients=sender,

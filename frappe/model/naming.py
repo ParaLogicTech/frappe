@@ -72,7 +72,7 @@ class NamingSeries:
 				exc=InvalidNamingSeriesError,
 			)
 
-	def generate_next_name(self, doc: "Document", *, ignore_validate=False, series_value_field='') -> str:
+	def generate_next_name(self, doc: "Document", *, ignore_validate=False, series_value_field="") -> str:
 		if not ignore_validate:
 			self.validate()
 
@@ -245,7 +245,7 @@ def set_naming_from_document_naming_rule(doc):
 			break
 
 
-def set_name_by_naming_series(doc, series_value_field=''):
+def set_name_by_naming_series(doc, series_value_field=""):
 	"""Sets name by the `naming_series` property"""
 	if not doc.naming_series:
 		doc.naming_series = get_default_naming_series(doc.doctype)
@@ -253,8 +253,7 @@ def set_name_by_naming_series(doc, series_value_field=''):
 	if not doc.naming_series:
 		frappe.throw(frappe._("Naming Series mandatory"))
 
-	doc.name = make_autoname(doc.naming_series + ".#####", "", doc,
-		series_value_field=series_value_field)
+	doc.name = make_autoname(doc.naming_series + ".#####", "", doc, series_value_field=series_value_field)
 
 
 def make_autoname(key="", doctype="", doc="", *, ignore_validate=False, series_value_field=""):
@@ -279,8 +278,9 @@ def make_autoname(key="", doctype="", doc="", *, ignore_validate=False, series_v
 		return (_get_timestamp_prefix() + _generate_random_string(7))[:10]
 
 	series = NamingSeries(key)
-	return series.generate_next_name(doc, ignore_validate=ignore_validate,
-		series_value_field=series_value_field)
+	return series.generate_next_name(
+		doc, ignore_validate=ignore_validate, series_value_field=series_value_field
+	)
 
 
 def _get_timestamp_prefix():
@@ -348,7 +348,7 @@ def parse_naming_series(
 				digits = len(e)
 
 				if series_value_field and doc and cint(doc.get(series_value_field)):
-					part = ('%0'+str(digits)+'d') % cint(doc.get(series_value_field))
+					part = ("%0" + str(digits) + "d") % cint(doc.get(series_value_field))
 				else:
 					part = number_generator(name, digits)
 					if series_value_field and doc:

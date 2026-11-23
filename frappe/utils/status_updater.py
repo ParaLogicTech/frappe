@@ -1,7 +1,7 @@
 import frappe
 from frappe import _, unscrub
-from frappe.utils import flt, cint, nowdate, getdate
 from frappe.model.document import Document
+from frappe.utils import cint, flt, getdate, nowdate
 
 
 class OverAllowanceError(frappe.ValidationError):
@@ -10,7 +10,7 @@ class OverAllowanceError(frappe.ValidationError):
 
 class StatusUpdater(Document):
 	def set_status(self, update=False, status=None, update_modified=True):
-		if self.get('status_map'):
+		if self.get("status_map"):
 			previous_status = self.status
 			if status:
 				self.status = status
@@ -24,12 +24,16 @@ class StatusUpdater(Document):
 					self.status = s
 					break
 				elif condition.startswith("eval:"):
-					if frappe.safe_eval(condition[5:], None, {
-						"self": self.as_dict(),
-						"getdate": getdate,
-						"nowdate": nowdate,
-						"get_value": frappe.db.get_value
-					}):
+					if frappe.safe_eval(
+						condition[5:],
+						None,
+						{
+							"self": self.as_dict(),
+							"getdate": getdate,
+							"nowdate": nowdate,
+							"get_value": frappe.db.get_value,
+						},
+					):
 						self.status = s
 						break
 				elif getattr(self, condition)():
@@ -39,7 +43,7 @@ class StatusUpdater(Document):
 			self.add_status_comment(previous_status)
 
 			if update:
-				self.db_set('status', self.status, update_modified=update_modified)
+				self.db_set("status", self.status, update_modified=update_modified)
 
 	def add_status_comment(self, previous_status):
 		if self.is_new():
@@ -54,7 +58,7 @@ class StatusUpdater(Document):
 		keyword,
 		not_applicable=False,
 		not_applicable_based_on=None,
-		within_allowance=False
+		within_allowance=False,
 	):
 		if self.docstatus == 2:
 			return "Not Applicable"
@@ -63,8 +67,7 @@ class StatusUpdater(Document):
 		rounded_percentage = flt(percentage, self.precision(percentage_field))
 
 		not_applicable_percentage = flt(self.get(not_applicable_based_on or percentage_field))
-		rounded_not_applicable_percentage = flt(not_applicable_percentage,
-			self.precision(percentage_field))
+		rounded_not_applicable_percentage = flt(not_applicable_percentage, self.precision(percentage_field))
 
 		if not_applicable and rounded_not_applicable_percentage <= 0:
 			return "Not Applicable"
@@ -75,14 +78,10 @@ class StatusUpdater(Document):
 			return f"To {keyword}"
 
 	def calculate_status_percentage(
-		self,
-		completed_field,
-		reference_field,
-		items=None,
-		under_delivery_allowance=False
+		self, completed_field, reference_field, items=None, under_delivery_allowance=False
 	):
 		if items is None:
-			items = self.get('items', [])
+			items = self.get("items", [])
 
 		if items:
 			precision = items[0].precision(reference_field)
@@ -152,7 +151,7 @@ class StatusUpdater(Document):
 		max_qty_field=None,
 		from_doctype=None,
 		row_names=None,
-		item_field="item_code"
+		item_field="item_code",
 	):
 		items = self.get_rows_for_qty_validation(items, row_names)
 		for row in items:
@@ -168,7 +167,7 @@ class StatusUpdater(Document):
 
 	def get_rows_for_qty_validation(self, items=None, row_names=None):
 		if items is None:
-			items = self.get('items', [])
+			items = self.get("items", [])
 
 		rows = []
 		for row in items:
@@ -185,7 +184,7 @@ class StatusUpdater(Document):
 		allowance_type=None,
 		max_qty_field=None,
 		from_doctype=None,
-		item_field="item_code"
+		item_field="item_code",
 	):
 		# Allow both: single and multiple completed qty fieldnames
 		if not isinstance(completed_field, list):
@@ -206,8 +205,9 @@ class StatusUpdater(Document):
 			max_qty = flt(row.get(max_qty_field), row.precision(reference_field))
 			excess_qty = completed_qty - max_qty
 		else:
-			excess_qty = self.get_excess_qty_with_allowance(row, completed_field, reference_field, allowance_type,
-				item_field=item_field)
+			excess_qty = self.get_excess_qty_with_allowance(
+				row, completed_field, reference_field, allowance_type, item_field=item_field
+			)
 
 		if reference_qty < 0:
 			excess_qty = -1 * excess_qty
@@ -215,17 +215,25 @@ class StatusUpdater(Document):
 		rounded_excess = flt(excess_qty, row.precision(reference_field))
 
 		if rounded_excess > 0:
-			self.limits_crossed_error(row, completed_field, reference_field, allowance_type, excess_qty,
-				from_doctype=from_doctype, item_field=item_field)
+			self.limits_crossed_error(
+				row,
+				completed_field,
+				reference_field,
+				allowance_type,
+				excess_qty,
+				from_doctype=from_doctype,
+				item_field=item_field,
+			)
 
-	def limits_crossed_error(self,
+	def limits_crossed_error(
+		self,
 		row,
 		completed_field,
 		reference_field,
 		allowance_type,
 		excess_qty=None,
 		from_doctype=None,
-		item_field="item_code"
+		item_field="item_code",
 	):
 		"""Raise exception for limits crossed"""
 		reference_qty = flt(row.get(reference_field))
@@ -242,7 +250,9 @@ class StatusUpdater(Document):
 			excess_qty = completed_qty - reference_qty
 
 		formatted_reference_qty = row.get_formatted(reference_field)
-		formatted_completed_qty = frappe.format(completed_qty, df=row.meta.get_field(completed_field[0]), doc=row)
+		formatted_completed_qty = frappe.format(
+			completed_qty, df=row.meta.get_field(completed_field[0]), doc=row
+		)
 		formatted_excess = frappe.format(excess_qty, df=row.meta.get_field(reference_field), doc=row)
 
 		reference_field_label = row.meta.get_label(reference_field)
@@ -254,8 +264,8 @@ class StatusUpdater(Document):
 
 		over_limit_msg = _("{0} for Item {1} is over limit by {2}.").format(
 			frappe.bold(completed_field_label),
-			frappe.bold(row.get(item_field) or row.get('item_name')),
-			frappe.bold(formatted_excess)
+			frappe.bold(row.get(item_field) or row.get("item_name")),
+			frappe.bold(formatted_excess),
 		)
 
 		actual_qty_msg = _("{0} {1} is {2}, however, {3} is {4}").format(
@@ -282,18 +292,13 @@ class StatusUpdater(Document):
 		if suggestion_msg:
 			full_msg += "<br><br>" + suggestion_msg
 
-		frappe.throw(full_msg, OverAllowanceError, title=_('{0} Limit Crossed').format(completed_field_label))
+		frappe.throw(full_msg, OverAllowanceError, title=_("{0} Limit Crossed").format(completed_field_label))
 
 	def get_excess_qty_with_allowance(
-		self,
-		row,
-		completed_field,
-		reference_field,
-		allowance_type,
-		item_field="item_code"
+		self, row, completed_field, reference_field, allowance_type, item_field="item_code"
 	):
 		"""
-			Checks if there is overflow condering a relaxation allowance
+		Checks if there is overflow condering a relaxation allowance
 		"""
 		reference_qty = flt(row.get(reference_field))
 		if not reference_qty:

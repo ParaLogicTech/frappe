@@ -286,10 +286,7 @@ def get_group_by_chart_config(chart, filters) -> dict | None:
 
 	data = frappe.get_list(
 		parent_doctype,
-		fields=[
-			f"`tab{doctype}`.{group_by_field} as name",
-			f"{aggregate_function}({value_field}) as count"
-		],
+		fields=[f"`tab{doctype}`.{group_by_field} as name", f"{aggregate_function}({value_field}) as count"],
 		filters=filters,
 		group_by=f"`tab{doctype}`.{group_by_field}",
 		order_by="count desc",

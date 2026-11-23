@@ -74,25 +74,43 @@ frappe.ui.form.PrintView = class {
 
 		let print_or_pdf = cint(this.print_settings.print_as_primary_button) ? "Print" : "PDF";
 
-		this.page.add_menu_item(__("Print Now"), () => this.printit(), true, print_or_pdf == "Print" ? "Ctrl+P" : null);
-		this.page.add_menu_item(__("Get PDF"), () => this.render_pdf(), true, print_or_pdf == "PDF" ? "Ctrl+P" : null);
+		this.page.add_menu_item(
+			__("Print Now"),
+			() => this.printit(),
+			true,
+			print_or_pdf == "Print" ? "Ctrl+P" : null
+		);
+		this.page.add_menu_item(
+			__("Get PDF"),
+			() => this.render_pdf(),
+			true,
+			print_or_pdf == "PDF" ? "Ctrl+P" : null
+		);
 
-		this.sign_button = this.page.add_button(__("Sign"), () => this.show_signature_dialog(), { icon: "pen" });
+		this.sign_button = this.page.add_button(__("Sign"), () => this.show_signature_dialog(), {
+			icon: "pen",
+		});
 		this.sign_button.toggle(false);
 
 		if (print_or_pdf == "PDF") {
-			this.print_button = this.page.add_button(__("Print"), () => this.printit(), { icon: "printer" });
+			this.print_button = this.page.add_button(__("Print"), () => this.printit(), {
+				icon: "printer",
+			});
 			this.print_button.toggle(false);
-			this.page.set_primary_action(__("PDF"), () => this.render_pdf(), { icon: "es-line-filetype" });
+			this.page.set_primary_action(__("PDF"), () => this.render_pdf(), {
+				icon: "es-line-filetype",
+			});
 		} else {
-			this.page.add_button(__("Get PDF"), () => this.render_pdf(), { icon: "es-line-filetype" });
+			this.page.add_button(__("Get PDF"), () => this.render_pdf(), {
+				icon: "es-line-filetype",
+			});
 			this.page.set_primary_action(__("Print"), () => this.printit(), { icon: "printer" });
 		}
 
 		// hide print view on pressing escape, only if there is no focus on any input
 		$(document).on("keydown", (e) => {
 			if (e.which === 27 && this.frm && e.target === document.body) {
-				this.go_to_form_view()
+				this.go_to_form_view();
 			}
 		});
 	}
@@ -249,27 +267,41 @@ frappe.ui.form.PrintView = class {
 
 	refresh_signed_documents() {
 		this.signed_documents_wrapper.empty();
-		return frappe.db.get_list("Signed Document", {
-			filters: {
-				document_type: this.frm.doc.doctype,
-				document_name: this.frm.doc.name,
-			},
-			fields: ["name", "signed_pdf", "user", "signature_timestamp"],
-			order_by: "creation",
-		}).then((data) => {
-			if ((data || []).length) {
-				$(`<div class="control-label">Signed Documents</div>`).appendTo(this.signed_documents_wrapper);
-				this.signed_documents_list = $(`<div class="signed-document-list"></div>`).appendTo(this.signed_documents_wrapper);
+		return frappe.db
+			.get_list("Signed Document", {
+				filters: {
+					document_type: this.frm.doc.doctype,
+					document_name: this.frm.doc.name,
+				},
+				fields: ["name", "signed_pdf", "user", "signature_timestamp"],
+				order_by: "creation",
+			})
+			.then((data) => {
+				if ((data || []).length) {
+					$(`<div class="control-label">Signed Documents</div>`).appendTo(
+						this.signed_documents_wrapper
+					);
+					this.signed_documents_list = $(
+						`<div class="signed-document-list"></div>`
+					).appendTo(this.signed_documents_wrapper);
 
-				for (let d of data || []) {
-					let $card = $(`<a class="btn btn-default signed-document-item" href="${encodeURI(d.signed_pdf)}" target="_blank"></a>`).appendTo(this.signed_documents_list);
-					$(`<div class="control-label">Signed On</div>`).appendTo($card);
-					$(`<div class="control-value">${frappe.datetime.str_to_user(d.signature_timestamp)}</div>`).appendTo($card);
-					$(`<div class="control-label">Signed By</div>`).appendTo($card);
-					$(`<div class="control-value">${d.user}</div>`).appendTo($card);
+					for (let d of data || []) {
+						let $card = $(
+							`<a class="btn btn-default signed-document-item" href="${encodeURI(
+								d.signed_pdf
+							)}" target="_blank"></a>`
+						).appendTo(this.signed_documents_list);
+						$(`<div class="control-label">Signed On</div>`).appendTo($card);
+						$(
+							`<div class="control-value">${frappe.datetime.str_to_user(
+								d.signature_timestamp
+							)}</div>`
+						).appendTo($card);
+						$(`<div class="control-label">Signed By</div>`).appendTo($card);
+						$(`<div class="control-value">${d.user}</div>`).appendTo($card);
+					}
 				}
-			}
-		});
+			});
 	}
 
 	add_settings_to_sidebar(settings) {
@@ -426,7 +458,9 @@ frappe.ui.form.PrintView = class {
 		const is_raw_printing = this.is_raw_printing();
 		// this.wrapper.find(".btn-print-preview").toggle(!is_raw_printing);
 		// this.wrapper.find(".btn-download-pdf").toggle(!is_raw_printing);
-		this.print_button?.toggle(Boolean(cint(this.print_settings.enable_print_server) || is_raw_printing));
+		this.print_button?.toggle(
+			Boolean(cint(this.print_settings.enable_print_server) || is_raw_printing)
+		);
 	}
 
 	toggle_sign_button() {
@@ -852,7 +886,7 @@ frappe.ui.form.PrintView = class {
 			doc: this.frm.doc,
 			callback: (signature_data) => {
 				return this.sign_pdf(signature_data);
-			}
+			},
 		});
 	}
 
@@ -875,7 +909,7 @@ frappe.ui.form.PrintView = class {
 			freeze: 1,
 			freeze_message: __("Signing PDF..."),
 			callback: (r) => {
-				window.open(r.message, '_blank');
+				window.open(r.message, "_blank");
 				this.refresh_signed_documents();
 			},
 		});

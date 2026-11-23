@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019, Frappe Technologies and contributors
 # For license information, please see license.txt
 
 import frappe
 from frappe import _
-from frappe.utils import cstr
 from frappe.model.document import Document
+from frappe.utils import cstr
 from frappe.utils.jinja import validate_template
 from frappe.utils.safe_exec import get_safe_globals
 
@@ -14,13 +13,13 @@ class AutoValueSetter(Document):
 	def validate(self):
 		self.validate_doctype()
 		self.validate_conditions()
-		frappe.cache.hdel('auto_value_setters', self.document_type)
+		frappe.cache.hdel("auto_value_setters", self.document_type)
 
 	def on_change(self):
-		frappe.cache.hdel('auto_value_setters', self.document_type)
+		frappe.cache.hdel("auto_value_setters", self.document_type)
 
 	def validate_doctype(self):
-		prohibited_doctypes = [self.doctype, 'DocType', 'DocField']
+		prohibited_doctypes = [self.doctype, "DocType", "DocField"]
 		prohibited_doctypes += [d.options for d in self.meta.get_table_fields()]
 
 		if self.document_type in prohibited_doctypes:
@@ -31,10 +30,20 @@ class AutoValueSetter(Document):
 			frappe.throw(_("Could not find Document Type {0}").format(self.document_type))
 
 		if not meta.get("allow_auto_value_setter"):
-			frappe.throw(_("Auto Value Setter not allowed for Document Type {0}. Please enable it using Customize Form").format(self.document_type))
+			frappe.throw(
+				_(
+					"Auto Value Setter not allowed for Document Type {0}. Please enable it using Customize Form"
+				).format(self.document_type)
+			)
 
 		if not meta.get_field(self.field_name):
-			frappe.throw(_("Field Name {0} does not exist in Document Type {1}".format(self.field_name, self.document_type)))
+			frappe.throw(
+				_(
+					"Field Name {0} does not exist in Document Type {1}".format(
+						self.field_name, self.document_type
+					)
+				)
+			)
 
 		if meta.issingle:
 			frappe.throw(_("Cannot set Auto Value Setter for Single Document Types"))
@@ -45,10 +54,13 @@ class AutoValueSetter(Document):
 
 
 def apply_auto_value_setters(doc, parent=None):
-	names = frappe.cache.hget('auto_value_setters', doc.doctype)
+	names = frappe.cache.hget("auto_value_setters", doc.doctype)
 	if names is None:
-		names = [d.name for d in frappe.get_all('Auto Value Setter', filters={'enabled': 1, 'document_type': doc.doctype})]
-		frappe.cache.hset('auto_value_setters', doc.doctype, names)
+		names = [
+			d.name
+			for d in frappe.get_all("Auto Value Setter", filters={"enabled": 1, "document_type": doc.doctype})
+		]
+		frappe.cache.hset("auto_value_setters", doc.doctype, names)
 
 	is_submitted = doc.meta.is_submittable and doc.docstatus == 1 and not doc.get("__islocal")
 	context = get_context(doc, parent)

@@ -248,7 +248,9 @@ frappe.ui.Page = class Page {
 		let scroll_container = $("html").css("overflow-y", "hidden");
 
 		this.sidebar.find(".close-sidebar").on("click", (e) => this.close_overlay_sidebar(e));
-		this.sidebar.on("click", "button:not(.dropdown-toggle)", (e) => this.close_overlay_sidebar(e));
+		this.sidebar.on("click", "button:not(.dropdown-toggle)", (e) =>
+			this.close_overlay_sidebar(e)
+		);
 	}
 
 	close_overlay_sidebar() {

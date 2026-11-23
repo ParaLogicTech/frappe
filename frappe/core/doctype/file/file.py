@@ -708,8 +708,10 @@ class File(Document):
 
 		# transform file content based on site settings
 		if (
-			not self.flags.is_amended and not self.flags.is_copied
-			and self.content_type and self.content_type == "image/jpeg"
+			not self.flags.is_amended
+			and not self.flags.is_copied
+			and self.content_type
+			and self.content_type == "image/jpeg"
 			and frappe.get_system_settings("strip_exif_metadata_from_uploaded_images")
 		):
 			self._content = strip_exif_data(self._content, self.content_type)

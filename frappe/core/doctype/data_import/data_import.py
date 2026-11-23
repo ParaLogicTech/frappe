@@ -295,7 +295,9 @@ def import_doc(path, pre_process=None, force=True):
 			raise NotImplementedError("Only .json files can be imported")
 
 
-def export_json(doctype, path, filters=None, or_filters=None, name=None, order_by="creation asc", export_creation=False):
+def export_json(
+	doctype, path, filters=None, or_filters=None, name=None, order_by="creation asc", export_creation=False
+):
 	def post_process(out):
 		# Note on Tree DocTypes:
 		# The tree structure is maintained in the database via the fields "lft"

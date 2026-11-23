@@ -23,7 +23,11 @@ frappe.ui.form.Controller = class FormController {
 	set_disallow_on_submit_fields_read_only(doc, cdt, cdn) {
 		let me = this;
 
-		if (!me.frm.doc.__onload || !me.frm.doc.__onload.disallow_on_submit || me.frm.doc.docstatus != 1) {
+		if (
+			!me.frm.doc.__onload ||
+			!me.frm.doc.__onload.disallow_on_submit ||
+			me.frm.doc.docstatus != 1
+		) {
 			return;
 		}
 
@@ -32,10 +36,10 @@ frappe.ui.form.Controller = class FormController {
 			let parentfield = d[1];
 			me.frm.set_df_property(
 				parentfield ? parentfield : fieldname,
-				'allow_on_submit',
+				"allow_on_submit",
 				0,
 				parentfield ? cdn : null,
-				parentfield ? fieldname : null,
+				parentfield ? fieldname : null
 			);
 		});
 	}
@@ -1313,7 +1317,9 @@ frappe.ui.form.Form = class FrappeForm {
 	}
 
 	email_doc(message) {
-		let recipients = this.timeline ? this.timeline.get_recipient() : this.doc.email || this.doc.email_id || this.doc.contact_email;
+		let recipients = this.timeline
+			? this.timeline.get_recipient()
+			: this.doc.email || this.doc.email_id || this.doc.contact_email;
 		let cc = this.timeline ? this.timeline.get_cc() : "";
 		return new frappe.views.CommunicationComposer({
 			doc: this.doc,
@@ -1400,7 +1406,9 @@ frappe.ui.form.Form = class FrappeForm {
 
 	check_if_unsaved() {
 		if (this.doc.__unsaved) {
-			frappe.throw(__("You have unsaved changes in this form. Please save before you continue."));
+			frappe.throw(
+				__("You have unsaved changes in this form. Please save before you continue.")
+			);
 		}
 	}
 
@@ -1763,7 +1771,7 @@ frappe.ui.form.Form = class FrappeForm {
 				if ($.isPlainObject(r.message)) {
 					if (opts.child) {
 						// update child doc
-						opts.child = frappe.get_doc(opts.child.doctype, opts.child.name)
+						opts.child = frappe.get_doc(opts.child.doctype, opts.child.name);
 						// if child row is deleted, don't update
 						if (opts.child) {
 							var std_field_list = ["doctype"]
@@ -1864,12 +1872,7 @@ frappe.ui.form.Form = class FrappeForm {
 		// get doctype from parent
 		let me = this;
 
-		const formatter = function (
-			value,
-			df,
-			options,
-			doc
-		) {
+		const formatter = function (value, df, options, doc) {
 			let label;
 			if (get_text) {
 				label = get_text(doc);
@@ -1895,7 +1898,11 @@ frappe.ui.form.Form = class FrappeForm {
 			frappe.meta.get_table_fields(this.doctype).every(function (table_df) {
 				let has_field = me.get_docfield(table_df.fieldname, fieldname);
 				if (has_field) {
-					me.fields_dict[table_df.fieldname]?.grid?.update_docfield_property(fieldname, "formatter", formatter);
+					me.fields_dict[table_df.fieldname]?.grid?.update_docfield_property(
+						fieldname,
+						"formatter",
+						formatter
+					);
 
 					return !!apply_on_all_child_tables;
 				} else {
@@ -1955,12 +1962,9 @@ frappe.ui.form.Form = class FrappeForm {
 
 	set_link_field(doctype, new_doc) {
 		let me = this;
-		let to_set = frappe.get_meta(doctype).fields.filter(df => {
+		let to_set = frappe.get_meta(doctype).fields.filter((df) => {
 			return (
-				df.fieldtype === 'Link'
-				&& df.options === me.doctype
-				&& !df.hidden
-				&& !df.read_only
+				df.fieldtype === "Link" && df.options === me.doctype && !df.hidden && !df.read_only
 			);
 		});
 

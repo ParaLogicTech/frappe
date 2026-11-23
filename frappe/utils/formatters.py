@@ -81,8 +81,13 @@ def format_value(value, df=None, doc=None, currency=None, translated=False, form
 
 		default_currency = frappe.db.get_default("currency")
 		currency = currency or get_field_currency(df, doc) or default_currency
-		return fmt_money(value, precision=precision, currency=currency, format=format,
-			force_symbol=cint(df.get("force_currency_symbol")))
+		return fmt_money(
+			value,
+			precision=precision,
+			currency=currency,
+			format=format,
+			force_symbol=cint(df.get("force_currency_symbol")),
+		)
 
 	elif df.get("fieldtype") == "Float":
 		precision = cint(precision) if precision is not None else get_field_precision(df, doc)

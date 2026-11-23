@@ -128,6 +128,7 @@ class EmailQueue(Document):
 	def update_status(self, status, commit=False, **kwargs):
 		if status == "Sent":
 			from frappe.core.doctype.notification_count.notification_count import add_notification_count
+
 			if self.reference_doctype and self.reference_name and self.notification_type:
 				add_notification_count(
 					self.reference_doctype,
@@ -183,7 +184,11 @@ class EmailQueue(Document):
 
 		with SendMailContext(self, smtp_server_instance) as ctx:
 			if self.reference_doctype and self.reference_name and self.notification_type:
-				from frappe.email.doctype.notification.notification import get_doc_for_notification_triggers, run_validate_notification
+				from frappe.email.doctype.notification.notification import (
+					get_doc_for_notification_triggers,
+					run_validate_notification,
+				)
+
 				doc = get_doc_for_notification_triggers(self.reference_doctype, self.reference_name)
 				if doc:
 					run_validate_notification(

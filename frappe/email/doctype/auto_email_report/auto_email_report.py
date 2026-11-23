@@ -92,7 +92,7 @@ class AutoEmailReport(Document):
 				valid.append(email)
 
 		self.email_to = "\n".join(valid)
-	
+
 	def filter_enabled_recipients(self):
 		updated_receipient_list = []
 		current_receipient_list = self.email_to.split()
@@ -103,7 +103,6 @@ class AutoEmailReport(Document):
 			else:
 				updated_receipient_list.append(each_email)
 		return updated_receipient_list
-
 
 	def validate_report_count(self):
 		count = frappe.db.count("Auto Email Report", {"user": self.user, "enabled": 1})
@@ -170,6 +169,7 @@ class AutoEmailReport(Document):
 
 		if self.report_type == "Script Report":
 			from frappe.desk.query_report import flatten_grouped_report_data
+
 			data = flatten_grouped_report_data(data)
 
 		if len(data) == 0 and self.send_if_data:
@@ -195,9 +195,16 @@ class AutoEmailReport(Document):
 			report_data["columns"] = columns
 			report_data["result"] = data
 
-			xlsx_data, column_widths, column_formats = build_xlsx_data(report_data, [], 1, ignore_visible_idx=True)
-			xlsx_file = make_xlsx(xlsx_data, "Auto Email Report",
-				column_widths=column_widths, column_formats=column_formats, freeze="A2")
+			xlsx_data, column_widths, column_formats = build_xlsx_data(
+				report_data, [], 1, ignore_visible_idx=True
+			)
+			xlsx_file = make_xlsx(
+				xlsx_data,
+				"Auto Email Report",
+				column_widths=column_widths,
+				column_formats=column_formats,
+				freeze="A2",
+			)
 			return xlsx_file.getvalue()
 
 		elif self.format == "CSV":
@@ -205,7 +212,9 @@ class AutoEmailReport(Document):
 			report_data["columns"] = columns
 			report_data["result"] = data
 
-			xlsx_data, column_widths, column_formats = build_xlsx_data(report_data, [], 1, ignore_visible_idx=True)
+			xlsx_data, column_widths, column_formats = build_xlsx_data(
+				report_data, [], 1, ignore_visible_idx=True
+			)
 			return to_csv(xlsx_data)
 
 		else:
@@ -230,11 +239,7 @@ class AutoEmailReport(Document):
 		)
 
 	def get_file_name(self):
-		return "{}-{}.{}".format(
-			self.name.replace(" ", "-").replace("/", "-"),
-			today(),
-			self.format.lower()
-		)
+		return "{}-{}.{}".format(self.name.replace(" ", "-").replace("/", "-"), today(), self.format.lower())
 
 	def prepare_dynamic_filters(self):
 		self.filters = frappe.parse_json(self.filters)
@@ -290,7 +295,7 @@ class AutoEmailReport(Document):
 
 		if not self.format == "HTML":
 			attachments = [{"fname": self.get_file_name(), "fcontent": data}]
-		
+
 		filterd_recipients = self.filter_enabled_recipients()
 
 		frappe.sendmail(

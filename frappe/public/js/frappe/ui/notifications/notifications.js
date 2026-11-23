@@ -360,11 +360,14 @@ class NotificationsView extends BaseNotificationsView {
 	}
 
 	setup_notification_listeners() {
-		frappe.realtime.on("notification", frappe.utils.debounce(() => {
-			frappe.utils.play_sound("alert");
-			this.toggle_notification_icon(false);
-			this.update_dropdown();
-		}, 500));
+		frappe.realtime.on(
+			"notification",
+			frappe.utils.debounce(() => {
+				frappe.utils.play_sound("alert");
+				this.toggle_notification_icon(false);
+				this.update_dropdown();
+			}, 500)
+		);
 
 		frappe.realtime.on("indicator_hide", () => {
 			this.toggle_notification_icon(true);

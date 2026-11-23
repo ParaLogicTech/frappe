@@ -264,7 +264,7 @@ def get_website_settings(context=None):
 
 	context["hide_login"] = settings.hide_login
 
-	if settings.get('splash_image'):
+	if settings.get("splash_image"):
 		context["splash_image"] = settings.splash_image
 
 	context.read_only_mode = frappe.flags.read_only

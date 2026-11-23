@@ -132,9 +132,9 @@ $.extend(frappe.datetime, {
 
 	get_user_time_fmt: function () {
 		if (frappe.datetime.get_time_hour_format() == "12 Hour") {
-			return 'hh:mm:ss A';
+			return "hh:mm:ss A";
 		} else {
-			return 'HH:mm:ss';
+			return "HH:mm:ss";
 		}
 	},
 
@@ -143,7 +143,9 @@ $.extend(frappe.datetime, {
 	},
 
 	get_time_hour_format: function () {
-		return frappe.sys_defaults && frappe.sys_defaults.time_format == "12 Hour" ? "12 Hour" : "24 Hour";
+		return frappe.sys_defaults && frappe.sys_defaults.time_format == "12 Hour"
+			? "12 Hour"
+			: "24 Hour";
 	},
 
 	get_time_format: function () {
@@ -258,14 +260,19 @@ $.extend(frappe.datetime, {
 				val = val.replaceAll(encountered_separator, "-");
 			}
 			return val;
-		// if DD or MM first
+			// if DD or MM first
 		} else if (
-			encountered_separator
-			&& user_first_component
-			&& user_second_component
-			&& first_separator_index != -1
+			encountered_separator &&
+			user_first_component &&
+			user_second_component &&
+			first_separator_index != -1
 		) {
-			let format = user_first_component + encountered_separator + user_second_component + encountered_separator + "yyyy";
+			let format =
+				user_first_component +
+				encountered_separator +
+				user_second_component +
+				encountered_separator +
+				"yyyy";
 			format = format.toUpperCase();
 			return moment(val, [format.replace("YYYY", "YY"), format])
 				.locale("en")

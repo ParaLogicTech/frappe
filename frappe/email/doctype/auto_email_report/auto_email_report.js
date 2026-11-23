@@ -127,7 +127,8 @@ frappe.ui.form.on("Auto Email Report", {
 				report_filters = reference_report.filters;
 			}
 
-			frm.doc.filter_meta = report_filters && report_filters.length > 0 ? JSON.stringify(report_filters) : "";
+			frm.doc.filter_meta =
+				report_filters && report_filters.length > 0 ? JSON.stringify(report_filters) : "";
 			frm.refresh_field("filter_meta");
 
 			var report_filters_list = [];

@@ -126,7 +126,8 @@ class TestCustomFunctionsMariaDB(FrappeTestCase):
 	def test_time(self):
 		note = frappe.qb.DocType("Note")
 		self.assertEqual(
-			"TIMESTAMP('2021-01-01','00:00:21.000000')", CombineDatetime("2021-01-01", time(0, 0, 21)).get_sql()
+			"TIMESTAMP('2021-01-01','00:00:21.000000')",
+			CombineDatetime("2021-01-01", time(0, 0, 21)).get_sql(),
 		)
 
 		select_query = frappe.qb.from_(note).select(CombineDatetime(note.posting_date, note.posting_time))

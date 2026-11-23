@@ -150,7 +150,8 @@ frappe.ui.form.ControlTextEditor = class ControlTextEditor extends frappe.ui.for
 
 		if (this.df.max_height) {
 			$(".ql-editor", this.quill_container).css({
-				"max-height": this.df.max_height, overflow: "auto"
+				"max-height": this.df.max_height,
+				overflow: "auto",
 			});
 		}
 

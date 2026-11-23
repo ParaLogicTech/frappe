@@ -23,7 +23,7 @@ Object.assign(frappe.regional, {
 		}
 	},
 
-	format_tax_id: function(frm, fieldname) {
+	format_tax_id: function (frm, fieldname) {
 		let value = frm.doc[fieldname];
 		if (value) {
 			value = frappe.regional.get_formatted_tax_id(value);
@@ -42,7 +42,7 @@ Object.assign(frappe.regional, {
 		}
 	},
 
-	format_cnic: function(frm, fieldname) {
+	format_cnic: function (frm, fieldname) {
 		let value = frm.doc[fieldname];
 		if (value) {
 			value = frappe.regional.get_formatted_cnic(value);
@@ -61,7 +61,7 @@ Object.assign(frappe.regional, {
 		}
 	},
 
-	format_strn: function(frm, fieldname) {
+	format_strn: function (frm, fieldname) {
 		let value = frm.doc[fieldname];
 		if (value) {
 			value = frappe.regional.get_formatted_strn(value);
@@ -87,8 +87,8 @@ Object.assign(frappe.regional, {
 					doctype: doc.doctype,
 					fieldname: fieldname,
 					value: value,
-					exclude: doc.__islocal ? null : doc.name
-				}
+					exclude: doc.__islocal ? null : doc.name,
+				},
 			});
 		}
 	},
@@ -102,8 +102,8 @@ Object.assign(frappe.regional, {
 					doctype: doc.doctype,
 					fieldname: fieldname,
 					value: value,
-					exclude: doc.__islocal ? null : doc.name
-				}
+					exclude: doc.__islocal ? null : doc.name,
+				},
 			});
 		}
 	},
@@ -117,8 +117,8 @@ Object.assign(frappe.regional, {
 					doctype: doc.doctype,
 					fieldname: fieldname,
 					value: value,
-					exclude: doc.__islocal ? null : doc.name
-				}
+					exclude: doc.__islocal ? null : doc.name,
+				},
 			});
 		}
 	},

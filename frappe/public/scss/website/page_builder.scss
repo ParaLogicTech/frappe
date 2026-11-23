@@ -19,22 +19,27 @@
 		@extend .lead;
 		color: $gray-600;
 		font-size: $font-size-lg;
-		
+
 		@include media-breakpoint-up(sm) {
 			font-size: $font-size-xl;
 		}
 	}
-	.hero-title, .hero-subtitle {
+	.hero-title,
+	.hero-subtitle {
 		max-width: 42rem;
 		margin-top: 0rem;
 		margin-bottom: 0.5rem;
 	}
 
 	.hero.align-center {
-		h1, .hero-title, .hero-subtitle, .hero-buttons {
+		h1,
+		.hero-title,
+		.hero-subtitle,
+		.hero-buttons {
 			text-align: center;
 		}
-		.hero-title, .hero-subtitle {
+		.hero-title,
+		.hero-subtitle {
 			margin-left: auto;
 			margin-right: auto;
 		}

@@ -273,14 +273,17 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 					// immediately show from cache
 					me.awesomplete.list = me.$input.cache[doctype][term];
 				} else {
-					me.awesomplete.list = [{
-						value: "loading__link_option",
-						html: "<span class='text-muted link-option'>" +
-							"<i class='fa fa-clock-o' style='margin-right: 5px;'></i> " +
+					me.awesomplete.list = [
+						{
+							value: "loading__link_option",
+							html:
+								"<span class='text-muted link-option'>" +
+								"<i class='fa fa-clock-o' style='margin-right: 5px;'></i> " +
 								__("Loading...") +
-							"</span>",
-						is_loading: true,
-					}];
+								"</span>",
+							is_loading: true,
+						},
+					];
 				}
 				var reference_doctype = me.get_reference_doctype() || "";
 				var docfield_parent =
@@ -315,12 +318,13 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 						if (!r.message.length) {
 							r.message.push({
 								value: "empty_result__link_option",
-								html: "<span class='text-muted link-option'>" +
+								html:
+									"<span class='text-muted link-option'>" +
 									"<i class='fa fa-circle-thin' style='margin-right: 5px;'></i> " +
-										__("Could not find any {0} {1}", [
-											__(me.get_options()),
-											term ? __("that matches your search term") : ""
-										]) +
+									__("Could not find any {0} {1}", [
+										__(me.get_options()),
+										term ? __("that matches your search term") : "",
+									]) +
 									"</span>",
 								is_empty_result: true,
 							});

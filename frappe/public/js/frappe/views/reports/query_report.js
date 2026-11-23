@@ -104,10 +104,14 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 
 	set_default_secondary_action() {
 		// this.refresh_button && this.refresh_button.remove();
-		this.refresh_button = this.page.set_secondary_action(__("Reload"), () => {
-			this.setup_progress_bar();
-			this.refresh();
-		}, "es-line-reload");
+		this.refresh_button = this.page.set_secondary_action(
+			__("Reload"),
+			() => {
+				this.setup_progress_bar();
+				this.refresh();
+			},
+			"es-line-reload"
+		);
 	}
 
 	get_no_result_message() {
@@ -146,7 +150,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 
 	load() {
 		this.page.wrapper.find(".layout-main-section-wrapper").css("margin-bottom", "5px");
-		this.page.wrapper.find(".page-body").removeClass('container').addClass('container-fluid');
+		this.page.wrapper.find(".page-body").removeClass("container").addClass("container-fluid");
 
 		if (frappe.get_route().length < 2) {
 			this.toggle_nothing_to_show(true);
@@ -622,7 +626,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 
 			var promises = [];
 
-			promises.push(() => this._no_refresh = true);
+			promises.push(() => (this._no_refresh = true));
 
 			$.each(filters_to_set, (i, f) => {
 				promises.push(() => {
@@ -991,7 +995,9 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		this.custom_columns = [];
 		this.data = this.prepare_data(data.result);
 		this.linked_doctypes = this.get_linked_doctypes();
-		this.tree_report = this.data.some((d) => "indent" in d) || this.data.some(d => "_isGroup" in d && "totals" in d);
+		this.tree_report =
+			this.data.some((d) => "indent" in d) ||
+			this.data.some((d) => "_isGroup" in d && "totals" in d);
 	}
 
 	render_datatable() {
@@ -1089,7 +1095,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 							fieldtype: options.fieldtype,
 							options: options.options,
 						},
-						{only_value: 1},
+						{ only_value: 1 },
 						options
 					),
 			};
@@ -1302,20 +1308,18 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 					}
 				}
 
-				options = Object.assign({for_print: false, always_show_decimals: true}, options || {});
+				options = Object.assign(
+					{ for_print: false, always_show_decimals: true },
+					options || {}
+				);
 				if (data && data._bold) {
 					if (!Object.hasOwn(options, "css")) {
 						options.css = {};
 					}
-					options.css['font-weight'] = 'bold';
+					options.css["font-weight"] = "bold";
 				}
 
-				return frappe.format(
-					value,
-					column,
-					options,
-					data
-				);
+				return frappe.format(value, column, options, data);
 			};
 
 			let compareFn = null;
@@ -1380,7 +1384,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			},
 			getValue: () => {
 				return control.get_value();
-			}
+			},
 		};
 	}
 
@@ -1390,17 +1394,19 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			if (!res) {
 				return resolve;
 			} else {
-				return res.then(r => {
-					if (r && typeof r == "object") {
-						if (r.exc) {
-							reject(r.exc);
+				return res
+					.then((r) => {
+						if (r && typeof r == "object") {
+							if (r.exc) {
+								reject(r.exc);
+							} else {
+								resolve(r.message);
+							}
 						} else {
-							resolve(r.message);
+							resolve(r);
 						}
-					} else {
-						resolve(r);
-					}
-				}).fail(reject);
+					})
+					.fail(reject);
 			}
 		});
 	}
@@ -1411,9 +1417,9 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 
 		if (col.custom_editor) {
 			control = col.custom_editor.call(this, col, value, rowIndex);
-		} else if (col.fieldtype === 'Text Editor') {
+		} else if (col.fieldtype === "Text Editor") {
 			const d = new frappe.ui.Dialog({
-				title: __('Edit {0}', [col.label]),
+				title: __("Edit {0}", [col.label]),
 				fields: [col],
 				primary_action: () => {
 					this.datatable.cellmanager.submitEditing();
@@ -1422,7 +1428,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				},
 				secondary_action: () => {
 					this.datatable.cellmanager.deactivateEditing(false);
-				}
+				},
 			});
 			d.show();
 			control = d.fields_dict[col.fieldname];
@@ -1431,7 +1437,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			control = frappe.ui.form.make_control({
 				df: col,
 				parent: parent,
-				render_input: true
+				render_input: true,
 			});
 			control.set_value(value);
 			control.toggle_label(false);
@@ -1527,26 +1533,27 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		}
 
 		var promises = [];
-		promises.push(() => this._no_refresh = true);
+		promises.push(() => (this._no_refresh = true));
 
-		Object.keys(field_value_map)
-			.forEach((fieldname, i, arr) => {
-				const value = field_value_map[fieldname];
+		Object.keys(field_value_map).forEach((fieldname, i, arr) => {
+			const value = field_value_map[fieldname];
 
-				if (i === arr.length - 1) {
-					promises.push(() => this._no_refresh = false);
-				}
+			if (i === arr.length - 1) {
+				promises.push(() => (this._no_refresh = false));
+			}
 
-				promises.push(() => {
-					return this.get_filter(fieldname)?.set_value(value)
-				});
+			promises.push(() => {
+				return this.get_filter(fieldname)?.set_value(value);
 			});
+		});
 		return frappe.run_serially(promises);
 	}
 
 	set_breadcrumbs() {
 		if (!this.report_doc) return;
-		const ref_doctype = this.report_doc.ref_doctype ? frappe.get_meta(this.report_doc.ref_doctype) : {};
+		const ref_doctype = this.report_doc.ref_doctype
+			? frappe.get_meta(this.report_doc.ref_doctype)
+			: {};
 		const module = this.report_doc.module || ref_doctype.module;
 		if (module) {
 			frappe.breadcrumbs.add(module);
@@ -1632,8 +1639,13 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		let filter_values = [],
 			name_len = 0;
 		for (let key of Object.keys(applied_filters)) {
-			let filter_df = this.filters.find(d => d.df.fieldname == key)?.df;
-			if (!filter_df || filter_df.fieldtype == "Check" || filter_df.hidden || filter_df.read_only) {
+			let filter_df = this.filters.find((d) => d.df.fieldname == key)?.df;
+			if (
+				!filter_df ||
+				filter_df.fieldtype == "Check" ||
+				filter_df.hidden ||
+				filter_df.read_only
+			) {
 				continue;
 			}
 
@@ -1716,10 +1728,12 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 	get_filters_html_for_print() {
 		return frappe.report_utils.get_filters_html_for_print(
 			this.get_filter_values(),
-			this.filters.map(d=>d.df).reduce((acc,f ) => {
-				acc[f.fieldname] = f;
-				return acc;
-			}, {})
+			this.filters
+				.map((d) => d.df)
+				.reduce((acc, f) => {
+					acc[f.fieldname] = f;
+					return acc;
+				}, {})
 		);
 	}
 
@@ -1862,7 +1876,8 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 					cell.content = frappe.utils.get_formatted_duration(cell.content);
 				}
 				if (include_indentation && i === 0) {
-					cell.content = "   ".repeat(row.meta ? row.meta.indent : 0) + (cell.content || "");
+					cell.content =
+						"   ".repeat(row.meta ? row.meta.indent : 0) + (cell.content || "");
 				}
 				return cell.content || "";
 			});
@@ -1935,7 +1950,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 						this.get_filter_value("no_letterhead") || this.report_doc.letter_head,
 						this.get_visible_columns(),
 						true,
-						this.get_filter_value("orientation"),
+						this.get_filter_value("orientation")
 					);
 					this.add_portrait_warning(dialog);
 				},
@@ -1952,7 +1967,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 						this.get_filter_value("no_letterhead") || this.report_doc.letter_head,
 						this.get_visible_columns(),
 						true,
-						this.get_filter_value("orientation"),
+						this.get_filter_value("orientation")
 					);
 
 					this.add_portrait_warning(dialog);
@@ -1983,7 +1998,8 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 								fieldname: "doctype",
 								label: __("From Document Type"),
 								options: this.linked_doctypes?.map((df) => ({
-									label: __(df.doctype) + " (" + (df.label || df.fieldname) + ")",
+									label:
+										__(df.doctype) + " (" + (df.label || df.fieldname) + ")",
 									value: JSON.stringify({
 										doctype: df.doctype,
 										fieldname: df.fieldname,
@@ -2158,7 +2174,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 
 	flatten_rows(rows) {
 		let result = [];
-		rows.forEach(row => {
+		rows.forEach((row) => {
 			result.push(row);
 			if (row.rows && Array.isArray(row.rows)) {
 				result = result.concat(this.flatten_rows(row.rows));
@@ -2200,7 +2216,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				doctypes.push({
 					doctype: df.options,
 					fieldname: df.fieldname,
-					label: __(df.label)
+					label: __(df.label),
 				});
 			} else if (df.fieldtype == "Dynamic Link" && df.options) {
 				dynamic_links.push({
@@ -2294,7 +2310,9 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		const message = __(
 			"For comparison, use >5, <10 or =324. For ranges, use 5:10 (for values between 5 & 10)."
 		);
-		const execution_time_msg = __("Execution Time: {0} sec", [flt(this.execution_time, 3) || 0.1]);
+		const execution_time_msg = __("Execution Time: {0} sec", [
+			flt(this.execution_time, 3) || 0.1,
+		]);
 
 		this.$report_footer_items.append(`<div>${message}</div>`);
 		this.$report_footer_items.append(`<div>${execution_time_msg}</div>`);

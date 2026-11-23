@@ -166,7 +166,7 @@ frappe.ui.form.AssignToDialog = class AssignToDialog {
 		if (title) {
 			title = me.frm.doc.name + ": " + title;
 		} else {
-			title = me.frm.doc.name
+			title = me.frm.doc.name;
 		}
 
 		me.dialog.set_value("title", title);
@@ -185,9 +185,9 @@ frappe.ui.form.AssignToDialog = class AssignToDialog {
 
 		return [
 			{
-				fieldtype: 'Data',
-				fieldname: 'title',
-				label: __("Title")
+				fieldtype: "Data",
+				fieldname: "title",
+				label: __("Title"),
 			},
 			{
 				label: __("Assign To User Group"),

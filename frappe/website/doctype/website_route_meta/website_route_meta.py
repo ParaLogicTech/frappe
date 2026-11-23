@@ -23,4 +23,5 @@ class WebsiteRouteMeta(Document):
 
 	def on_update(self):
 		from frappe.website.utils import clear_cache
+
 		clear_cache(self.name)

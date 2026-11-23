@@ -237,12 +237,16 @@ class FormMeta(Meta):
 		print_format_names = list(print_formats_map.keys())
 		signatories = []
 		if print_format_names:
-			signatories = frappe.db.sql("""
+			signatories = frappe.db.sql(
+				"""
 				select *
 				from `tabPrint Format Signatory`
 				where parent in %s
 				order by idx
-			""", [print_format_names], as_dict=1)
+			""",
+				[print_format_names],
+				as_dict=1,
+			)
 
 		for s in signatories:
 			if print_formats_map.get(s.parent):

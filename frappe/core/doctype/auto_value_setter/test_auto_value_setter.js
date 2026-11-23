@@ -10,14 +10,14 @@ QUnit.test("test: Auto Value Setter", function (assert) {
 
 	frappe.run_serially([
 		// insert a new Auto Value Setter
-		() => frappe.tests.make('Auto Value Setter', [
-			// values to be set
-			{key: 'value'}
-		]),
+		() =>
+			frappe.tests.make("Auto Value Setter", [
+				// values to be set
+				{ key: "value" },
+			]),
 		() => {
-			assert.equal(cur_frm.doc.key, 'value');
+			assert.equal(cur_frm.doc.key, "value");
 		},
-		() => done()
+		() => done(),
 	]);
-
 });

@@ -164,7 +164,8 @@
 }
 
 .template-row {
-	.grid-static-col, .row-index {
+	.grid-static-col,
+	.row-index {
 		height: auto;
 		max-height: unset;
 		min-height: 34px;

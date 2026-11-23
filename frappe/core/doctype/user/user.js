@@ -123,12 +123,13 @@ frappe.ui.form.on("User", {
 		let doc = frm.doc;
 
 		frappe.xcall("frappe.apps.get_apps").then((r) => {
-			let apps = r?.map((r) => {
-				return {
-					"value": r.name,
-					"label": r.title || r.name,
-				};
-			}) || [];
+			let apps =
+				r?.map((r) => {
+					return {
+						value: r.name,
+						label: r.title || r.name,
+					};
+				}) || [];
 			frm.set_df_property("default_app", "options", ["", ...apps]);
 		});
 
@@ -307,7 +308,11 @@ frappe.ui.form.on("User", {
 	},
 	enabled: function (frm) {
 		var doc = frm.doc;
-		frm.set_df_property("enabled", "read_only", cint(frm.is_new() || !has_access_to_edit_user()));
+		frm.set_df_property(
+			"enabled",
+			"read_only",
+			cint(frm.is_new() || !has_access_to_edit_user())
+		);
 		if (!frm.is_new() && has_access_to_edit_user()) {
 			frm.toggle_display(["sb1", "sb3", "modules_access"], doc.enabled);
 		}
@@ -385,9 +390,10 @@ frappe.ui.form.on("User", {
 	},
 	setup_impersonation: function (frm) {
 		if (
-			(frappe.session.user === "Administrator" || frappe.user.has_role("Impersonation User"))
-			&& !["Administrator", "Guest"].includes(frm.doc.name)
-			&& frm.doc.name != frappe.session.user
+			(frappe.session.user === "Administrator" ||
+				frappe.user.has_role("Impersonation User")) &&
+			!["Administrator", "Guest"].includes(frm.doc.name) &&
+			frm.doc.name != frappe.session.user
 		) {
 			frm.add_custom_button(__("Impersonate"), () => {
 				if (frm.doc.restrict_ip) {
@@ -424,7 +430,7 @@ frappe.ui.form.on("User", {
 	},
 	mobile_no: function (frm) {
 		frappe.regional.format_mobile_no(frm, "mobile_no");
-	}
+	},
 });
 
 frappe.ui.form.on("User Email", {

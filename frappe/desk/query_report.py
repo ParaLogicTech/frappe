@@ -4,6 +4,7 @@
 import datetime
 import json
 import os
+from collections import OrderedDict
 from datetime import timedelta
 
 import frappe
@@ -15,7 +16,6 @@ from frappe.model.utils import render_include
 from frappe.modules import get_module_path, scrub
 from frappe.monitor import add_data_to_monitor
 from frappe.permissions import get_role_permissions, get_roles, has_permission
-from collections import OrderedDict
 from frappe.utils import cint, cstr, flt, format_duration, get_html_format, sbool
 from frappe.utils.caching import request_cache
 
@@ -390,7 +390,9 @@ def _export_query(form_params, csv_params, populate_response=True):
 	visible_columns = frappe.parse_json(form_params.visible_columns)
 
 	if report_data is not None:
-		data = frappe._dict({"columns": visible_columns, "result": report_data, "filters": form_params.applied_filters})
+		data = frappe._dict(
+			{"columns": visible_columns, "result": report_data, "filters": form_params.applied_filters}
+		)
 	else:
 		data = run(report_name, form_params.filters, custom_columns=custom_columns, are_default_filters=False)
 		data = frappe._dict(data)
@@ -423,11 +425,7 @@ def _export_query(form_params, csv_params, populate_response=True):
 	elif file_format_type == "Excel":
 		file_extension = "xlsx"
 		content = make_xlsx(
-			xlsx_data,
-			"Query Report",
-			column_widths=column_widths,
-			column_formats=column_formats,
-			freeze="A2"
+			xlsx_data, "Query Report", column_widths=column_widths, column_formats=column_formats, freeze="A2"
 		).getvalue()
 
 	if include_filters:
@@ -544,6 +542,7 @@ def build_xlsx_data(
 		fieldtype = column.get("fieldtype")
 		if fieldtype in ("Currency", "Float", "Percent"):
 			from frappe.model.meta import get_field_precision
+
 			number_format = frappe.db.get_default("number_format") or "#,###.##"
 			decimal_str, comma_str, precision = frappe.utils.get_number_format_info(number_format)
 			precision = 1 if fieldtype == "Percent" else get_field_precision(column)
@@ -1001,9 +1000,14 @@ def translate_report_data(data, total_row):
 
 
 def group_report_data(
-	rows_to_group, group_by, group_by_labels=None,
-	total_fields=None, totals_only=False,
-	calculate_totals=None, postprocess_group=None, starting_level=1,
+	rows_to_group,
+	group_by,
+	group_by_labels=None,
+	total_fields=None,
+	totals_only=False,
+	calculate_totals=None,
+	postprocess_group=None,
+	starting_level=1,
 ):
 	return _group_report_data(
 		rows_to_group=rows_to_group,
@@ -1013,15 +1017,21 @@ def group_report_data(
 		totals_only=totals_only,
 		calculate_totals=calculate_totals,
 		postprocess_group=postprocess_group,
-		level=cint(starting_level)
+		level=cint(starting_level),
 	)
 
 
 def _group_report_data(
-	rows_to_group, group_by, group_by_labels=None,
-	total_fields=None, totals_only=False,
-	calculate_totals=None, postprocess_group=None,
-	parent_grouped_by=None, level=1, level_idx=None
+	rows_to_group,
+	group_by,
+	group_by_labels=None,
+	total_fields=None,
+	totals_only=False,
+	calculate_totals=None,
+	postprocess_group=None,
+	parent_grouped_by=None,
+	level=1,
+	level_idx=None,
 ):
 	def get_grouped_by_map(group):
 		res = parent_grouped_by.copy()
@@ -1044,7 +1054,7 @@ def _group_report_data(
 
 		group_idx = []
 		for l in range(level):
-			group_idx.append(str(level_idx[l+1]))
+			group_idx.append(str(level_idx[l + 1]))
 
 		group_idx_str = ".".join(group_idx)
 		return group_idx_str
@@ -1069,15 +1079,19 @@ def _group_report_data(
 	if not parent_grouped_by:
 		parent_grouped_by = OrderedDict()
 
-	group_field = group_by[0] or ''
-	group_label = group_by_labels.get(group_field) if group_by_labels.get(group_field) else frappe.unscrub(cstr(group_field))
+	group_field = group_by[0] or ""
+	group_label = (
+		group_by_labels.get(group_field)
+		if group_by_labels.get(group_field)
+		else frappe.unscrub(cstr(group_field))
+	)
 	group_rows = OrderedDict()
 	group_totals = OrderedDict()
 
 	# Create group dictionaries
 	for row in rows_to_group:
 		if not group_field:
-			group_value = ''
+			group_value = ""
 		elif isinstance(group_field, (list, tuple)):
 			group_value = tuple(map(lambda f: row.get(f), group_field))
 		else:
@@ -1096,7 +1110,9 @@ def _group_report_data(
 	if calculate_totals and callable(calculate_totals):
 		for group_value in group_rows.keys():
 			grouped_by_map = get_grouped_by_map(group_value)
-			group_totals[group_value] = calculate_totals(group_rows[group_value], group_field, group_value, grouped_by_map)
+			group_totals[group_value] = calculate_totals(
+				group_rows[group_value], group_field, group_value, grouped_by_map
+			)
 
 	# Group totals only break condition
 	if totals_only and len(group_by) == 1:
@@ -1111,26 +1127,28 @@ def _group_report_data(
 		level_idx[level] += 1
 
 		grouped_by_map = get_grouped_by_map(group_value)
-		group_object = frappe._dict({
-			"_isGroup": 1,
-			"_level_idx": level_idx[level],
-			"_group_idx": get_group_idx(),
-			"group_field": group_field,
-			"group_label": group_label,
-			"group_value": group_value,
-			"rows": _group_report_data(
-				rows_to_group=rows,
-				group_by=group_by[1:],
-				group_by_labels=group_by_labels,
-				totals_only=totals_only,
-				total_fields=total_fields,
-				calculate_totals=calculate_totals,
-				postprocess_group=postprocess_group,
-				parent_grouped_by=grouped_by_map,
-				level=level+1,
-				level_idx=level_idx,
-			),
-		})
+		group_object = frappe._dict(
+			{
+				"_isGroup": 1,
+				"_level_idx": level_idx[level],
+				"_group_idx": get_group_idx(),
+				"group_field": group_field,
+				"group_label": group_label,
+				"group_value": group_value,
+				"rows": _group_report_data(
+					rows_to_group=rows,
+					group_by=group_by[1:],
+					group_by_labels=group_by_labels,
+					totals_only=totals_only,
+					total_fields=total_fields,
+					calculate_totals=calculate_totals,
+					postprocess_group=postprocess_group,
+					parent_grouped_by=grouped_by_map,
+					level=level + 1,
+					level_idx=level_idx,
+				),
+			}
+		)
 
 		for f, g in grouped_by_map.items():
 			if f not in group_object and f is not None:
@@ -1138,16 +1156,16 @@ def _group_report_data(
 
 		if group_totals.get(group_value):
 			group_total_row = group_totals.get(group_value)
-			group_total_row['_bold'] = 1
-			group_total_row['_group_idx'] = group_object['_group_idx']
-			group_total_row['_level_idx'] = group_object['_level_idx']
-			group_object['totals'] = group_total_row
+			group_total_row["_bold"] = 1
+			group_total_row["_group_idx"] = group_object["_group_idx"]
+			group_total_row["_level_idx"] = group_object["_level_idx"]
+			group_object["totals"] = group_total_row
 
 		if postprocess_group and callable(postprocess_group):
 			postprocess_group(group_object, grouped_by_map)
 
 		if group_object.totals:
-			group_object.totals['_isGroupTotal'] = 1
+			group_object.totals["_isGroupTotal"] = 1
 
 		if group_object.rows or group_object.totals:
 			out.append(group_object)
@@ -1168,7 +1186,9 @@ def flatten_grouped_report_data(data, result=None, current_indent=None):
 				result.append(obj.get("totals"))
 
 			if obj.get("rows"):
-				flatten_grouped_report_data(obj.get("rows"), result=result, current_indent=(current_indent or 0) + 1)
+				flatten_grouped_report_data(
+					obj.get("rows"), result=result, current_indent=(current_indent or 0) + 1
+				)
 		else:
 			if current_indent is not None:
 				obj["indent"] = current_indent + 1
@@ -1180,8 +1200,8 @@ def flatten_grouped_report_data(data, result=None, current_indent=None):
 
 def hide_columns_if_filtered(columns, filters):
 	def condition(col):
-		if col.get('hide_if_filtered'):
-			filter_value = filters.get(col.get('filter_fieldname') or col['fieldname'])
+		if col.get("hide_if_filtered"):
+			filter_value = filters.get(col.get("filter_fieldname") or col["fieldname"])
 			if filter_value:
 				if isinstance(filter_value, list):
 					return len(filter_value) == 1
