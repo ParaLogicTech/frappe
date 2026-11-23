@@ -38,7 +38,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: checkrun
     if: ${{ needs.checkrun.outputs.build == 'strawberry' && github.repository_owner == 'frappe' }}
     timeout-minutes: 60
@@ -81,7 +81,7 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 22
           check-latest: true
 
       - name: Add to Hosts
@@ -114,6 +114,11 @@ jobs:
         with:
           path: ~/.cache/Cypress
           key: ${{ runner.os }}-cypress
+
+      - name: Install System Dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: libcups2-dev redis-server mariadb-client fontconfig libjpeg-turbo8 xfonts-75dpi xfonts-base
 
       - name: Install Dependencies
         run: |
