@@ -40,3 +40,6 @@ f223bc02490902dfcc32892058f13f343d51fbaf
 
 # frappe.cache() -> frappe.cache
 fa6dc03cc87ad74e11609e7373078366fdcb3e1b
+
+# pre-commit formatting
+3d6ce09f8304d5f55888736f45076d1bacb796c5
