@@ -1,7 +1,7 @@
 # Copyright (c) 2015, Frappe Technologies and contributors
 # License: MIT. See LICENSE
 
-from typing import Optional
+from typing import Any
 
 from jinja2 import TemplateSyntaxError
 
@@ -314,7 +314,9 @@ def get_company_address(company, shipping_address=False):
 
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
-def address_query(doctype, txt, searchfield, start, page_len, filters):
+def address_query(
+	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict[str, Any]
+):
 	from frappe.desk.reportview import get_match_cond, get_filters_cond
 
 	doctype = "Address"
