@@ -238,7 +238,6 @@ def get_list_context(context=None):
 def get_address_list(doctype, txt, filters, limit_start, limit_page_length=20, fields=None, order_by=None):
 	from frappe.www.list import get_list
 
-	user = frappe.session.user
 	ignore_permissions = True
 
 	if not filters:
@@ -328,7 +327,7 @@ def address_query(doctype, txt, searchfield, start, page_len, filters):
 			(meta.get_field(searchfield) or searchfield in frappe.db.DEFAULT_COLUMNS):
 		searchfields.append(searchfield)
 
-	fields = ["name"] + searchfields
+	fields = ["name", *searchfields]
 	fields = frappe.utils.unique(fields)
 	fields = ", ".join(["`tabAddress`.{0}".format(f) for f in fields])
 

@@ -1304,7 +1304,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 
 				options = Object.assign({for_print: false, always_show_decimals: true}, options || {});
 				if (data && data._bold) {
-					if (!options.hasOwnProperty('css')) {
+					if (!Object.hasOwn(options, "css")) {
 						options.css = {};
 					}
 					options.css['font-weight'] = 'bold';
@@ -2141,11 +2141,6 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		}
 
 		return items;
-	}
-
-	get_checked_items() {
-		const indexes = this.datatable.rowmanager.getCheckedRows();
-		return indexes.map(i => this.data[i]).filter(i => i != undefined);
 	}
 
 	add_portrait_warning(dialog) {

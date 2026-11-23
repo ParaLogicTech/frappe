@@ -537,7 +537,7 @@ def contact_query(doctype, txt, searchfield, start, page_len, filters):
 			(meta.get_field(searchfield) or searchfield in frappe.db.DEFAULT_COLUMNS):
 		searchfields.append(searchfield)
 
-	fields = ["name"] + searchfields
+	fields = ["name", *searchfields]
 	fields = frappe.utils.unique(fields)
 	fields = ", ".join(["`tabContact`.{0}".format(f) for f in fields])
 

@@ -33,7 +33,7 @@ class ContactUsSettings(Document):
 
 	# end: auto-generated types
 	def validate(self):
-		for i, d in enumerate(self.get("query_options")):
+		for d in self.get("query_options"):
 			d.option = clean_whitespace(d.option)
 
 		self.query_options = [d for i, d in enumerate(self.query_options) if d or i == 0]

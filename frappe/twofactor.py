@@ -119,7 +119,7 @@ def two_factor_is_enabled_for_(user):
 		user = frappe.get_doc("User", user)
 
 	user_roles = [d.role for d in user.roles or []]
-	roles = user_roles + [ALL_USER_ROLE]
+	roles = [*user_roles, ALL_USER_ROLE]
 
 	role_doctype = frappe.qb.DocType("Role")
 

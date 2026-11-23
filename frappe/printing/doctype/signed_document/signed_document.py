@@ -274,7 +274,7 @@ def data_url_to_image(data_url):
 
 	# Split the metadata prefix out to extract only the Base64 payload
 	if "," in data_url:
-		header, encoded = data_url.split(",", 1)
+		_header, encoded = data_url.split(",", 1)
 	else:
 		encoded = data_url
 

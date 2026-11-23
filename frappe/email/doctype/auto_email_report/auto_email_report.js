@@ -195,7 +195,9 @@ frappe.ui.form.on("Auto Email Report", {
 							filters: dialog.fields_list,
 						});
 						reference_report.onload(frappe.query_report);
-					} catch (e) {}
+					} catch (e) {
+						// the filters dialog still works if the report's onload fails here
+					}
 				}
 
 				dialog.doc = dialog.doc || {};

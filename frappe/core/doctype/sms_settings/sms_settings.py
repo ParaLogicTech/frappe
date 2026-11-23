@@ -194,7 +194,7 @@ def send_via_gateway(args):
 	fail_list = []
 	for d in args.get('receiver_list'):
 		request_params[ss.receiver_parameter] = d
-		response = send_request(ss.sms_gateway_url, request_params, headers, ss.use_post)
+		response = send_request(ss.sms_gateway_url, request_params, headers, use_post=ss.use_post, use_json=use_json)
 
 		if validate_response(response, ss):
 			success_list.append(d)

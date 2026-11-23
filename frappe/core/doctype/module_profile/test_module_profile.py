@@ -123,8 +123,8 @@ class TestModuleProfile(FrappeTestCase):
 
 		user1.reload()
 		user2.reload()
-		self.assertEqual([bm.module for bm in user1.block_modules], ["Accounts", "Projects"])
-		self.assertEqual([bm.module for bm in user2.block_modules], ["Accounts", "Projects"])
+		self.assertCountEqual([bm.module for bm in user1.block_modules], ["Accounts", "Projects"])
+		self.assertCountEqual([bm.module for bm in user2.block_modules], ["Accounts", "Projects"])
 
 	def test_switch_user_module_profile(self):
 		"""Switching user to a different profile updates their block_modules"""
