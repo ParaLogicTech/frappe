@@ -154,10 +154,12 @@ def get_all_mobile_formats(mobile_no):
 			is_international_number = True
 			base_number = mobile_no[len(international_prefix) + 2 :]
 			all_mobile_nos.append(f"{local_prefix}{base_number}")
+			all_mobile_nos.append(f"+{international_prefix}{base_number}")
 		elif mobile_no.startswith(f"+{international_prefix}"):
 			is_international_number = True
 			base_number = mobile_no[len(international_prefix) + 1 :]
 			all_mobile_nos.append(f"{local_prefix}{base_number}")
+			all_mobile_nos.append(f"00{international_prefix}{base_number}")
 
 	# Local to International
 	if local_prefix is not None and international_prefix and not is_international_number:
