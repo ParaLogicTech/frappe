@@ -58,16 +58,21 @@ frappe.ui.form.ControlGeolocation = class ControlGeolocation extends frappe.ui.f
 		if (!Object.hasOwn(L.gridLayer, "googleMutant")) {
 			return;
 		}
-		L.gridLayer.googleMutant({
-			type: "roadmap"
-		}).addTo(this.map);
+		L.gridLayer
+			.googleMutant({
+				type: "roadmap",
+			})
+			.addTo(this.map);
 
 		$(`<input type="text" placeholder="Search for a place">`).appendTo(this.map_area);
-		var searchBox = new window.google.maps.places.SearchBox(this.map_area.find('input')[0]);
-		searchBox.addListener('places_changed', () => {
+		var searchBox = new window.google.maps.places.SearchBox(this.map_area.find("input")[0]);
+		searchBox.addListener("places_changed", () => {
 			var places = searchBox.getPlaces();
 			if (places.length) {
-				this.map.setView([places[0].geometry.location.lat(), places[0].geometry.location.lng()], 20);
+				this.map.setView(
+					[places[0].geometry.location.lat(), places[0].geometry.location.lng()],
+					20
+				);
 			}
 		});
 	}

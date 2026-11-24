@@ -311,10 +311,7 @@ def subscribe(email, email_group=None):
 	if not email_group:
 		email_group = get_default_email_group()
 
-
-	require_email_verification = frappe.db.get_value(
-		"Email Group", email_group, "require_email_verification"
-	)
+	require_email_verification = frappe.db.get_value("Email Group", email_group, "require_email_verification")
 
 	if require_email_verification:
 		parsed_email = frappe.utils.validate_email_address(email, True)
@@ -403,9 +400,7 @@ def confirm_subscription(email, email_group=None):
 
 def create_missing_email_group(email_group):
 	if not frappe.db.exists("Email Group", email_group):
-		frappe.get_doc({"doctype": "Email Group", "title": email_group}).insert(
-			ignore_permissions=True
-		)
+		frappe.get_doc({"doctype": "Email Group", "title": email_group}).insert(ignore_permissions=True)
 
 
 def get_list_context(context=None):

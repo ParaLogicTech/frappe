@@ -1,5 +1,6 @@
 import frappe
 
+
 def execute():
 	table_dts = frappe.db.sql_list("select name from `tabDocType` where istable = 1")
 	for dt in table_dts:
@@ -17,18 +18,24 @@ def execute():
 			if frappe.get_meta(parenttype).issingle:
 				continue
 
-			non_existent_parents = frappe.db.sql("""
+			non_existent_parents = frappe.db.sql(
+				"""
 				select ch.name, ch.parent
 				from `tab{dt}` ch
 				left join `tab{parenttype}` p on p.name = ch.parent
 				where p.name is null and ch.parenttype = '{parenttype}' and ch.parentfield = '{parentfield}'
-			""".format(dt=dt, parenttype=parenttype, parentfield=parentfield), as_dict=1)
+			""".format(dt=dt, parenttype=parenttype, parentfield=parentfield),
+				as_dict=1,
+			)
 
 			name_list = [d.name for d in non_existent_parents if d.name]
 			parent_list = list(set([d.parent for d in non_existent_parents]))
 
 			if name_list:
-				print("({0}, {1}, {2}) has {3} non existent parents".format(parenttype, dt, parentfield,
-					len(parent_list)))
+				print(
+					"({0}, {1}, {2}) has {3} non existent parents".format(
+						parenttype, dt, parentfield, len(parent_list)
+					)
+				)
 
 				frappe.db.sql("delete from `tab{0}` where name in %s".format(dt), [name_list])

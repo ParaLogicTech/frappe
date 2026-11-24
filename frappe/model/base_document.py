@@ -30,8 +30,8 @@ from frappe.utils import (
 	flt,
 	is_a_property,
 	now,
-	sanitize_html,
 	round_half_away_from_zero,
+	sanitize_html,
 	strip_html,
 )
 from frappe.utils.html_utils import unescape_html
@@ -80,7 +80,9 @@ def import_controller(doctype):
 
 	module_name = "Core"
 	if doctype not in DOCTYPES_FOR_DOCTYPE:
-		doctype_info = frappe.db.get_value("DocType", doctype, ("module", "custom", "is_tree"), as_dict=True, cache=True)
+		doctype_info = frappe.db.get_value(
+			"DocType", doctype, ("module", "custom", "is_tree"), as_dict=True, cache=True
+		)
 		if doctype_info:
 			if doctype_info.custom:
 				return NestedSet if doctype_info.is_tree else Document
@@ -1059,7 +1061,12 @@ class BaseDocument:
 			df = self.meta.get_field(key)
 			db_value = db_values.get(key)
 
-			if df and (not df.allow_on_submit or self.is_disallowed_on_submit(df.fieldname)) and not df.is_virtual and (self.get(key) or db_value):
+			if (
+				df
+				and (not df.allow_on_submit or self.is_disallowed_on_submit(df.fieldname))
+				and not df.is_virtual
+				and (self.get(key) or db_value)
+			):
 				if df.fieldtype in table_fields:
 					# just check if the table size has changed
 					# individual fields will be checked in the loop for children
@@ -1095,20 +1102,24 @@ class BaseDocument:
 	def is_disallowed_on_submit(self, fieldname):
 		doc = getattr(self, "parent_doc", None) or self
 		disallowed_fields = doc.flags.disallow_on_submit or []
-		return (fieldname, self.get('parentfield') or None) in disallowed_fields
+		return (fieldname, self.get("parentfield") or None) in disallowed_fields
 
 	def get_fields_for_disallow_on_submit(self, excluding_fields=None):
 		if not excluding_fields:
 			excluding_fields = []
 
-		disallowed_fields = [(df.fieldname, None) for df in self.meta.fields if df.allow_on_submit
-			and df.fieldname not in excluding_fields]
+		disallowed_fields = [
+			(df.fieldname, None)
+			for df in self.meta.fields
+			if df.allow_on_submit and df.fieldname not in excluding_fields
+		]
 
 		table_fields = self.meta.get_table_fields()
 		for table_df in table_fields:
 			table_meta = frappe.get_meta(table_df.options)
-			disallowed_fields += [(df.fieldname, table_df.fieldname) for df in table_meta.fields if
-				df.get('allow_on_submit')]
+			disallowed_fields += [
+				(df.fieldname, table_df.fieldname) for df in table_meta.fields if df.get("allow_on_submit")
+			]
 
 		return disallowed_fields
 

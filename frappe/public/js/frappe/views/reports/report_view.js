@@ -1615,7 +1615,10 @@ frappe.views.ReportView = class ReportView extends frappe.views.ListView {
 						fields: this.get_dialog_fields(),
 						primary_action: (values) => {
 							// doctype fields
-							let fields = (values[this.doctype] || []).map((f) => [f, this.doctype]);
+							let fields = (values[this.doctype] || []).map((f) => [
+								f,
+								this.doctype,
+							]);
 							delete values[this.doctype];
 
 							// child table fields
@@ -1804,11 +1807,11 @@ frappe.views.ReportView = class ReportView extends frappe.views.ListView {
 			}
 		}
 
-		if (frappe.user.has_role('System Manager') && frappe.boot.developer_mode === 1) {
+		if (frappe.user.has_role("System Manager") && frappe.boot.developer_mode === 1) {
 			// edit doctype
 			items.push({
-				label: __('Edit DocType'),
-				action: () => frappe.set_route('Form', 'DocType', this.doctype),
+				label: __("Edit DocType"),
+				action: () => frappe.set_route("Form", "DocType", this.doctype),
 			});
 		}
 

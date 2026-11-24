@@ -78,13 +78,15 @@ def get(
 
 	from frappe.utils.response import json_handler
 
-	out = frappe._dict({
-		"raw_result": json.dumps(raw_result, default=json_handler),
-		"list_count": list_data.list_count,
-		"result": result,
-		"show_more": show_more,
-		"next_start": limit_start + limit,
-	})
+	out = frappe._dict(
+		{
+			"raw_result": json.dumps(raw_result, default=json_handler),
+			"list_count": list_data.list_count,
+			"result": result,
+			"show_more": show_more,
+			"next_start": limit_start + limit,
+		}
+	)
 
 	frappe.utils.call_hook_method("update_website_list_data", out, doctype)
 
@@ -144,23 +146,27 @@ def get_list_data(
 	list_count = None
 	if list_context.get_list_count:
 		count_kwargs = list_kwargs.copy()
-		count_kwargs.update(dict(
-			limit_start=0,
-			limit_page_length=None,
-			fields=f"count(`tab{doctype}`.name) as count",
-			order_by=None,
-		))
+		count_kwargs.update(
+			dict(
+				limit_start=0,
+				limit_page_length=None,
+				fields=f"count(`tab{doctype}`.name) as count",
+				order_by=None,
+			)
+		)
 		list_count = _get_list(**count_kwargs)
 		list_count = cint(list_count[0].get("count")) if list_count else 0
-		list_context['list_count'] = list_count
+		list_context["list_count"] = list_count
 
 	# list context to be used if called as rendered list
 	frappe.flags.list_context = list_context
 
-	return frappe._dict({
-		"raw_result": raw_result,
-		"list_count": list_count,
-	})
+	return frappe._dict(
+		{
+			"raw_result": raw_result,
+			"list_count": list_count,
+		}
+	)
 
 
 def set_route(context):

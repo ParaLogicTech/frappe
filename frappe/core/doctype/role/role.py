@@ -26,6 +26,7 @@ class Role(Document):
 		restrict_to_domain: DF.Link | None
 		role_name: DF.Data
 		two_factor_auth: DF.Check
+
 	# end: auto-generated types
 	def before_rename(self, old, new, merge=False):
 		if old in STANDARD_ROLES:

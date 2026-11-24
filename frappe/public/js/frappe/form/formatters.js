@@ -9,7 +9,7 @@ frappe.form.link_formatters = {};
 frappe.form.global_formatters = [];
 
 frappe.form.formatters = {
-	_style: function(value, df, options, doc, right_align) {
+	_style: function (value, df, options, doc, right_align) {
 		if (options?.only_value) {
 			return value;
 		} else {
@@ -23,7 +23,9 @@ frappe.form.formatters = {
 			if (options?.link_href || options?.link_onclick) {
 				let link_title = frappe.form.formatters._get_link_title(options);
 				let link_target = frappe.form.formatters._get_link_target(options);
-				let link_onclick = options.link_onclick ? ` onclick="${options.link_onclick}"` : ""
+				let link_onclick = options.link_onclick
+					? ` onclick="${options.link_onclick}"`
+					: "";
 
 				out = `<a href="${options.link_href}"
 					${link_title}${link_target}${css_class}${css_style}${link_onclick}>
@@ -131,11 +133,11 @@ frappe.form.formatters = {
 		}
 	},
 
-	_format_number: function(value, format, precision) {
-		return (value == null || value === "") ? "" : format_number(value, format, precision);
+	_format_number: function (value, format, precision) {
+		return value == null || value === "" ? "" : format_number(value, format, precision);
 	},
 
-	Data: function(value, df, options, doc) {
+	Data: function (value, df, options, doc) {
 		if (df && df.options == "URL") {
 			if (!value) return "";
 			return `<a href="${value}" title="Open Link" target="_blank">${value}</a>`;
@@ -156,9 +158,10 @@ frappe.form.formatters = {
 	},
 	Float: function (value, docfield, options, doc) {
 		// don't allow 0 precision for Floats, hence or'ing with null
-		let precision = docfield.precision
-			|| cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.float_precision)
-			|| null;
+		let precision =
+			docfield.precision ||
+			cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.float_precision) ||
+			null;
 
 		if (docfield.options && docfield.options.trim()) {
 			// options points to a currency field, but expects precision of float!
@@ -178,21 +181,20 @@ frappe.form.formatters = {
 			return frappe.form.formatters._style(value, docfield, options, doc, true);
 		}
 	},
-	Int: function(value, docfield, options, doc) {
+	Int: function (value, docfield, options, doc) {
 		if (cstr(docfield.options).trim() === "File Size") {
 			return frappe.form.formatters.FileSize(value, docfield, options, doc);
 		}
 		value = frappe.form.formatters._format_number(value, null, 0);
 		return frappe.form.formatters._style(value, docfield, options, doc, true);
 	},
-	Percent: function(value, docfield, options, doc) {		
+	Percent: function (value, docfield, options, doc) {
 		const precision =
 			docfield.precision ||
 			cint(frappe.boot.sysdefaults && frappe.boot.sysdefaults.float_precision) ||
 			2;
 
-		if (value == null || value === "")
-			value = "";
+		if (value == null || value === "") value = "";
 		else {
 			value = flt(value, precision) + "%";
 		}
@@ -245,8 +247,15 @@ frappe.form.formatters = {
 			}
 		}
 
-		value = (value == null || value === "")
-			? "" : format_currency(value, currency, precision, cint(docfield.force_currency_symbol));
+		value =
+			value == null || value === ""
+				? ""
+				: format_currency(
+						value,
+						currency,
+						precision,
+						cint(docfield.force_currency_symbol)
+				  );
 
 		if (options && options.only_value) {
 			return value;
@@ -295,13 +304,18 @@ frappe.form.formatters = {
 		let anchor_target = frappe.form.formatters._get_link_target(options);
 		let anchor_title = frappe.form.formatters._get_link_title(options);
 
-		let link_text = __((options && options.label) || (link_title != original_value && link_title) || value);
+		let link_text = __(
+			(options && options.label) || (link_title != original_value && link_title) || value
+		);
 
 		let formatted;
 		if (docfield && docfield.link_onclick) {
-			formatted = repl(`<a onclick="%(onclick)s"${anchor_title}${css_class}${css_style}>${link_text}</a>`, {
-				onclick: docfield.link_onclick.replace(/"/g, "&quot;"),
-			});
+			formatted = repl(
+				`<a onclick="%(onclick)s"${anchor_title}${css_class}${css_style}>${link_text}</a>`,
+				{
+					onclick: docfield.link_onclick.replace(/"/g, "&quot;"),
+				}
+			);
 		} else if (docfield && doctype) {
 			if (frappe.model.can_read(doctype)) {
 				let url = frappe.utils.get_form_link(doctype, original_value);
@@ -347,18 +361,22 @@ frappe.form.formatters = {
 
 		return frappe.form.formatters._style(value, docfield, options, doc);
 	},
-	Datetime: function(value, docfield, options, doc) {
-		if(value) {
+	Datetime: function (value, docfield, options, doc) {
+		if (value) {
 			var m = moment(frappe.datetime.convert_to_user_tz(value));
-			value = m.format(frappe.datetime.get_user_date_fmt().toUpperCase() + ', ' + frappe.datetime.get_user_time_fmt());
+			value = m.format(
+				frappe.datetime.get_user_date_fmt().toUpperCase() +
+					", " +
+					frappe.datetime.get_user_time_fmt()
+			);
 		} else {
 			value = "";
 		}
 
 		return frappe.form.formatters._style(value, docfield, options, doc);
 	},
-	Text: function(value, df, options) {
-		if(value) {
+	Text: function (value, df, options) {
+		if (value) {
 			var tags = ["<p", "<div", "<br", "<table"];
 			var match = false;
 
@@ -369,7 +387,7 @@ frappe.form.formatters = {
 				}
 			}
 
-			if(!match && (!options || !options.no_newlines)) {
+			if (!match && (!options || !options.no_newlines)) {
 				value = frappe.utils.replace_newlines(value);
 			}
 		}
@@ -432,7 +450,7 @@ frappe.form.formatters = {
 		});
 		return html;
 	},
-	SmallText: function(value, docfield, options) {
+	SmallText: function (value, docfield, options) {
 		return frappe.form.formatters.Text(value, docfield, options);
 	},
 	TextEditor: function (value) {

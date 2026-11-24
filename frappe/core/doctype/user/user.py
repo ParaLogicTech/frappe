@@ -24,6 +24,7 @@ from frappe.rate_limiter import rate_limit
 from frappe.sessions import clear_sessions
 from frappe.utils import (
 	cint,
+	clean_whitespace,
 	escape_html,
 	flt,
 	format_datetime,
@@ -31,7 +32,6 @@ from frappe.utils import (
 	get_system_timezone,
 	now_datetime,
 	today,
-	clean_whitespace,
 )
 from frappe.utils.data import sha256_hash
 from frappe.utils.deprecations import deprecated
@@ -266,7 +266,10 @@ class User(Document):
 	def clean_name(self):
 		for field in ("first_name", "middle_name", "last_name"):
 			if field_value := self.get(field):
-				self.set(field, sanitize_html(clean_whitespace(field_value), always_sanitize=True, disallowed_tags="*"))
+				self.set(
+					field,
+					sanitize_html(clean_whitespace(field_value), always_sanitize=True, disallowed_tags="*"),
+				)
 
 	def set_full_name(self):
 		self.full_name = " ".join(p for p in [self.first_name, self.middle_name, self.last_name] if p)
@@ -388,8 +391,9 @@ class User(Document):
 		pass
 
 	def _reset_password(self, send_email=False, password_expired=False):
-		from frappe.utils import get_url
 		from urllib.parse import quote
+
+		from frappe.utils import get_url
 
 		key = frappe.generate_hash()
 		hashed_key = sha256_hash(key)
@@ -608,6 +612,7 @@ class User(Document):
 
 	def validate_mobile_no(self):
 		from frappe.regional.regional import validate_mobile_no
+
 		if self.mobile_no:
 			validate_mobile_no(self.mobile_no, throw=True)
 
@@ -1317,7 +1322,7 @@ def create_contact(user, ignore_links=False, ignore_mandatory=False):
 	# 		contact = frappe.get_doc("Contact", contact_name)
 	# 		contact.first_name = user.first_name
 	# 		contact.last_name = user.last_name
-	#		contact.gender = user.gender
+	# contact.gender = user.gender
 	#
 	# 		# Add mobile number if phone does not exists in contact
 	# 		if user.phone and not any(new_contact.phone == user.phone for new_contact in contact.phone_nos):

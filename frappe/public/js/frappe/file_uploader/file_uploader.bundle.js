@@ -37,7 +37,7 @@ class FileUploader {
 			this.wrapper = wrapper.get ? wrapper.get(0) : wrapper;
 		}
 
-		if(show_upload_button == null) {
+		if (show_upload_button == null) {
 			show_upload_button = !Boolean(this.dialog);
 		}
 

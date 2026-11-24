@@ -201,18 +201,18 @@ frappe.ui.form.on("Contact", {
 
 		$.each(frm.doc.phone_nos || [], function (i, d) {
 			if (d.is_primary_mobile_no) {
-				d.phone = frappe.regional.get_formatted_mobile_no(d.phone)
-				refresh_field('phone', d.name, 'phone_nos');
+				d.phone = frappe.regional.get_formatted_mobile_no(d.phone);
+				refresh_field("phone", d.name, "phone_nos");
 			}
 		});
 	},
 });
 
 frappe.ui.form.on("Contact Phone", {
-	phone: function(frm) {
+	phone: function (frm) {
 		frm.events.format_mobile_nos(frm);
 	},
-	is_primary_mobile_no: function(frm) {
+	is_primary_mobile_no: function (frm) {
 		frm.events.format_mobile_nos(frm);
-	}
+	},
 });

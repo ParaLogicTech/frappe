@@ -14,7 +14,8 @@
 	--dt-border-color: var(--table-border-color);
 	--dt-header-cell-bg: var(--fg-color);
 	--dt-selection-highlight-color: var(--highlight-color);
-	font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
+	font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell,
+		Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 
 	background-color: var(--bg-color);
 	//margin-left: -5px;
@@ -160,7 +161,7 @@
 		align-items: center;
 		justify-content: center;
 
-		input[type=checkbox] {
+		input[type="checkbox"] {
 			margin: 0 !important;
 		}
 	}

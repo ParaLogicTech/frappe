@@ -8,7 +8,7 @@ from frappe.contacts.address_and_contact import set_link_title
 from frappe.core.doctype.access_log.access_log import make_access_log
 from frappe.core.doctype.dynamic_link.dynamic_link import deduplicate_dynamic_links
 from frappe.model.document import Document
-from frappe.utils import cstr, cint, clean_whitespace
+from frappe.utils import cint, clean_whitespace, cstr
 
 
 class Contact(Document):
@@ -51,6 +51,7 @@ class Contact(Document):
 		tax_cnic: DF.Data | None
 		unsubscribed: DF.Check
 		user: DF.Link | None
+
 	# end: auto-generated types
 	def validate(self):
 		self.clean_contact_name()
@@ -145,12 +146,12 @@ class Contact(Document):
 	def validate_regional(self):
 		from frappe.regional.regional import validate_mobile_no, validate_tax_ids
 
-		if self.get('tax_cnic'):
+		if self.get("tax_cnic"):
 			validate_tax_ids(tax_cnic=self.tax_cnic)
 
-		if self.get('mobile_no'):
+		if self.get("mobile_no"):
 			validate_mobile_no(self.mobile_no)
-		if self.get('mobile_no_2'):
+		if self.get("mobile_no_2"):
 			validate_mobile_no(self.mobile_no_2)
 
 		for d in self.phone_nos:
@@ -188,7 +189,7 @@ class Contact(Document):
 		# Primary Email
 		if self.email_id:
 			if self.email_id not in [d.email_id for d in self.email_ids]:
-				self.append('email_ids', {'email_id': self.email_id})
+				self.append("email_ids", {"email_id": self.email_id})
 		else:
 			if self.email_ids:
 				self.email_id = self.email_ids[0].email_id
@@ -197,7 +198,7 @@ class Contact(Document):
 		non_primary_emails = [d.email_id for d in self.email_ids if d.email_id != self.email_id]
 		if self.email_id_2:
 			if self.email_id_2 not in all_emails:
-				self.append('email_ids', {'email_id': self.email_id_2})
+				self.append("email_ids", {"email_id": self.email_id_2})
 		else:
 			if non_primary_emails:
 				self.email_id_2 = non_primary_emails[0]
@@ -240,16 +241,18 @@ class Contact(Document):
 		# Primary Mobile
 		if self.mobile_no:
 			if self.mobile_no not in all_nos:
-				self.append('phone_nos', {'phone': self.mobile_no, 'is_primary_mobile_no': 1})
+				self.append("phone_nos", {"phone": self.mobile_no, "is_primary_mobile_no": 1})
 		else:
 			if mobile_nos:
 				self.mobile_no = mobile_nos[0]
 
 		# Secondary Mobile
-		non_primary_mobile_nos = [d.phone for d in self.phone_nos if d.is_primary_mobile_no and d.phone != self.mobile_no]
+		non_primary_mobile_nos = [
+			d.phone for d in self.phone_nos if d.is_primary_mobile_no and d.phone != self.mobile_no
+		]
 		if self.mobile_no_2:
 			if self.mobile_no_2 not in all_nos:
-				self.append('phone_nos', {'phone': self.mobile_no_2, 'is_primary_mobile_no': 1})
+				self.append("phone_nos", {"phone": self.mobile_no_2, "is_primary_mobile_no": 1})
 		else:
 			if non_primary_mobile_nos:
 				self.mobile_no_2 = non_primary_mobile_nos[0]
@@ -257,7 +260,7 @@ class Contact(Document):
 		# Primary Landline
 		if self.phone:
 			if self.phone not in all_nos:
-				self.append('phone_nos', {'phone': self.phone, 'is_primary_phone': 1})
+				self.append("phone_nos", {"phone": self.phone, "is_primary_phone": 1})
 		else:
 			if phone_nos:
 				self.phone = phone_nos[0]
@@ -278,10 +281,7 @@ class Contact(Document):
 			self.email_id = email_id
 
 		if email_id not in [d.email_id for d in self.email_ids]:
-			self.append("email_ids", {
-				"email_id": email_id,
-				"is_primary": is_primary
-			})
+			self.append("email_ids", {"email_id": email_id, "is_primary": is_primary})
 
 		if autosave:
 			self.save(ignore_permissions=True)
@@ -307,9 +307,9 @@ class Contact(Document):
 			self.user = frappe.db.get_value("User", {"email": self.email_id})
 
 	def get_link_for(self, link_doctype):
-		'''Return the link name, if exists for the given link DocType'''
+		"""Return the link name, if exists for the given link DocType"""
 		for link in self.links:
-			if link.link_doctype==link_doctype:
+			if link.link_doctype == link_doctype:
 				return link.link_name
 
 		return None
@@ -435,14 +435,18 @@ def download_vcards(contacts: str):
 
 def get_default_contact(doctype, name):
 	"""Returns default contact for the given doctype, name"""
-	out = frappe.db.sql_list("""
+	out = frappe.db.sql_list(
+		"""
 		select cont.name
 		from `tabDynamic Link` dl
 		inner join `tabContact` cont on cont.name = dl.parent and dl.parenttype = 'Contact'
 		where dl.link_doctype = %s and dl.link_name = %s
 		order by cont.is_primary_contact desc, cont.creation asc
 		limit 1
-	""", (doctype, name), as_dict=True)
+	""",
+		(doctype, name),
+		as_dict=True,
+	)
 
 	return out[0] if out else None
 
@@ -491,20 +495,20 @@ def _get_contact_details(
 	if contact and check_permissions:
 		contact.check_permission()
 
-	out = frappe._dict({
-		"contact_person": contact.get("name"),
-		"contact_display": " ".join(
-			filter(None, [contact.get("salutation"), contact.get("full_name")])
-		),
-		"contact_email": contact.get("email_id"),
-		"contact_email_cc": contact.get("email_id_2"),
-		"contact_mobile": contact.get("mobile_no"),
-		"contact_mobile_2": contact.get("mobile_no_2"),
-		"contact_phone": contact.get("phone"),
-		"contact_designation": contact.get("designation"),
-		"contact_department": contact.get("department"),
-		"contact_cnic": contact.get("tax_cnic")
-	})
+	out = frappe._dict(
+		{
+			"contact_person": contact.get("name"),
+			"contact_display": " ".join(filter(None, [contact.get("salutation"), contact.get("full_name")])),
+			"contact_email": contact.get("email_id"),
+			"contact_email_cc": contact.get("email_id_2"),
+			"contact_mobile": contact.get("mobile_no"),
+			"contact_mobile_2": contact.get("mobile_no_2"),
+			"contact_phone": contact.get("phone"),
+			"contact_designation": contact.get("designation"),
+			"contact_department": contact.get("department"),
+			"contact_cnic": contact.get("tax_cnic"),
+		}
+	)
 
 	if cint(get_contact_no_list) and link_doctype and link_name:
 		out.contact_nos = get_all_contact_nos(link_doctype, link_name)
@@ -529,7 +533,7 @@ def update_contact(doc, method):
 def contact_query(
 	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict[str, Any]
 ):
-	from frappe.desk.reportview import get_match_cond, get_filters_cond
+	from frappe.desk.reportview import get_filters_cond, get_match_cond
 
 	doctype = "Contact"
 	link_doctype = filters.pop("link_doctype")
@@ -537,17 +541,23 @@ def contact_query(
 
 	meta = frappe.get_meta(doctype)
 	searchfields = meta.get_search_fields()
-	if searchfield and searchfield not in searchfields and \
-			(meta.get_field(searchfield) or searchfield in frappe.db.DEFAULT_COLUMNS):
+	if (
+		searchfield
+		and searchfield not in searchfields
+		and (meta.get_field(searchfield) or searchfield in frappe.db.DEFAULT_COLUMNS)
+	):
 		searchfields.append(searchfield)
 
 	fields = ["name", *searchfields]
 	fields = frappe.utils.unique(fields)
 	fields = ", ".join(["`tabContact`.{0}".format(f) for f in fields])
 
-	search_condition = " or ".join(["`tabContact`.{0}".format(field) + " like %(txt)s" for field in searchfields])
+	search_condition = " or ".join(
+		["`tabContact`.{0}".format(field) + " like %(txt)s" for field in searchfields]
+	)
 
-	return frappe.db.sql("""
+	return frappe.db.sql(
+		"""
 		select {fields}
 		from `tabContact`, `tabDynamic Link`
 		where `tabDynamic Link`.parent = `tabContact`.name
@@ -564,19 +574,20 @@ def contact_query(
 			`tabContact`.name
 		limit %(start)s, %(page_len)s
 	""".format(
-		fields=fields,
-		scond=search_condition,
-		mcond=get_match_cond(doctype),
-		fcond=get_filters_cond(doctype, filters, []),
-		key=searchfield
-	), {
-		'txt': '%' + txt + '%',
-		'_txt': txt.replace("%", ""),
-		'start': start,
-		'page_len': page_len,
-		'link_name': link_name,
-		'link_doctype': link_doctype
-	})
+			fields=fields,
+			scond=search_condition,
+			mcond=get_match_cond(doctype),
+			fcond=get_filters_cond(doctype, filters, []),
+		),
+		{
+			"txt": "%" + txt + "%",
+			"_txt": txt.replace("%", ""),
+			"start": start,
+			"page_len": page_len,
+			"link_name": link_name,
+			"link_doctype": link_doctype,
+		},
+	)
 
 
 @frappe.whitelist()
@@ -640,14 +651,18 @@ def get_all_contact_nos(link_doctype, link_name):
 	if not link_doctype or not link_name:
 		return []
 
-	numbers = frappe.db.sql("""
+	numbers = frappe.db.sql(
+		"""
 		select p.phone, p.is_primary_mobile_no, p.is_primary_phone, c.name as contact
 		from `tabContact Phone` p
 		inner join `tabContact` c on c.name = p.parent
 		where exists(select dl.name from `tabDynamic Link` dl
 			where dl.parenttype = 'Contact' and dl.parent = c.name and dl.link_doctype = %s and dl.link_name = %s)
 		order by c.is_primary_contact desc, c.creation, p.idx
-	""", (link_doctype, link_name), as_dict=1)
+	""",
+		(link_doctype, link_name),
+		as_dict=1,
+	)
 
 	return numbers
 
@@ -655,7 +670,9 @@ def get_all_contact_nos(link_doctype, link_name):
 @frappe.whitelist()
 def add_phone_no_to_contact(contact, phone, is_primary_mobile_no=0, is_primary_phone=0):
 	doc = frappe.get_doc("Contact", contact)
-	doc.add_phone(phone, is_primary_mobile_no=cint(is_primary_mobile_no), is_primary_phone=cint(is_primary_phone))
+	doc.add_phone(
+		phone, is_primary_mobile_no=cint(is_primary_mobile_no), is_primary_phone=cint(is_primary_phone)
+	)
 	doc.save()
 
 

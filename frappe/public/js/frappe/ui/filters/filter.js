@@ -35,7 +35,7 @@ frappe.ui.Filter = class {
 			["ancestors of", __("Ancestors Of")],
 			["not ancestors of", __("Not Ancestors Of")],
 			["subtree of", __("Subtree Of")],
-			["not subtree of", __("Not Subtree Of")]
+			["not subtree of", __("Not Subtree Of")],
 		];
 
 		this.conditions.push(...this.nested_set_conditions);
@@ -126,8 +126,8 @@ frappe.ui.Filter = class {
 			this.on_change();
 		});
 
-		this.filter_edit_area.find('.set-filter-and-run').on('click', () => {
-			this.filter_edit_area.removeClass('new-filter');
+		this.filter_edit_area.find(".set-filter-and-run").on("click", () => {
+			this.filter_edit_area.removeClass("new-filter");
 			this.on_change();
 			this.update_filter_tag();
 		});

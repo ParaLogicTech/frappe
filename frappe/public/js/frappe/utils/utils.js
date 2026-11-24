@@ -495,7 +495,10 @@ Object.assign(frappe.utils, {
 				style = "warning";
 				colour = "orange";
 			} else if (
-				has_words(["Open", "Urgent", "High", "Failed", "Rejected", "Error", "Cancelled"], text)
+				has_words(
+					["Open", "Urgent", "High", "Failed", "Rejected", "Error", "Cancelled"],
+					text
+				)
 			) {
 				style = "danger";
 				colour = "red";
@@ -1001,8 +1004,8 @@ Object.assign(frappe.utils, {
 		}, 1000);
 	},
 
-	group_report_data_in_printable_format: function(rows, groups, current_group) {
-		let new_group = {rows: [], group: current_group};
+	group_report_data_in_printable_format: function (rows, groups, current_group) {
+		let new_group = { rows: [], group: current_group };
 		let groups_added = 0;
 
 		if (rows && rows.length) {
@@ -1012,16 +1015,20 @@ Object.assign(frappe.utils, {
 				if (cur_row._isGroup) {
 					if (new_group.rows.length) {
 						groups.push(new_group);
-						new_group = {rows: [], group: current_group};
+						new_group = { rows: [], group: current_group };
 						groups_added++;
 					}
 
-					let child_groups_added = frappe.utils.group_report_data_in_printable_format(cur_row.rows, groups, cur_row);
+					let child_groups_added = frappe.utils.group_report_data_in_printable_format(
+						cur_row.rows,
+						groups,
+						cur_row
+					);
 					if (cur_row.totals) {
 						if (child_groups_added == 1) {
 							groups[groups.length - 1].rows.push(cur_row.totals);
 						} else {
-							groups.push({rows: [cur_row.totals], group: cur_row});
+							groups.push({ rows: [cur_row.totals], group: cur_row });
 						}
 					}
 				} else {
@@ -1040,7 +1047,7 @@ Object.assign(frappe.utils, {
 		return groups_added;
 	},
 
-	print_report_groups: function(rows, print_group_function, page_break_groups, _p) {
+	print_report_groups: function (rows, print_group_function, page_break_groups, _p) {
 		let groups = [];
 		frappe.utils.group_report_data_in_printable_format(rows, groups);
 

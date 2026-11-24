@@ -345,12 +345,11 @@ export default class Grid {
 		}
 
 		const is_editable = this.is_editable();
-		const has_checked_row = this.wrapper.find(".grid-body .grid-row-check:checked:first").length;
+		const has_checked_row = this.wrapper.find(
+			".grid-body .grid-row-check:checked:first"
+		).length;
 
-		this.remove_rows_button.toggleClass(
-			"hidden",
-			!(has_checked_row && is_editable)
-		);
+		this.remove_rows_button.toggleClass("hidden", !(has_checked_row && is_editable));
 
 		let select_all_checkbox_checked = this.wrapper.find(
 			".grid-heading-row .grid-row-check:checked:first"
@@ -1041,7 +1040,7 @@ export default class Grid {
 		}
 
 		this.grid_rows[idx].row
-			.find('input,textarea,select')
+			.find("input,textarea,select")
 			.filter(":not(.grid-row-check):visible:enabled" + (last_column ? ":last" : ":first"))
 			.focus();
 	}
@@ -1267,7 +1266,7 @@ export default class Grid {
 								}
 							});
 
-							me.frm.trigger(me.df.fieldname + '_after_bulk_upload');
+							me.frm.trigger(me.df.fieldname + "_after_bulk_upload");
 							me.frm.refresh_field(me.df.fieldname);
 							frappe.msgprint({
 								message: __("Table updated"),

@@ -216,7 +216,7 @@ frappe.ui.FilterGroup = class {
 		return true;
 	}
 
-	push_new_filter(args, is_new_filter=false) {
+	push_new_filter(args, is_new_filter = false) {
 		// args: [doctype, fieldname, condition, value]
 		if (this.filter_exists(args)) return;
 
@@ -288,7 +288,7 @@ frappe.ui.FilterGroup = class {
 
 	update_filters() {
 		// remove hidden filters and undefined filters
-		this.filters = this.filters.filter(f => f.field); // remove hidden filters
+		this.filters = this.filters.filter((f) => f.field); // remove hidden filters
 		const filter_exists = (f) => ![undefined, null].includes(f.get_selected_value());
 		this.filters.map((f) => !filter_exists(f) && f.remove());
 		this.filters = this.filters.filter((f) => filter_exists(f) && f.field);

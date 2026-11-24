@@ -9,7 +9,7 @@ frappe.ui.form.ControlTime = class ControlTime extends frappe.ui.form.ControlDat
 		this.refresh();
 	}
 	set_time_options() {
-		let time_format = frappe.datetime.get_user_time_fmt()
+		let time_format = frappe.datetime.get_user_time_fmt();
 		let time_hour_format = frappe.datetime.get_time_hour_format();
 		let timepicker_format = time_hour_format == "12 Hour" ? "hh:ii:ss AA" : "hh:ii:ss";
 
@@ -45,7 +45,7 @@ frappe.ui.form.ControlTime = class ControlTime extends frappe.ui.form.ControlDat
 			((this.last_value && this.last_value !== this.value) ||
 				!this.datepicker.selectedDates.length)
 		) {
-			var date_obj = frappe.datetime.moment_to_date_obj(moment(value, 'HH:mm:ss'));
+			var date_obj = frappe.datetime.moment_to_date_obj(moment(value, "HH:mm:ss"));
 			this.datepicker.selectDate(date_obj);
 		}
 	}

@@ -141,7 +141,17 @@ class DocType(Document):
 		max_attachments: DF.Int
 		migration_hash: DF.Data | None
 		module: DF.Link
-		naming_rule: DF.Literal["", "Set by user", "Autoincrement", "By fieldname", "By \"Naming Series\" field", "Expression", "Expression (old style)", "Random", "By script"]
+		naming_rule: DF.Literal[
+			"",
+			"Set by user",
+			"Autoincrement",
+			"By fieldname",
+			'By "Naming Series" field',
+			"Expression",
+			"Expression (old style)",
+			"Random",
+			"By script",
+		]
 		nsm_parent_field: DF.Data | None
 		permissions: DF.Table[DocPerm]
 		protect_attached_files: DF.Check

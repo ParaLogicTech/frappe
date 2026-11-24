@@ -4,7 +4,7 @@ frappe.ui.get_print_settings = function (
 	letter_head,
 	pick_columns,
 	has_filters = false,
-	orientation = null,
+	orientation = null
 ) {
 	var print_settings = locals[":Print Settings"]["Print Settings"];
 
@@ -59,8 +59,8 @@ frappe.ui.get_print_settings = function (
 			fieldtype: "Check",
 			fieldname: "page_break_groups",
 			label: __("Insert Page Breaks Between Groups"),
-			default: 0
-		}
+			default: 0,
+		},
 	];
 
 	if (has_filters) {
@@ -270,4 +270,4 @@ frappe.ui.get_print_format_printer_map = function () {
 	} catch (e) {
 		return {};
 	}
-}
+};

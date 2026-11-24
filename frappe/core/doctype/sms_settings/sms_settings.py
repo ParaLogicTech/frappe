@@ -1,13 +1,14 @@
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 
-import frappe
-from frappe import _
-from frappe.utils import nowdate, cint, cstr
-from frappe.model.document import Document
-from frappe.core.doctype.notification_count.notification_count import add_notification_count
 import json
 from datetime import datetime
+
+import frappe
+from frappe import _
+from frappe.core.doctype.notification_count.notification_count import add_notification_count
+from frappe.model.document import Document
+from frappe.utils import cint, cstr, nowdate
 
 
 class SMSSettings(Document):
@@ -55,31 +56,34 @@ def send_sms(
 
 	receiver_list = clean_receiver_nos(receiver_list, format_sms=True)
 
-	args = frappe._dict({
-		'receiver_list': receiver_list,
-		'message': message,
-		'success_msg': success_msg,
-		'notification_type': notification_type,
-		'reference_doctype': reference_doctype,
-		'reference_name': reference_name,
-		'child_doctype': child_doctype,
-		'child_name': child_name,
-		'party_doctype': party_doctype,
-		'party': party,
-		'is_promotional': cint(is_promotional),
-		'priority': cint(priority),
-	})
+	args = frappe._dict(
+		{
+			"receiver_list": receiver_list,
+			"message": message,
+			"success_msg": success_msg,
+			"notification_type": notification_type,
+			"reference_doctype": reference_doctype,
+			"reference_name": reference_name,
+			"child_doctype": child_doctype,
+			"child_name": child_name,
+			"party_doctype": party_doctype,
+			"party": party,
+			"is_promotional": cint(is_promotional),
+			"priority": cint(priority),
+		}
+	)
 
 	queue = cint(queue)
 	queue_separately = cint(queue_separately)
 	if send_after:
-		args['send_after'] = send_after
+		args["send_after"] = send_after
 		queue = True
 
 	create_communication(args, automated=automated)
 
 	if queue:
 		from frappe.core.doctype.sms_queue.sms_queue import queue_sms
+
 		if queue_separately:
 			for r in receiver_list:
 				receiver_args = args.copy()
@@ -95,22 +99,24 @@ def send_sms(
 def process_and_send(args):
 	from frappe.email.doctype.notification.notification import get_doc_for_notification_triggers
 
-	if not frappe.get_cached_value('SMS Settings', None, 'sms_gateway_url'):
+	if not frappe.get_cached_value("SMS Settings", None, "sms_gateway_url"):
 		frappe.throw(_("Please Update SMS Settings"))
 
 	args = frappe._dict(args)
 
-	args['receiver_list'] = clean_receiver_nos(args.get('receiver_list'), format_sms=True)
-	if not args.get('receiver_list'):
+	args["receiver_list"] = clean_receiver_nos(args.get("receiver_list"), format_sms=True)
+	if not args.get("receiver_list"):
 		frappe.throw(_("No valid Mobile Number provided"))
 
-	if not args.get('message'):
+	if not args.get("message"):
 		frappe.throw(_("No SMS message provided"))
 
-	args['message'] = frappe.safe_decode(args.get('message')).encode('utf-8')
+	args["message"] = frappe.safe_decode(args.get("message")).encode("utf-8")
 
-	if not args.get('doc'):
-		args['doc'] = get_doc_for_notification_triggers(args.get('reference_doctype'), args.get('reference_name'))
+	if not args.get("doc"):
+		args["doc"] = get_doc_for_notification_triggers(
+			args.get("reference_doctype"), args.get("reference_name")
+		)
 
 	run_before_send_methods(args)
 	send_via_gateway(args)
@@ -119,66 +125,75 @@ def process_and_send(args):
 
 def create_communication(args, automated=False):
 	"""Make communication entry"""
-	if args.get('reference_doctype') and args.get('reference_name'):
+	if args.get("reference_doctype") and args.get("reference_name"):
 		subject = "SMS"
-		if args.get('subject') or args.get('notification_type'):
-			subject = "{0} SMS".format(args.get('subject') or args.get('notification_type'))
+		if args.get("subject") or args.get("notification_type"):
+			subject = "{0} SMS".format(args.get("subject") or args.get("notification_type"))
 
-		receiver_list = args.get('receiver_list') or []
+		receiver_list = args.get("receiver_list") or []
 
-		comm = frappe.get_doc({
-			"doctype": "Communication",
-			"communication_medium": "SMS",
-			"communication_type": "Automated Message" if cint(automated) else "Communication",
-			"subject": subject or 'SMS',
-			"content": args.get('message'),
-			"sent_or_received": "Sent",
-			"reference_doctype": args.get('reference_doctype'),
-			"reference_name": args.get('reference_name'),
-			"sender": frappe.session.user,
-			"recipients": "\n".join(receiver_list),
-			"phone_no": receiver_list[0] if len(receiver_list) == 1 else None
-		})
+		comm = frappe.get_doc(
+			{
+				"doctype": "Communication",
+				"communication_medium": "SMS",
+				"communication_type": "Automated Message" if cint(automated) else "Communication",
+				"subject": subject or "SMS",
+				"content": args.get("message"),
+				"sent_or_received": "Sent",
+				"reference_doctype": args.get("reference_doctype"),
+				"reference_name": args.get("reference_name"),
+				"sender": frappe.session.user,
+				"recipients": "\n".join(receiver_list),
+				"phone_no": receiver_list[0] if len(receiver_list) == 1 else None,
+			}
+		)
 
-		if args.get('party_doctype') and args.get('party'):
-			comm.append("timeline_links", {
-				"link_doctype": args.get('party_doctype'),
-				"link_name": args.get('party')
-			})
+		if args.get("party_doctype") and args.get("party"):
+			comm.append(
+				"timeline_links", {"link_doctype": args.get("party_doctype"), "link_name": args.get("party")}
+			)
 
 		comm.insert(ignore_permissions=True)
-		args['communication'] = comm.name
+		args["communication"] = comm.name
 
 
 def run_before_send_methods(args):
 	from frappe.email.doctype.notification.notification import run_validate_notification
 
-	doc = args.get('doc')
-	notification_type = cstr(args.get('notification_type'))
+	doc = args.get("doc")
+	notification_type = cstr(args.get("notification_type"))
 
 	if doc and notification_type:
 		validation = run_validate_notification(
-			doc, notification_type, child_doctype=args.get("child_doctype"), child_name=args.get("child_name"), throw=True
+			doc,
+			notification_type,
+			child_doctype=args.get("child_doctype"),
+			child_name=args.get("child_name"),
+			throw=True,
 		)
 		if not validation:
 			frappe.throw(_("{0} Notification Validation Failed").format(notification_type))
 
 
 def run_after_send_methods(args):
-	notification_type = cstr(args.get('notification_type'))
+	notification_type = cstr(args.get("notification_type"))
 	if args.get("reference_doctype") and args.get("reference_name") and notification_type:
-		add_notification_count(args.get("reference_doctype"), args.get("reference_name"), notification_type, 'SMS',
-			child_doctype=args.get("child_doctype"), child_name=args.get("child_name"))
+		add_notification_count(
+			args.get("reference_doctype"),
+			args.get("reference_name"),
+			notification_type,
+			"SMS",
+			child_doctype=args.get("child_doctype"),
+			child_name=args.get("child_name"),
+		)
 
 
 def send_via_gateway(sms_args):
-	ss = frappe.get_cached_doc('SMS Settings', None)
+	ss = frappe.get_cached_doc("SMS Settings", None)
 	headers = get_headers(ss)
 	use_json = headers.get("Content-Type") == "application/json"
 
-	request_params = {
-		ss.message_parameter: sms_args.get('message')
-	}
+	request_params = {ss.message_parameter: sms_args.get("message")}
 
 	for d in ss.get("parameters"):
 		if d.header:
@@ -188,30 +203,41 @@ def send_via_gateway(sms_args):
 
 		request_params[d.parameter] = d.value
 
-	frappe.utils.call_hook_method("update_sms_request_params",
-		params=request_params, headers=headers, args=sms_args)
+	frappe.utils.call_hook_method(
+		"update_sms_request_params", params=request_params, headers=headers, args=sms_args
+	)
 
 	success_list = []
 	fail_list = []
-	for d in sms_args.get('receiver_list'):
+	for d in sms_args.get("receiver_list"):
 		request_params[ss.receiver_parameter] = d
-		response = send_request(ss.sms_gateway_url, request_params, headers, use_post=ss.use_post, use_json=use_json)
+		response = send_request(
+			ss.sms_gateway_url, request_params, headers, use_post=ss.use_post, use_json=use_json
+		)
 
 		if validate_response(response, ss):
 			success_list.append(d)
 		else:
-			fail_list.append({'number': d, 'error': get_error_message(response, ss)})
+			fail_list.append({"number": d, "error": get_error_message(response, ss)})
 
-	fail_message_list = ["{0} ({1})".format(d.get('number'), d.get('error') or 'Unknown Error') for d in fail_list]
+	fail_message_list = [
+		"{0} ({1})".format(d.get("number"), d.get("error") or "Unknown Error") for d in fail_list
+	]
 
 	if len(success_list) > 0:
 		create_sms_log(sms_args, success_list)
-		if sms_args.get('success_msg'):
+		if sms_args.get("success_msg"):
 			frappe.msgprint(_("SMS sent to the following numbers:<br>{0}").format("<br>".join(success_list)))
 			if fail_message_list:
-				frappe.msgprint(_("SMS failed for the following numbers:<br>{0}").format("<br>".join(fail_message_list)))
+				frappe.msgprint(
+					_("SMS failed for the following numbers:<br>{0}").format("<br>".join(fail_message_list))
+				)
 	else:
-		frappe.throw(_("SMS could not be sent{0}").format("<br>{0}".format(fail_message_list[0]) if fail_message_list else ""))
+		frappe.throw(
+			_("SMS could not be sent{0}").format(
+				"<br>{0}".format(fail_message_list[0]) if fail_message_list else ""
+			)
+		)
 
 
 def get_headers(sms_settings=None):
@@ -263,7 +289,7 @@ def validate_response(response, sms_settings=None):
 		return False
 
 	if sms_settings.response_validation:
-		valid = frappe.safe_eval(sms_settings.response_validation, eval_locals={'response': response})
+		valid = frappe.safe_eval(sms_settings.response_validation, eval_locals={"response": response})
 		if not valid:
 			return False
 
@@ -275,18 +301,18 @@ def get_error_message(response, sms_settings=None):
 		sms_settings = frappe.get_cached_doc("SMS Settings", None)
 
 	if sms_settings.error_message:
-		return frappe.safe_eval(sms_settings.error_message, eval_locals={'response': response})
+		return frappe.safe_eval(sms_settings.error_message, eval_locals={"response": response})
 
 
 def is_sms_enabled():
-	return True if frappe.get_cached_value('SMS Settings', None, 'sms_gateway_url') else False
+	return True if frappe.get_cached_value("SMS Settings", None, "sms_gateway_url") else False
 
 
 def is_automated_sms_enabled():
 	if not is_sms_enabled():
 		return False
 
-	return cint(frappe.conf.get('enable_automated_sms'))
+	return cint(frappe.conf.get("enable_automated_sms"))
 
 
 # Create SMS Log
@@ -295,23 +321,23 @@ def create_sms_log(args, sent_to):
 	if args.get("sms_log_message"):
 		message = args.get("sms_log_message")
 	else:
-		message = args['message'].decode('utf-8')
+		message = args["message"].decode("utf-8")
 
-	sl = frappe.new_doc('SMS Log')
+	sl = frappe.new_doc("SMS Log")
 	sl.sent_on = frappe.utils.now_datetime()
 	sl.message = message
-	sl.no_of_requested_sms = len(args['receiver_list'])
-	sl.requested_numbers = "\n".join(args['receiver_list'])
+	sl.no_of_requested_sms = len(args["receiver_list"])
+	sl.requested_numbers = "\n".join(args["receiver_list"])
 	sl.no_of_sent_sms = len(sent_to)
 	sl.sent_to = "\n".join(sent_to)
-	sl.reference_doctype = args.get('reference_doctype')
-	sl.reference_name = args.get('reference_name')
-	sl.communication = args.get('communication')
+	sl.reference_doctype = args.get("reference_doctype")
+	sl.reference_name = args.get("reference_name")
+	sl.communication = args.get("communication")
 	sl.flags.ignore_permissions = True
 	sl.save()
 
-	if args.get('communication') and not args.get('sms_queue'):
-		frappe.get_doc('Communication', args.get('communication')).set_delivery_status(commit=False)
+	if args.get("communication") and not args.get("sms_queue"):
+		frappe.get_doc("Communication", args.get("communication")).set_delivery_status(commit=False)
 
 
 def clean_receiver_nos(receiver_list, format_sms=False):
@@ -338,7 +364,7 @@ def clean_receiver_number(number, format_sms=False):
 	if format_sms:
 		sms_settings = frappe.get_cached_doc("SMS Settings", None)
 		if sms_settings.number_formatter:
-			formatted_number = frappe.safe_eval(sms_settings.number_formatter, eval_locals={'number': number})
+			formatted_number = frappe.safe_eval(sms_settings.number_formatter, eval_locals={"number": number})
 			if formatted_number:
 				number = formatted_number
 
@@ -346,7 +372,7 @@ def clean_receiver_number(number, format_sms=False):
 
 
 def clean_phone_no(number):
-	invalid_characters = {' ', '\t', '-', '(', ')', '\xa0'}
+	invalid_characters = {" ", "\t", "-", "(", ")", "\xa0"}
 	number = "".join([c for c in cstr(number) if c not in invalid_characters])
 	return number
 
@@ -360,16 +386,19 @@ def get_contact_number(
 		mobile_no = frappe.db.get_value("Contact", contact_name, "mobile_no")
 
 	if not mobile_no and ref_doctype and ref_name:
-		number = frappe.db.sql_list("""
+		number = frappe.db.sql_list(
+			"""
 			select c.mobile_no
 			from `tabContact` c
 			where ifnull(c.mobile_no, '') != ''
 				and exists(select dl.name from `tabDynamic Link` dl where dl.parenttype = 'Contact' and dl.parent = c.name
 					and link_doctype=%s and link_name=%s)
 			limit 1
-		""", (ref_doctype, ref_name))
+		""",
+			(ref_doctype, ref_name),
+		)
 
 		if number:
 			mobile_no = number[0]
 
-	return mobile_no or ''
+	return mobile_no or ""

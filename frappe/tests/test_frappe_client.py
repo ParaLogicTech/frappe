@@ -142,9 +142,7 @@ class TestFrappeClient(FrappeTestCase):
 			{
 				"doctype": "Event",
 				"subject": "Sing a song of sixpence",
-				"event_participants": [
-					{"reference_doctype": "Contact", "reference_docname": george}
-				],
+				"event_participants": [{"reference_doctype": "Contact", "reference_docname": george}],
 			}
 		)
 

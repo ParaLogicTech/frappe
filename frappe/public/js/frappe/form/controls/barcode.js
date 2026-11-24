@@ -11,7 +11,6 @@ frappe.ui.form.ControlBarcode = class ControlBarcode extends frappe.ui.form.Cont
 		this.barcode_area.appendTo($input_wrapper);
 	}
 
-
 	refresh_input() {
 		super.refresh_input();
 		if (this.disp_status != "None") {

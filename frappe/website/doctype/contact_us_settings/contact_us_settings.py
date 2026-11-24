@@ -42,6 +42,7 @@ class ContactUsSettings(Document):
 
 	def on_update(self):
 		from frappe.website.utils import clear_cache
+
 		clear_cache()
 
 
@@ -57,4 +58,4 @@ def update_website_context(context):
 	else:
 		doc.query_options = ["Sales", "Support", "General"]
 
-	context['contact_us_settings'] = doc
+	context["contact_us_settings"] = doc

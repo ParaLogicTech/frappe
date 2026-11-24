@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2022, Frappe Technologies and contributors
 # For license information, please see license.txt
 
 import frappe
-from frappe.utils import cint, now_datetime, get_datetime, cstr
 from frappe.model.document import Document
-
+from frappe.utils import cint, cstr, get_datetime, now_datetime
 
 exclude_from_linked_with = True
 
@@ -43,8 +41,15 @@ def add_notification_count(
 ):
 	count = cint(count) or 1
 
-	doc = get_notification_count_doc(reference_doctype, reference_name, notification_type, notification_medium,
-		child_doctype=child_doctype, child_name=child_name, for_update=True)
+	doc = get_notification_count_doc(
+		reference_doctype,
+		reference_name,
+		notification_type,
+		notification_medium,
+		child_doctype=child_doctype,
+		child_name=child_name,
+		for_update=True,
+	)
 	doc.notification_count = cint(doc.notification_count) + count
 	doc.last_sent_dt = now_datetime()
 	doc.save(ignore_permissions=True)
@@ -58,9 +63,15 @@ def get_notification_count(
 	child_doctype=None,
 	child_name=None,
 ):
-	doc = get_notification_count_doc(reference_doctype, reference_name, notification_type, notification_medium,
-		child_doctype=child_doctype, child_name=child_name)
-	return cint(doc.get('notification_count'))
+	doc = get_notification_count_doc(
+		reference_doctype,
+		reference_name,
+		notification_type,
+		notification_medium,
+		child_doctype=child_doctype,
+		child_name=child_name,
+	)
+	return cint(doc.get("notification_count"))
 
 
 def set_notification_last_scheduled(
@@ -72,8 +83,15 @@ def set_notification_last_scheduled(
 	child_name=None,
 	now_dt=None,
 ):
-	doc = get_notification_count_doc(reference_doctype, reference_name, notification_type, notification_medium,
-		child_doctype=child_doctype, child_name=child_name, for_update=True)
+	doc = get_notification_count_doc(
+		reference_doctype,
+		reference_name,
+		notification_type,
+		notification_medium,
+		child_doctype=child_doctype,
+		child_name=child_name,
+		for_update=True,
+	)
 	doc.last_scheduled_dt = get_datetime(now_dt)
 	doc.save(ignore_permissions=True)
 
@@ -86,9 +104,15 @@ def get_notification_last_scheduled(
 	child_doctype=None,
 	child_name=None,
 ):
-	doc = get_notification_count_doc(reference_doctype, reference_name, notification_type, notification_medium,
-		child_doctype=child_doctype, child_name=child_name)
-	return get_datetime(doc.get('last_scheduled_dt')) if doc.get('last_scheduled_dt') else None
+	doc = get_notification_count_doc(
+		reference_doctype,
+		reference_name,
+		notification_type,
+		notification_medium,
+		child_doctype=child_doctype,
+		child_name=child_name,
+	)
+	return get_datetime(doc.get("last_scheduled_dt")) if doc.get("last_scheduled_dt") else None
 
 
 def clear_notification_count(reference_doctype, reference_name, child_doctype=None, child_name=None):
@@ -114,10 +138,12 @@ def get_all_notification_count(reference_doctype, reference_name, child_doctype=
 	fields = ["notification_type", "notification_medium", "notification_count"]
 
 	if child_doctype and child_name:
-		filters.update({
-			"child_doctype": child_doctype,
-			"child_name": child_name,
-		})
+		filters.update(
+			{
+				"child_doctype": child_doctype,
+				"child_name": child_name,
+			}
+		)
 
 	return frappe.get_all("Notification Count", filters=filters, fields=fields, order_by="creation")
 
@@ -138,14 +164,11 @@ def get_notification_count_doc(
 		"reference_doctype": reference_doctype,
 		"reference_name": reference_name,
 		"notification_type": notification_type,
-		"notification_medium": notification_medium
+		"notification_medium": notification_medium,
 	}
 
 	if child_doctype and child_name:
-		filters.update({
-			"child_doctype": child_doctype,
-			"child_name": child_name
-		})
+		filters.update({"child_doctype": child_doctype, "child_name": child_name})
 
 	name = frappe.db.get_value("Notification Count", filters)
 

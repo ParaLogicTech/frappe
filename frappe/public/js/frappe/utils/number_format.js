@@ -91,7 +91,8 @@ frappe.number_format_info = {
 window.format_number = function (v, format, decimals) {
 	if (!format) {
 		format = get_number_format();
-		if (decimals == null) decimals = cint(frappe.defaults?.get_default("float_precision")) || 3;
+		if (decimals == null)
+			decimals = cint(frappe.defaults?.get_default("float_precision")) || 3;
 	}
 
 	var info = get_number_format_info(format);
@@ -153,10 +154,11 @@ function format_currency(v, currency, decimals, force_symbol) {
 		decimals = frappe.boot.sysdefaults.currency_precision || null;
 	}
 
-	if (symbol && (
-		frappe.boot.sysdefaults.hide_currency_symbol != "Yes"
-		|| (currency && currency != frappe.boot.sysdefaults.currency)
-		|| force_symbol)
+	if (
+		symbol &&
+		(frappe.boot.sysdefaults.hide_currency_symbol != "Yes" ||
+			(currency && currency != frappe.boot.sysdefaults.currency) ||
+			force_symbol)
 	) {
 		if (show_symbol_on_right) {
 			return format_number(v, format, decimals) + " " + __(symbol);
@@ -169,8 +171,7 @@ function format_currency(v, currency, decimals, force_symbol) {
 
 function get_currency_symbol(currency) {
 	if (frappe.boot) {
-		if (!currency)
-			currency = frappe.boot.sysdefaults.currency;
+		if (!currency) currency = frappe.boot.sysdefaults.currency;
 
 		return frappe.model.get_value(":Currency", currency, "symbol") || currency;
 	} else {
@@ -206,7 +207,9 @@ function get_number_format_info(format) {
 
 function _round(num, precision, rounding_method) {
 	rounding_method =
-		rounding_method || frappe.boot?.sysdefaults?.rounding_method || "Banker's Rounding (legacy)";
+		rounding_method ||
+		frappe.boot?.sysdefaults?.rounding_method ||
+		"Banker's Rounding (legacy)";
 
 	let is_negative = num < 0 ? true : false;
 
@@ -297,7 +300,7 @@ function round_based_on_smallest_currency_fraction(
 	value,
 	currency,
 	precision,
-	smallest_currency_fraction_value,
+	smallest_currency_fraction_value
 ) {
 	if (smallest_currency_fraction_value == null) {
 		smallest_currency_fraction_value = flt(

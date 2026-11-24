@@ -308,6 +308,7 @@ def _get_linked_document_counts(doctype: str, name: str, items=None):
 
 	if not meta.custom:
 		from frappe.model.base_document import get_controller
+
 		controller = get_controller(doctype)
 		module = frappe.get_meta_module(doctype)
 

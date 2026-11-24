@@ -84,7 +84,7 @@ $.extend(frappe.contacts, {
 				callback: function (r) {
 					frappe.contacts.set_all_contact_nos(frm, r.message);
 				},
-			})
+			});
 		}
 	},
 
@@ -103,7 +103,9 @@ $.extend(frappe.contacts, {
 			all_contact_nos = frm.doc.__onload.contact_nos;
 		}
 
-		var filtered_contact_nos = number_type ? all_contact_nos.filter(d => d[number_type]) : all_contact_nos;
+		var filtered_contact_nos = number_type
+			? all_contact_nos.filter((d) => d[number_type])
+			: all_contact_nos;
 
 		var contact_nos = [];
 		$.each(filtered_contact_nos, function (i, d) {
@@ -114,44 +116,59 @@ $.extend(frappe.contacts, {
 
 		var already_set = frm.doc[fieldname];
 		if (already_set && !contact_nos.includes(already_set)) {
-			 contact_nos.push(already_set);
+			contact_nos.push(already_set);
 		}
 
-		var options = [''].concat(contact_nos);
+		var options = [""].concat(contact_nos);
 		if (allow_add) {
-			options.push(__('[Add New Number]'));
+			options.push(__("[Add New Number]"));
 		}
 
-		frm.set_df_property(fieldname, 'options', options);
+		frm.set_df_property(fieldname, "options", options);
 	},
 
-	add_new_number_dialog: function(frm, number_field, contact_field, contact_name_field, number_type, callback) {
+	add_new_number_dialog: function (
+		frm,
+		number_field,
+		contact_field,
+		contact_name_field,
+		number_type,
+		callback
+	) {
 		var html = `
 <div class="text-center">
-<button type="button" class="btn btn-primary btn-new-contact">${__("Create a New Contact")}</button>
+<button type="button" class="btn btn-primary btn-new-contact">${__(
+			"Create a New Contact"
+		)}</button>
 <br/><br/>
-<button type="button" class="btn btn-primary btn-existing-contact">${__("Add Number To Existing Contact")}</button>
+<button type="button" class="btn btn-primary btn-existing-contact">${__(
+			"Add Number To Existing Contact"
+		)}</button>
 </div>
 `;
 
 		var dialog = new frappe.ui.Dialog({
 			title: __("Add New Contact Number"),
-			fields: [
-				{fieldtype: "HTML", options: html}
-			],
+			fields: [{ fieldtype: "HTML", options: html }],
 		});
 
 		dialog.show();
 
-		$('.btn-new-contact', dialog.$wrapper).click(function () {
+		$(".btn-new-contact", dialog.$wrapper).click(function () {
 			dialog.hide();
 			frappe.contacts.create_new_contact(frm, number_field, contact_field);
 		});
 
-		$('.btn-existing-contact', dialog.$wrapper).click(function () {
+		$(".btn-existing-contact", dialog.$wrapper).click(function () {
 			dialog.hide();
-			frappe.contacts.add_number_to_existing_contact_dialog(frm, number_field, contact_field, contact_name_field,
-				number_type, callback);
+			frappe.contacts.add_number_to_existing_contact_dialog(
+				frm,
+				number_field,
+				contact_field,
+				contact_name_field,
+				number_type,
+				callback
+			);
 		});
 	},
 
@@ -162,7 +179,14 @@ $.extend(frappe.contacts, {
 		}
 	},
 
-	add_number_to_existing_contact_dialog: function (frm, number_field, contact_field, contact_name_field, number_type, callback) {
+	add_number_to_existing_contact_dialog: function (
+		frm,
+		number_field,
+		contact_field,
+		contact_name_field,
+		number_type,
+		callback
+	) {
 		var dialog = new frappe.ui.Dialog({
 			title: __("Add Number to Existing Contact"),
 			fields: [
@@ -175,28 +199,31 @@ $.extend(frappe.contacts, {
 					default: frm.doc[contact_field],
 					get_query: () => frappe.contacts.contact_query(frm.doc),
 					onchange: () => {
-						var contact = dialog.get_value('contact');
+						var contact = dialog.get_value("contact");
 						if (contact) {
 							frappe.call({
 								method: "frappe.contacts.doctype.contact.contact.get_contact_details",
-								args: {contact: contact},
+								args: { contact: contact },
 								callback: function (r) {
 									if (r.message) {
-										dialog.set_value('contact_display', r.message.contact_display);
+										dialog.set_value(
+											"contact_display",
+											r.message.contact_display
+										);
 									}
-								}
+								},
 							});
 						} else {
-							dialog.set_value('contact_display', "");
+							dialog.set_value("contact_display", "");
 						}
-					}
+					},
 				},
 				{
 					label: __("Contact Name"),
 					fieldname: "contact_display",
 					fieldtype: "Data",
 					read_only: 1,
-					default: frm.doc[contact_name_field]
+					default: frm.doc[contact_name_field],
 				},
 				{
 					fieldtype: "Data",
@@ -205,14 +232,14 @@ $.extend(frappe.contacts, {
 					reqd: 1,
 					onchange: () => {
 						if (number_type == "is_primary_mobile_no") {
-							var value = dialog.get_value('phone');
+							var value = dialog.get_value("phone");
 							value = frappe.regional.get_formatted_mobile_no(value);
 							dialog.fields_dict.phone.value = value;
 							dialog.fields_dict.phone.refresh();
 						}
 					},
 				},
-			]
+			],
 		});
 
 		dialog.set_primary_action(__("Add"), function () {
@@ -223,17 +250,17 @@ $.extend(frappe.contacts, {
 			return frappe.call({
 				method: "frappe.contacts.doctype.contact.contact.add_phone_no_to_contact",
 				args: {
-					"contact": values.contact,
-					"phone": values.phone,
-					"is_primary_mobile_no": cint(number_type == 'is_primary_mobile_no'),
-					"is_primary_phone": cint(number_type == 'is_primary_phone'),
+					contact: values.contact,
+					phone: values.phone,
+					is_primary_mobile_no: cint(number_type == "is_primary_mobile_no"),
+					is_primary_phone: cint(number_type == "is_primary_phone"),
 				},
 				callback: function (r) {
 					if (!r.exc) {
 						dialog.hide();
 						callback && callback(values.phone);
 					}
-				}
+				},
 			});
 		});
 
@@ -243,42 +270,60 @@ $.extend(frappe.contacts, {
 	get_contacts_from_number: function (frm, phone_no) {
 		contacts = [];
 		if (phone_no && frm.doc.__onload && frm.doc.__onload.contact_nos) {
-			var contacts = frm.doc.__onload.contact_nos.filter(d => d.phone == phone_no);
-			contacts = contacts.map(d => d.contact);
+			var contacts = frm.doc.__onload.contact_nos.filter((d) => d.phone == phone_no);
+			contacts = contacts.map((d) => d.contact);
 		}
 		return contacts;
 	},
 
-	address_query: function(doc) {
+	address_query: function (doc) {
 		if (frappe.dynamic_link) {
-			if(!doc[frappe.dynamic_link.fieldname]) {
-				frappe.throw(__("Please set {0}",
-					[__(frappe.meta.get_label(doc.doctype, frappe.dynamic_link.fieldname, doc.name))]));
+			if (!doc[frappe.dynamic_link.fieldname]) {
+				frappe.throw(
+					__("Please set {0}", [
+						__(
+							frappe.meta.get_label(
+								doc.doctype,
+								frappe.dynamic_link.fieldname,
+								doc.name
+							)
+						),
+					])
+				);
 			}
 
 			return {
-				query: 'frappe.contacts.doctype.address.address.address_query',
+				query: "frappe.contacts.doctype.address.address.address_query",
 				filters: {
 					link_doctype: frappe.dynamic_link.doctype,
-					link_name: doc[frappe.dynamic_link.fieldname]
-				}
+					link_name: doc[frappe.dynamic_link.fieldname],
+				},
 			};
 		}
 	},
 
-	contact_query: function(doc) {
+	contact_query: function (doc) {
 		if (frappe.dynamic_link) {
-			if(!doc[frappe.dynamic_link.fieldname]) {
-				frappe.throw(__("Please set {0}",
-					[__(frappe.meta.get_label(doc.doctype, frappe.dynamic_link.fieldname, doc.name))]));
+			if (!doc[frappe.dynamic_link.fieldname]) {
+				frappe.throw(
+					__("Please set {0}", [
+						__(
+							frappe.meta.get_label(
+								doc.doctype,
+								frappe.dynamic_link.fieldname,
+								doc.name
+							)
+						),
+					])
+				);
 			}
 
 			return {
-				query: 'frappe.contacts.doctype.contact.contact.contact_query',
+				query: "frappe.contacts.doctype.contact.contact.contact_query",
 				filters: {
 					link_doctype: frappe.dynamic_link.doctype,
-					link_name: doc[frappe.dynamic_link.fieldname]
-				}
+					link_name: doc[frappe.dynamic_link.fieldname],
+				},
 			};
 		}
 	},

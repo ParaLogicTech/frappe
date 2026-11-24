@@ -1,6 +1,7 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 
+import json
 from collections import Counter
 from email.utils import getaddresses
 from urllib.parse import unquote
@@ -27,7 +28,6 @@ from frappe.utils import (
 	validate_email_address,
 )
 from frappe.utils.user import is_system_user
-import json
 
 exclude_from_linked_with = True
 
@@ -45,12 +45,51 @@ class Communication(Document, CommunicationEmailMixin):
 		_user_tags: DF.Data | None
 		bcc: DF.Code | None
 		cc: DF.Code | None
-		comment_type: DF.Literal["", "Comment", "Like", "Info", "Label", "Workflow", "Created", "Submitted", "Cancelled", "Updated", "Deleted", "Assigned", "Assignment Completed", "Attachment", "Attachment Removed", "Shared", "Unshared", "Relinked"]
+		comment_type: DF.Literal[
+			"",
+			"Comment",
+			"Like",
+			"Info",
+			"Label",
+			"Workflow",
+			"Created",
+			"Submitted",
+			"Cancelled",
+			"Updated",
+			"Deleted",
+			"Assigned",
+			"Assignment Completed",
+			"Attachment",
+			"Attachment Removed",
+			"Shared",
+			"Unshared",
+			"Relinked",
+		]
 		communication_date: DF.Datetime | None
-		communication_medium: DF.Literal["", "Email", "Chat", "Phone", "SMS", "Event", "Meeting", "Visit", "WhatsApp", "Other"]
-		communication_type: DF.Literal["Communication", "Comment", "Chat", "Notification", "Feedback", "Automated Message"]
+		communication_medium: DF.Literal[
+			"", "Email", "Chat", "Phone", "SMS", "Event", "Meeting", "Visit", "WhatsApp", "Other"
+		]
+		communication_type: DF.Literal[
+			"Communication", "Comment", "Chat", "Notification", "Feedback", "Automated Message"
+		]
 		content: DF.TextEditor | None
-		delivery_status: DF.Literal["", "Sent", "Bounced", "Opened", "Marked As Spam", "Rejected", "Delayed", "Soft-Bounced", "Clicked", "Recipient Unsubscribed", "Error", "Expired", "Sending", "Read", "Scheduled"]
+		delivery_status: DF.Literal[
+			"",
+			"Sent",
+			"Bounced",
+			"Opened",
+			"Marked As Spam",
+			"Rejected",
+			"Delayed",
+			"Soft-Bounced",
+			"Clicked",
+			"Recipient Unsubscribed",
+			"Error",
+			"Expired",
+			"Sending",
+			"Read",
+			"Scheduled",
+		]
 		email_account: DF.Link | None
 		email_status: DF.Literal["Open", "Spam", "Trash"]
 		email_template: DF.Link | None
@@ -383,13 +422,20 @@ class Communication(Document, CommunicationEmailMixin):
 		delivery_status = None
 
 		if self.communication_medium == "SMS":
-			status_counts = Counter(frappe.db.sql_list('''select status from `tabSMS Queue` where communication=%s''', self.name))
+			status_counts = Counter(
+				frappe.db.sql_list("""select status from `tabSMS Queue` where communication=%s""", self.name)
+			)
 			if not status_counts:
-				status_counts = Counter(frappe.db.sql_list("""
+				status_counts = Counter(
+					frappe.db.sql_list(
+						"""
 					select 'Sent' as status
 					from `tabSMS Log`
 					where communication=%s and no_of_sent_sms > 0 and no_of_sent_sms >= no_of_requested_sms
-				""", self.name))
+				""",
+						self.name,
+					)
+				)
 		else:
 			status_counts = Counter(
 				frappe.get_all("Email Queue", pluck="status", filters={"communication": self.name})
@@ -656,11 +702,7 @@ def update_parent_document_on_communication(doc):
 		options = (status_field.options or "").splitlines()
 
 		# if status has a "Open" option and status is "Replied", then update the status for received communication
-		if (
-			("Open" in options)
-			and parent.status == "Replied"
-			and doc.sent_or_received == "Received"
-		):
+		if ("Open" in options) and parent.status == "Replied" and doc.sent_or_received == "Received":
 			parent.db_set("status", "Open")
 			parent.run_method("handle_hold_time", "Replied")
 			apply_assignment_rule(parent)

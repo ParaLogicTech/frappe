@@ -26,7 +26,20 @@ class Address(Document):
 		address_line1: DF.Data
 		address_line2: DF.Data | None
 		address_title: DF.Data | None
-		address_type: DF.Literal["Billing", "Shipping", "Office", "Personal", "Plant", "Postal", "Shop", "Subsidiary", "Warehouse", "Current", "Permanent", "Other"]
+		address_type: DF.Literal[
+			"Billing",
+			"Shipping",
+			"Office",
+			"Personal",
+			"Plant",
+			"Postal",
+			"Shop",
+			"Subsidiary",
+			"Warehouse",
+			"Current",
+			"Permanent",
+			"Other",
+		]
 		city: DF.Data
 		country: DF.Link
 		county: DF.Data | None
@@ -39,6 +52,7 @@ class Address(Document):
 		phone: DF.Data | None
 		pincode: DF.Data | None
 		state: DF.Data | None
+
 	# end: auto-generated types
 	def __setup__(self):
 		self.flags.linked = False
@@ -62,8 +76,12 @@ class Address(Document):
 	def clean_address(self):
 		fields = [
 			"address_title",
-			"address_line1", "address_line2", "address_line3",
-			"city", "state", "pincode"
+			"address_line1",
+			"address_line2",
+			"address_line3",
+			"city",
+			"state",
+			"pincode",
 		]
 
 		for f in fields:
@@ -160,7 +178,9 @@ def get_preferred_address(doctype, name, preferred_key="is_primary_address"):
 
 
 @frappe.whitelist()
-def get_default_address(doctype: str, name: str | None, sort_key: str = "is_primary_address", primary_only=False) -> str | None:
+def get_default_address(
+	doctype: str, name: str | None, sort_key: str = "is_primary_address", primary_only=False
+) -> str | None:
 	"""Returns default Address name for the given doctype, name"""
 	if sort_key not in ["is_shipping_address", "is_primary_address"]:
 		return None
@@ -173,14 +193,18 @@ def get_default_address(doctype: str, name: str | None, sort_key: str = "is_prim
 	if cint(primary_only):
 		primary_condition = f" and addr.`{sort_key}` = 1"
 
-	out = frappe.db.sql_list(f"""
+	out = frappe.db.sql_list(
+		f"""
 		select addr.name
 		from `tabDynamic Link` dl
 		inner join `tabAddress` addr on addr.name = dl.parent and dl.parenttype = 'Address'
 		where dl.link_doctype = %s and dl.link_name = %s {primary_condition}
 		order by addr.`{sort_key}` desc {shipping_order_by}, addr.creation asc
 		limit 1
-	""", (doctype, name), as_dict=True)
+	""",
+		(doctype, name),
+		as_dict=True,
+	)
 
 	return out[0] if out else None
 
@@ -247,12 +271,15 @@ def get_address_list(doctype, txt, filters, limit_start, limit_page_length=20, f
 
 	address_names = []
 	if contact_links:
-		address_names = frappe.db.sql_list("""
+		address_names = frappe.db.sql_list(
+			"""
 			select addr.name
 			from `tabDynamic Link` l
 			inner join `tabAddress` addr on l.parenttype = 'Address' and l.parent = addr.name
 			where (l.link_doctype, l.link_name) in %s
-		""", [contact_links])
+		""",
+			[contact_links],
+		)
 
 	if not address_names:
 		return []
@@ -260,8 +287,14 @@ def get_address_list(doctype, txt, filters, limit_start, limit_page_length=20, f
 	filters.append(["Address", "name", "in", address_names])
 
 	return get_list(
-		doctype, txt, filters, limit_start, limit_page_length,
-		ignore_permissions=ignore_permissions, fields=fields, order_by=order_by,
+		doctype,
+		txt,
+		filters,
+		limit_start,
+		limit_page_length,
+		ignore_permissions=ignore_permissions,
+		fields=fields,
+		order_by=order_by,
 	)
 
 
@@ -277,12 +310,15 @@ def has_website_permission(doc, ptype, user, verbose=False):
 
 
 def get_contact_links():
-	return frappe.db.sql("""
+	return frappe.db.sql(
+		"""
 		select distinct l.link_doctype, l.link_name
 		from `tabDynamic Link` l
 		inner join `tabContact` c on l.parenttype = 'Contact' and l.parent = c.name
 		where c.user = %s
-	""", frappe.session.user)
+	""",
+		frappe.session.user,
+	)
 
 
 def get_address_templates(address):
@@ -295,6 +331,7 @@ def get_address_templates(address):
 
 	if not result:
 		from frappe.contacts.doctype.address_template.address_template import get_default_address_template
+
 		return None, get_default_address_template()
 	else:
 		return result
@@ -317,7 +354,7 @@ def get_company_address(company, shipping_address=False):
 def address_query(
 	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: dict[str, Any]
 ):
-	from frappe.desk.reportview import get_match_cond, get_filters_cond
+	from frappe.desk.reportview import get_filters_cond, get_match_cond
 
 	doctype = "Address"
 	link_doctype = filters.pop("link_doctype", None)
@@ -325,17 +362,23 @@ def address_query(
 
 	meta = frappe.get_meta(doctype)
 	searchfields = meta.get_search_fields()
-	if searchfield and searchfield not in searchfields and \
-			(meta.get_field(searchfield) or searchfield in frappe.db.DEFAULT_COLUMNS):
+	if (
+		searchfield
+		and searchfield not in searchfields
+		and (meta.get_field(searchfield) or searchfield in frappe.db.DEFAULT_COLUMNS)
+	):
 		searchfields.append(searchfield)
 
 	fields = ["name", *searchfields]
 	fields = frappe.utils.unique(fields)
 	fields = ", ".join(["`tabAddress`.{0}".format(f) for f in fields])
 
-	search_condition = " or ".join(["`tabAddress`.{0}".format(field) + " like %(txt)s" for field in searchfields])
+	search_condition = " or ".join(
+		["`tabAddress`.{0}".format(field) + " like %(txt)s" for field in searchfields]
+	)
 
-	return frappe.db.sql("""
+	return frappe.db.sql(
+		"""
 		select {fields}
 		from `tabAddress`, `tabDynamic Link`
 		where `tabDynamic Link`.parent = `tabAddress`.name
@@ -353,18 +396,20 @@ def address_query(
 			`tabAddress`.name
 		limit %(start)s, %(page_len)s
 	""".format(
-		fields=fields,
-		mcond=get_match_cond(doctype),
-		scond=search_condition,
-		fcond=get_filters_cond(doctype, filters, []),
-	), {
-		"txt": "%" + txt + "%",
-		"_txt": txt.replace("%", ""),
-		"start": start,
-		"page_len": page_len,
-		"link_name": link_name,
-		"link_doctype": link_doctype,
-	})
+			fields=fields,
+			mcond=get_match_cond(doctype),
+			scond=search_condition,
+			fcond=get_filters_cond(doctype, filters, []),
+		),
+		{
+			"txt": "%" + txt + "%",
+			"_txt": txt.replace("%", ""),
+			"start": start,
+			"page_len": page_len,
+			"link_name": link_name,
+			"link_doctype": link_doctype,
+		},
+	)
 
 
 def get_condensed_address(doc):

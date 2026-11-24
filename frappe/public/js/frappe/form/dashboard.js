@@ -175,9 +175,9 @@ frappe.ui.form.Dashboard = class FormDashboard {
 
 	make_progress_chart(title) {
 		this.progress_area.show();
-		let progress_wrapper = $(
-			`<div class="progress-wrapper"></div>`
-		).appendTo(this.progress_area.body);
+		let progress_wrapper = $(`<div class="progress-wrapper"></div>`).appendTo(
+			this.progress_area.body
+		);
 
 		$(`<div class="progress-title">${title}</div>`).appendTo(progress_wrapper);
 

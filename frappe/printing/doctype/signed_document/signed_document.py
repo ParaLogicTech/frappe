@@ -1,16 +1,17 @@
 # Copyright (c) 2026, Frappe Technologies and contributors
 # For license information, please see license.txt
 
+import base64
+from io import BytesIO
+
 import frappe
 from frappe import _
-from frappe.utils import cint, get_datetime, format_datetime, format_date, format_time
-from frappe.translate import print_language
 from frappe.model.document import Document
 from frappe.permissions import SYSTEM_USER_ROLE, get_doctypes_with_read
+from frappe.translate import print_language
+from frappe.utils import cint, format_date, format_datetime, format_time, get_datetime
 from frappe.utils.pdf import get_pdf
 from frappe.www.printview import validate_print_permission
-from io import BytesIO
-import base64
 
 
 class SignedDocument(Document):
@@ -20,7 +21,9 @@ class SignedDocument(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
-		from frappe.printing.doctype.signed_document_signatory.signed_document_signatory import SignedDocumentSignatory
+		from frappe.printing.doctype.signed_document_signatory.signed_document_signatory import (
+			SignedDocumentSignatory,
+		)
 		from frappe.types import DF
 
 		branch_name: DF.Data | None
@@ -50,6 +53,7 @@ class SignedDocument(Document):
 
 	def validate_mobile_no(self):
 		from frappe.regional.regional import validate_mobile_no
+
 		for d in self.signatories:
 			validate_mobile_no(d.signatory_mobile)
 
@@ -90,15 +94,18 @@ def sign_pdf(
 		pf_signatory_row = [d for d in print_format_doc.signatories if d.signatory == s.get("signatory")]
 		pf_signatory_row = pf_signatory_row[0] if pf_signatory_row else None
 		if not pf_signatory_row:
-			frappe.throw(_("Signatory {0} is not allowed in print format {1}").format(
-				frappe.bold(s.get("signatory")), format
-			))
+			frappe.throw(
+				_("Signatory {0} is not allowed in print format {1}").format(
+					frappe.bold(s.get("signatory")), format
+				)
+			)
 
 		if pf_signatory_row.signatory_role and pf_signatory_row.signatory_role not in frappe.get_roles():
 			if s.get("signature_image") or not pf_signatory_row.optional:
-				frappe.throw(_("You are not allowed to sign for {0}").format(
-					pf_signatory_row.signatory
-				), exc=frappe.PermissionError)
+				frappe.throw(
+					_("You are not allowed to sign for {0}").format(pf_signatory_row.signatory),
+					exc=frappe.PermissionError,
+				)
 
 			if pf_signatory_row.optional:
 				signature_data_to_remove.append(s)
@@ -106,19 +113,15 @@ def sign_pdf(
 
 		if s.get("signature_image"):
 			if not s.get("signatory_name"):
-				frappe.throw(_("{0} Name is mandatory").format(
-					frappe.bold(s.get("signatory"))
-				))
+				frappe.throw(_("{0} Name is mandatory").format(frappe.bold(s.get("signatory"))))
 
 			if not s.get("signature_timestamp"):
-				frappe.throw(_("{0} Signature Timestamp not provided").format(
-					frappe.bold(s.get("signatory"))
-				))
+				frappe.throw(
+					_("{0} Signature Timestamp not provided").format(frappe.bold(s.get("signatory")))
+				)
 		else:
 			if not pf_signatory_row.optional:
-				frappe.throw(_("{0} Signature is mandatory").format(
-					frappe.bold(s.get("signatory"))
-				))
+				frappe.throw(_("{0} Signature is mandatory").format(frappe.bold(s.get("signatory"))))
 
 			s["signature_timestamp"] = None
 
@@ -164,14 +167,22 @@ def sign_pdf(
 		signatory = s.get("signatory") or ""
 
 		if s.get("signatory_name"):
-			name_fields = soup.select(f".signature-field[data-fieldtype='Name'][data-signatory='{signatory}']")
+			name_fields = soup.select(
+				f".signature-field[data-fieldtype='Name'][data-signatory='{signatory}']"
+			)
 			for el in name_fields:
 				el.string = s.get("signatory_name")
 
 		if s.get("signature_timestamp"):
-			date_fields = soup.select(f".signature-field[data-fieldtype='Date'][data-signatory='{signatory}']")
-			time_fields = soup.select(f".signature-field[data-fieldtype='Time'][data-signatory='{signatory}']")
-			datetime_fields = soup.select(f".signature-field[data-fieldtype='Datetime'][data-signatory='{signatory}']")
+			date_fields = soup.select(
+				f".signature-field[data-fieldtype='Date'][data-signatory='{signatory}']"
+			)
+			time_fields = soup.select(
+				f".signature-field[data-fieldtype='Time'][data-signatory='{signatory}']"
+			)
+			datetime_fields = soup.select(
+				f".signature-field[data-fieldtype='Datetime'][data-signatory='{signatory}']"
+			)
 			for el in date_fields:
 				el.string = format_date(s.get("signature_timestamp"))
 			for el in time_fields:
@@ -180,7 +191,9 @@ def sign_pdf(
 				el.string = format_datetime(s.get("signature_timestamp"))
 
 		if s.get("signature_image"):
-			image_fields = soup.select(f".signature-field[data-fieldtype='Image'][data-signatory='{signatory}']")
+			image_fields = soup.select(
+				f".signature-field[data-fieldtype='Image'][data-signatory='{signatory}']"
+			)
 			for el in image_fields:
 				el.clear()
 				img = soup.new_tag("img")
@@ -209,13 +222,16 @@ def sign_pdf(
 	signed_document_doc.digitally_signed = cint(digitally_signed)
 
 	for s in signature_data:
-		signed_document_doc.append("signatories", {
-			"signatory": s.get("signatory"),
-			"signatory_name": s.get("signatory_name"),
-			"signature_timestamp": s.get("signature_timestamp"),
-			"signatory_email": s.get("signatory_email"),
-			"signatory_mobile": s.get("signatory_mobile"),
-		})
+		signed_document_doc.append(
+			"signatories",
+			{
+				"signatory": s.get("signatory"),
+				"signatory_name": s.get("signatory_name"),
+				"signature_timestamp": s.get("signature_timestamp"),
+				"signatory_email": s.get("signatory_email"),
+				"signatory_mobile": s.get("signatory_mobile"),
+			},
+		)
 
 	signed_document_doc.flags.ignore_permissions = True
 	signed_document_doc.insert()
@@ -295,9 +311,10 @@ def image_to_data_url(im):
 
 
 def digitally_sign_pdf(unsigned_pdf):
-	from frappe.core.doctype.file import get_file_local_path
-	from pyhanko.sign import signers
 	from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
+	from pyhanko.sign import signers
+
+	from frappe.core.doctype.file import get_file_local_path
 
 	dsc_settings = frappe.get_single("Digital Signature Settings")
 	if not dsc_settings.certificate_file:
@@ -307,12 +324,11 @@ def digitally_sign_pdf(unsigned_pdf):
 	passphrase = dsc_settings.get_password("passphrase")
 
 	signer = signers.SimpleSigner.load_pkcs12(
-		pfx_file=pfx_certificate_path,
-		passphrase=passphrase.encode('utf-8')
+		pfx_file=pfx_certificate_path, passphrase=passphrase.encode("utf-8")
 	)
 
 	w = IncrementalPdfFileWriter(BytesIO(unsigned_pdf))
-	meta = signers.PdfSignatureMetadata(field_name='Signature1')
+	meta = signers.PdfSignatureMetadata(field_name="Signature1")
 
 	signed_pdf = signers.sign_pdf(w, meta, signer=signer)
 	signed_pdf.seek(0)

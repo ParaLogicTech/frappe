@@ -350,7 +350,10 @@ frappe.search.AwesomeBar = class AwesomeBar {
 				var formatted_txt = strip_number_groups(txt);
 				try {
 					var val = eval(formatted_txt);
-					var formatted_value = __("{0} = {1}", [txt, (frappe.format(val, {fieldtype: "Float"}, {only_value: 1})).bold()]);
+					var formatted_value = __("{0} = {1}", [
+						txt,
+						frappe.format(val, { fieldtype: "Float" }, { only_value: 1 }).bold(),
+					]);
 					this.options.push({
 						label: formatted_value,
 						value: __("{0} = {1}", [txt, val]),

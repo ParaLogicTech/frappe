@@ -3,11 +3,11 @@
 
 import frappe
 from frappe import _
+from frappe.core.doctype.notification_count.notification_count import add_notification_count
 from frappe.desk.doctype.notification_settings.notification_settings import (
 	is_email_notifications_enabled_for_type,
 	is_notifications_enabled,
 )
-from frappe.core.doctype.notification_count.notification_count import add_notification_count
 from frappe.model.document import Document
 
 

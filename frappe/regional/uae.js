@@ -6,8 +6,8 @@ Object.assign(frappe.regional.uae, {
 
 		// do not format international numbers
 		if (
-			value.slice(0, 1) === '+' && value.slice(0, 4) === '+971' ||
-			value.slice(0, 2) === '00' && value.slice(0, 5) === '00971'
+			(value.slice(0, 1) === "+" && value.slice(0, 4) === "+971") ||
+			(value.slice(0, 2) === "00" && value.slice(0, 5) === "00971")
 		) {
 			return value;
 		}

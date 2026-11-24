@@ -75,7 +75,7 @@ frappe.ui.form.ControlInput = class ControlInput extends frappe.ui.form.Control 
 			}
 		};
 
-		var update_input = function() {
+		var update_input = function () {
 			me.set_input(me.value);
 		};
 

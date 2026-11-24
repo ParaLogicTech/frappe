@@ -520,7 +520,9 @@ from {tables}
 		# add tables from fields
 		if self.fields:
 			for field in self.fields:
-				if not ("tab" in field and "." in field) or any(x for x in sql_functions if x in field.lower()):
+				if not ("tab" in field and "." in field) or any(
+					x for x in sql_functions if x in field.lower()
+				):
 					continue
 
 				table_name = field.split(".", 1)[0]
@@ -816,7 +818,11 @@ from {tables}
 			lft_rgt = frappe.db.get_value(ref_doctype, f.value, ["lft", "rgt"]) if f.values else None
 			if lft_rgt:
 				lft, rgt = lft_rgt
-				lt_op, gt_op = ("<=", ">=") if f.operator.lower() in ("subtree of", "not subtree of", "descendants of (inclusive)") else ("<", ">")
+				lt_op, gt_op = (
+					("<=", ">=")
+					if f.operator.lower() in ("subtree of", "not subtree of", "descendants of (inclusive)")
+					else ("<", ">")
+				)
 
 				# Get descendants elements of a DocType with a tree structure
 				if f.operator.lower() in (
@@ -851,7 +857,9 @@ from {tables}
 			# changing operator to IN as the above code fetches all the parent / child values and convert into tuple
 			# which can be directly used with IN operator to query.
 			f.operator = (
-				"not in" if f.operator.lower() in ("not ancestors of", "not descendants of", "not subtree of") else "in"
+				"not in"
+				if f.operator.lower() in ("not ancestors of", "not descendants of", "not subtree of")
+				else "in"
 			)
 
 		elif f.operator.lower() in ("in", "not in"):

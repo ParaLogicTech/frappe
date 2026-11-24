@@ -22,7 +22,7 @@ frappe.ui.signature_pad.SignaturePad = class FrappeSignaturePad extends Signatur
 	debouncedResizeCanvas = frappe.utils.debounce(this.resizeCanvas, 200);
 
 	resizeCanvas() {
-		const ratio =  Math.max(window.devicePixelRatio || 1, 1);
+		const ratio = Math.max(window.devicePixelRatio || 1, 1);
 		this.canvas.width = (this.canvas.offsetWidth || this.canvas.width) * ratio;
 		this.canvas.height = (this.canvas.offsetHeight || this.canvas.height) * ratio;
 		this.canvas.getContext("2d").scale(ratio, ratio);
@@ -45,7 +45,10 @@ $.extend(frappe.ui.signature_pad, {
 		let signatories = [];
 
 		for (let signatory_data of all_signatories) {
-			if (signatory_data.signatory_role && !frappe.user_roles.includes(signatory_data.signatory_role)) {
+			if (
+				signatory_data.signatory_role &&
+				!frappe.user_roles.includes(signatory_data.signatory_role)
+			) {
 				if (signatory_data.optional) {
 					continue;
 				} else {
@@ -107,10 +110,10 @@ $.extend(frappe.ui.signature_pad, {
 				fieldname: mobile_field,
 				onchange: () => {
 					let value = dialog.get_value(mobile_field);
-					value = frappe.regional.get_formatted_mobile_no(value)
+					value = frappe.regional.get_formatted_mobile_no(value);
 					dialog.doc[mobile_field] = value;
 					dialog.get_field(mobile_field).refresh();
-				}
+				},
 			});
 			fields.push({
 				fieldtype: "HTML",
@@ -130,7 +133,7 @@ $.extend(frappe.ui.signature_pad, {
 			let pad = frappe.ui.signature_pad.add_signature_pad(
 				dialog.fields_dict[html_field].$wrapper,
 				args,
-				signatory_data,
+				signatory_data
 			);
 			signature_pads.push(pad);
 		}
@@ -166,12 +169,12 @@ $.extend(frappe.ui.signature_pad, {
 				}
 
 				output.push({
-					"signatory": pad.signatoryData?.signatory || "",
-					"signatory_name": signatory_name,
-					"signatory_email": values[email_field],
-					"signatory_mobile": values[mobile_field],
-					"signature_image": pad.isEmpty() ? null : pad.toDataURL("image/png"),
-					"signature_timestamp": pad.signatoryData?.signature_timestamp || null,
+					signatory: pad.signatoryData?.signatory || "",
+					signatory_name: signatory_name,
+					signatory_email: values[email_field],
+					signatory_mobile: values[mobile_field],
+					signature_image: pad.isEmpty() ? null : pad.toDataURL("image/png"),
+					signature_timestamp: pad.signatoryData?.signature_timestamp || null,
 				});
 			}
 
@@ -187,9 +190,15 @@ $.extend(frappe.ui.signature_pad, {
 
 		let $wrapper = $(wrapper);
 
-		let $signature_pad_wrapper = $(`<div class="signature-pad-wrapper"></div>`).appendTo($wrapper);
+		let $signature_pad_wrapper = $(`<div class="signature-pad-wrapper"></div>`).appendTo(
+			$wrapper
+		);
 
-		$signature_pad_wrapper.append(`<div class="control-label ${!signatory_data.optional ? "reqd" : ""}">${signatory_data.signatory || ""} Signature</div>`)
+		$signature_pad_wrapper.append(
+			`<div class="control-label ${!signatory_data.optional ? "reqd" : ""}">${
+				signatory_data.signatory || ""
+			} Signature</div>`
+		);
 		$signature_pad_wrapper.append(`<div class="signature-pad"></div>`);
 
 		let $signature_pad = $signature_pad_wrapper.find(".signature-pad");
@@ -221,5 +230,5 @@ $.extend(frappe.ui.signature_pad, {
 		});
 
 		return pad;
-	}
+	},
 });

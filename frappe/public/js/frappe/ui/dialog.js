@@ -102,7 +102,7 @@ frappe.ui.Dialog = class Dialog extends frappe.ui.FieldGroup {
 						window.cur_dialog = null;
 					}
 				} else {
-					window.cur_dialog = frappe.ui.open_dialogs[frappe.ui.open_dialogs.length-1];
+					window.cur_dialog = frappe.ui.open_dialogs[frappe.ui.open_dialogs.length - 1];
 				}
 				me.onhide && me.onhide();
 				me.on_hide && me.on_hide();

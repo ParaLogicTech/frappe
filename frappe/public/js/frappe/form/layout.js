@@ -596,7 +596,10 @@ frappe.ui.form.Layout = class Layout {
 					break;
 				}
 			}
-			if(this.is_field_visible(field) && !in_list(frappe.model.no_value_type, field.df.fieldtype))
+			if (
+				this.is_field_visible(field) &&
+				!in_list(frappe.model.no_value_type, field.df.fieldtype)
+			)
 				prev = fields[i];
 		}
 
@@ -631,8 +634,8 @@ frappe.ui.form.Layout = class Layout {
 			let field = fields[i];
 			if (this.is_field_visible(field)) {
 				if (
-					in_list(["Table", "Table MultiSelect"], field.df.fieldtype)
-					|| !in_list(frappe.model.no_value_type, field.df.fieldtype)
+					in_list(["Table", "Table MultiSelect"], field.df.fieldtype) ||
+					!in_list(frappe.model.no_value_type, field.df.fieldtype)
 				) {
 					this.set_focus(field);
 					return true;

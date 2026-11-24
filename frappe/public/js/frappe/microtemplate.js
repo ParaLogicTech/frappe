@@ -147,7 +147,7 @@ frappe.render_template = function (name, data) {
 		opts.content = frappe.render_template(opts.template || "print_grid", opts);
 	}
 
-	if(!opts.template) {
+	if (!opts.template) {
 		opts.template = null;
 	}
 

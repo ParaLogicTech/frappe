@@ -70,7 +70,9 @@ frappe.notification = {
 				});
 			} else if (["WhatsApp", "SMS"].includes(frm.doc.channel)) {
 				receiver_fields = $.map(fields, function (d) {
-					return d.options == "Phone" || cstr(d.fieldname).search("mobile") != -1 ? get_select_options(d) : null;
+					return d.options == "Phone" || cstr(d.fieldname).search("mobile") != -1
+						? get_select_options(d)
+						: null;
 				});
 			}
 

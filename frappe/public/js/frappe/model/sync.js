@@ -127,7 +127,7 @@ Object.assign(frappe.model, {
 				}
 
 				// remove extra rows from local
-				let new_docnames = doc[fieldname].map(d => d.name).filter(d => d);
+				let new_docnames = doc[fieldname].map((d) => d.name).filter((d) => d);
 				for (let local_d of local_doc[fieldname]) {
 					if (local_d.name && !new_docnames.includes(local_d.name)) {
 						// clear from local

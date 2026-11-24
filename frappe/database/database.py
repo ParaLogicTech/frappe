@@ -997,6 +997,7 @@ class Database:
 
 		if notify:
 			from frappe.model.document import notify_doc_update
+
 			notify_doc_update(dt, dn, to_update.get("modified") or modified)
 
 		if dt in self.value_cache:

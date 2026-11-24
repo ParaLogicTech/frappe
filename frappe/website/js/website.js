@@ -101,23 +101,25 @@ $.extend(frappe, {
 					if (opts.success) opts.success(data);
 				},
 			},
-		}).always(function (data) {
-			if (opts.freeze) {
-				frappe.unfreeze();
-			}
-
-			// executed before statusCode functions
-			if (data.responseText) {
-				try {
-					data = JSON.parse(data.responseText);
-				} catch (e) {
-					data = {};
+		})
+			.always(function (data) {
+				if (opts.freeze) {
+					frappe.unfreeze();
 				}
-			}
-			frappe.process_response(opts, data);
-		}).fail(function (xhr) {
-			opts.error && opts.error(xhr);
-		});
+
+				// executed before statusCode functions
+				if (data.responseText) {
+					try {
+						data = JSON.parse(data.responseText);
+					} catch (e) {
+						data = {};
+					}
+				}
+				frappe.process_response(opts, data);
+			})
+			.fail(function (xhr) {
+				opts.error && opts.error(xhr);
+			});
 	},
 	prepare_call: function (opts) {
 		if (opts.btn) {

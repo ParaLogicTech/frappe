@@ -259,7 +259,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 				this._add_field(df.options);
 			}
 
-			if (df && df.fieldtype === 'Dynamic Link' && df.options) {
+			if (df && df.fieldtype === "Dynamic Link" && df.options) {
 				this._add_field(df.options);
 			}
 		});
@@ -296,16 +296,12 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 				} else {
 					this.make_new_doc();
 				}
-			}
+			};
 
 			// Better style would be __("Add {0}", [doctype_name], "Primary action in list view")
 			// Keeping it like this to not disrupt existing translations
 			const label = `${__("Add", null, "Primary action in list view")} ${doctype_name}`;
-			this.page.set_primary_action(
-				label,
-				primary_action_function,
-				"add"
-			);
+			this.page.set_primary_action(label, primary_action_function, "add");
 
 			this.new_menu_button = this.page.add_menu_item(
 				`${__("New")} ${doctype_name}`,
@@ -845,10 +841,10 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 							aria-valuemin="0" aria-valuemax="100" style="width: ${Math.round(value)}%;">
 						</div>
 					</div>`;
-			} else if (df.fieldname === "name" && doc[this.meta.title_field || ''] === doc.name) {
+			} else if (df.fieldname === "name" && doc[this.meta.title_field || ""] === doc.name) {
 				return "";
 			} else {
-				return frappe.format(value, df, {'no_newlines': 1}, doc);
+				return frappe.format(value, df, { no_newlines: 1 }, doc);
 			}
 		};
 
@@ -963,10 +959,11 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 	get_meta_html(doc) {
 		let html = "";
 
-		if (!this.settings.hide_name_column
-			&& this.meta.title_field
-			&& this.meta.title_field !== "name"
-			&& doc[this.meta.title_field || ""] !== doc.name
+		if (
+			!this.settings.hide_name_column &&
+			this.meta.title_field &&
+			this.meta.title_field !== "name" &&
+			doc[this.meta.title_field || ""] !== doc.name
 		) {
 			html += `
 				<div class="level-item list-row-id hidden-xs hidden-sm ellipsis mr-2">

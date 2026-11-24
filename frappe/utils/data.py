@@ -132,10 +132,12 @@ def get_datetime(
 	except ValueError:
 		return parser.parse(datetime_str)
 
+
 def combine_datetime(date, time):
 	date = getdate(date)
 	time = get_time(time)
 	return datetime.datetime.combine(date, time)
+
 
 def get_timedelta(time: str | datetime.timedelta | None = None) -> datetime.timedelta | None:
 	"""Return `datetime.timedelta` object from string value of a valid time format.
@@ -1053,8 +1055,8 @@ def clean_whitespace(s):
 	s = cstr(s)
 	s = sanitize_whitespace(s)
 	s = s.strip()
-	s = re.sub(r'\n\s*\n', '\n', s)
-	s = re.sub(r' +', ' ', s)
+	s = re.sub(r"\n\s*\n", "\n", s)
+	s = re.sub(r" +", " ", s)
 	return s
 
 
@@ -1149,12 +1151,12 @@ def _bankers_rounding_legacy(num, precision):
 
 
 def round_half_up(num, precision=0):
-	multiplier = 10 ** precision
+	multiplier = 10**precision
 	return math.floor(num * multiplier + 0.5) / multiplier
 
 
 def round_half_down(num, precision=0):
-	multiplier = 10 ** precision
+	multiplier = 10**precision
 	return math.ceil(num * multiplier - 0.5) / multiplier
 
 
@@ -1164,7 +1166,7 @@ def round_half_away_from_zero(num, precision=0):
 
 
 def round_up(value, decimals):
-	factor = 10 ** decimals
+	factor = 10**decimals
 
 	value = math.ceil(flt(value * factor, 9)) / factor
 	value = flt(value, 9)
@@ -1172,7 +1174,7 @@ def round_up(value, decimals):
 
 
 def round_down(value, decimals):
-	factor = 10 ** decimals
+	factor = 10**decimals
 
 	value = math.floor(flt(value * factor, 9)) / factor
 	value = flt(value, 9)
@@ -1379,8 +1381,11 @@ def fmt_money(
 	if amount != "0":
 		amount = minus + amount
 
-	if currency and (force_symbol or frappe.defaults.get_global_default("hide_currency_symbol") != "Yes"
-			or currency != frappe.defaults.get_global_default("currency")):
+	if currency and (
+		force_symbol
+		or frappe.defaults.get_global_default("hide_currency_symbol") != "Yes"
+		or currency != frappe.defaults.get_global_default("currency")
+	):
 		symbol = frappe.db.get_value("Currency", currency, "symbol", cache=True) or currency
 		symbol_on_right = frappe.db.get_value("Currency", currency, "symbol_on_right", cache=True)
 

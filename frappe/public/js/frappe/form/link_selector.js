@@ -192,9 +192,21 @@ frappe.ui.form.LinkSelector = class LinkSelector {
 							frappe.run_serially([
 								() => (d = this.target.add_new_row()),
 								() => frappe.timeout(0.1),
-								() => frappe.model.set_value(d.doctype, d.name, this.qty_fieldname, data.qty),
+								() =>
+									frappe.model.set_value(
+										d.doctype,
+										d.name,
+										this.qty_fieldname,
+										data.qty
+									),
 								() => frappe.timeout(0.1),
-								() => frappe.model.set_value(d.doctype, d.name, this.fieldname, value),
+								() =>
+									frappe.model.set_value(
+										d.doctype,
+										d.name,
+										this.fieldname,
+										value
+									),
 								() => frappe.show_alert(__("Added {0} ({1})", [value, data.qty])),
 								() => resolve(),
 							]);

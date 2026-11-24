@@ -6,7 +6,7 @@ import frappe
 from frappe import _
 from frappe.model import child_table_fields, default_fields, table_fields
 from frappe.model.document import Document
-from frappe.utils import cstr, cint
+from frappe.utils import cint, cstr
 
 
 @frappe.whitelist()
@@ -274,7 +274,9 @@ def map_child_doc(source_d, target_parent, table_map, source_parent=None, target
 	target_child_doctype = table_map["doctype"]
 	target_parentfield = target_parent.get_parentfield_of_doctype(target_child_doctype)
 	if not row_exists:
-		target_d = frappe.new_doc(target_child_doctype, parent_doc=target_parent, parentfield=target_parentfield)
+		target_d = frappe.new_doc(
+			target_child_doctype, parent_doc=target_parent, parentfield=target_parentfield
+		)
 
 	map_doc(source_d, target_d, table_map, source_parent, target_parent)
 

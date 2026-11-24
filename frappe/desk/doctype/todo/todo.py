@@ -85,7 +85,7 @@ class ToDo(Document):
 
 	def set_title(self):
 		if not self.title:
-			self.title = strip_html_tags(self.description)[:frappe.db.VARCHAR_LEN]
+			self.title = strip_html_tags(self.description)[: frappe.db.VARCHAR_LEN]
 
 	def delete_communication_links(self):
 		# unlink todo from linked comments

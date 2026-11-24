@@ -53,7 +53,7 @@ Object.assign(frappe.regional.pakistan, {
 		value = value.replace(/[^0-9+]+/g, "");
 
 		// do not format international numbers
-		if (value.slice(0, 1) === '+' || value.slice(0, 2) === '00') {
+		if (value.slice(0, 1) === "+" || value.slice(0, 2) === "00") {
 			return value;
 		}
 

@@ -42,8 +42,11 @@ frappe.ui.form.ControlDatetime = class ControlDatetime extends frappe.ui.form.Co
 			timeFormat: time_format,
 			onSelect: () => {
 				// ignore micro seconds
-				if (moment(this.get_value()).format(frappe.defaultDatetimeFormat) != moment(this.value).format(frappe.defaultDatetimeFormat)) {
-					this.$input.trigger('change');
+				if (
+					moment(this.get_value()).format(frappe.defaultDatetimeFormat) !=
+					moment(this.value).format(frappe.defaultDatetimeFormat)
+				) {
+					this.$input.trigger("change");
 				}
 			},
 		});
