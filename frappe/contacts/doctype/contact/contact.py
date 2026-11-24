@@ -647,7 +647,7 @@ def get_contact_name(email_id: str) -> str | None:
 
 
 @frappe.whitelist()
-def get_all_contact_nos(link_doctype, link_name):
+def get_all_contact_nos(link_doctype: str | None, link_name: str | None):
 	if not link_doctype or not link_name:
 		return []
 
@@ -668,7 +668,9 @@ def get_all_contact_nos(link_doctype, link_name):
 
 
 @frappe.whitelist()
-def add_phone_no_to_contact(contact, phone, is_primary_mobile_no=0, is_primary_phone=0):
+def add_phone_no_to_contact(
+	contact: str, phone: str, is_primary_mobile_no: int = 0, is_primary_phone: int = 0
+):
 	doc = frappe.get_doc("Contact", contact)
 	doc.add_phone(
 		phone, is_primary_mobile_no=cint(is_primary_mobile_no), is_primary_phone=cint(is_primary_phone)

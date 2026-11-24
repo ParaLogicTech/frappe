@@ -158,7 +158,7 @@ export default class WebFormList {
 	more() {
 		this.web_list_start += this.page_length;
 		this.fetch_data().then((res) => {
-			if (res.message.length === 0) {
+			if (res.message.raw_result.length === 0) {
 				frappe.msgprint(__("No more items to display"));
 			}
 			this.append_rows(res.message.raw_result);

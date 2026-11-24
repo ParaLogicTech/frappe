@@ -96,31 +96,31 @@ def send_sms(
 		process_and_send(args)
 
 
-def process_and_send(args):
+def process_and_send(sms_args):
 	from frappe.email.doctype.notification.notification import get_doc_for_notification_triggers
 
 	if not frappe.get_cached_value("SMS Settings", None, "sms_gateway_url"):
 		frappe.throw(_("Please Update SMS Settings"))
 
-	args = frappe._dict(args)
+	sms_args = frappe._dict(sms_args)
 
-	args["receiver_list"] = clean_receiver_nos(args.get("receiver_list"), format_sms=True)
-	if not args.get("receiver_list"):
+	sms_args["receiver_list"] = clean_receiver_nos(sms_args.get("receiver_list"), format_sms=True)
+	if not sms_args.get("receiver_list"):
 		frappe.throw(_("No valid Mobile Number provided"))
 
-	if not args.get("message"):
+	if not sms_args.get("message"):
 		frappe.throw(_("No SMS message provided"))
 
-	args["message"] = frappe.safe_decode(args.get("message")).encode("utf-8")
+	sms_args["message"] = frappe.safe_decode(sms_args.get("message")).encode("utf-8")
 
-	if not args.get("doc"):
-		args["doc"] = get_doc_for_notification_triggers(
-			args.get("reference_doctype"), args.get("reference_name")
+	if not sms_args.get("doc"):
+		sms_args["doc"] = get_doc_for_notification_triggers(
+			sms_args.get("reference_doctype"), sms_args.get("reference_name")
 		)
 
-	run_before_send_methods(args)
-	send_via_gateway(args)
-	run_after_send_methods(args)
+	run_before_send_methods(sms_args)
+	send_via_gateway(sms_args)
+	run_after_send_methods(sms_args)
 
 
 def create_communication(args, automated=False):

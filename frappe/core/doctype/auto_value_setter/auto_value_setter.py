@@ -38,10 +38,8 @@ class AutoValueSetter(Document):
 
 		if not meta.get_field(self.field_name):
 			frappe.throw(
-				_(
-					"Field Name {0} does not exist in Document Type {1}".format(
-						self.field_name, self.document_type
-					)
+				_("Field Name {0} does not exist in Document Type {1}").format(
+					self.field_name, self.document_type
 				)
 			)
 
