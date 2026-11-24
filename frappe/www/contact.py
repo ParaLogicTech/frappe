@@ -7,7 +7,7 @@ from contextlib import suppress
 import frappe
 from frappe import _, unscrub
 from frappe.rate_limiter import rate_limit
-from frappe.utils import cint, escape_html, validate_email_address
+from frappe.utils import cint, cstr, escape_html, validate_email_address
 
 sitemap = 1
 
@@ -24,9 +24,18 @@ def get_context(context):
 	return out
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True, methods=["POST"])
 @rate_limit(limit=100, seconds=60 * 60)
 def send_message(
+	sender: str,
+	message: str,
+	subject: str = "Website Query",
+	args: str | dict | None = None,
+):
+	process_contact_message(sender, message, subject=subject, args=args)
+
+
+def process_contact_message(
 	sender: str,
 	message: str,
 	subject: str = "Website Query",
@@ -49,13 +58,14 @@ def send_message(
 	if isinstance(args, str):
 		args = json.loads(args)
 
+	# args and subject come from guests and are rendered into HTML emails
 	context = {
 		"sender": sender,
-		"subject": subject,
+		"subject": escape_html(subject),
 	}
 	for key, value in args.items():
 		if not context.get(key):
-			context[key] = value
+			context[key] = escape_html(value)
 
 	context["message"] = message
 
@@ -67,12 +77,12 @@ def send_message(
 				if not value:
 					continue
 
-				label = unscrub(key)
+				label = escape_html(unscrub(key))
 
 				if isinstance(value, str):
 					value = frappe.format(value, df={"fieldtype": "Text"})
 				else:
-					value = frappe.format(value)
+					value = escape_html(cstr(frappe.format(value)))
 
 				forward_email_content.append(f"<b>{label}:</b> {value}")
 
