@@ -260,19 +260,23 @@ def invite_user(contact):
 	if not contact.email_id:
 		frappe.throw(_("Please set Email Address"))
 
-	if contact.has_permission("write"):
-		user = frappe.get_doc(
-			{
-				"doctype": "User",
-				"first_name": contact.first_name,
-				"last_name": contact.last_name,
-				"email": contact.email_id,
-				"user_type": "Website User",
-				"send_welcome_email": 1,
-			}
-		).insert(ignore_permissions=True)
+	# Contact write permission alone must not be enough to create a User
+	contact.check_permission("write")
+	if not frappe.has_permission("User", "create"):
+		frappe.throw(_("You are not permitted to create a User"), frappe.PermissionError)
 
-		return user.name
+	user = frappe.get_doc(
+		{
+			"doctype": "User",
+			"first_name": contact.first_name,
+			"last_name": contact.last_name,
+			"email": contact.email_id,
+			"user_type": "Website User",
+			"send_welcome_email": 1,
+		}
+	).insert(ignore_permissions=True)
+
+	return user.name
 
 
 @frappe.whitelist()

@@ -21,7 +21,7 @@ frappe.ui.form.on("Contact", {
 			}
 		}
 
-		if (!frm.doc.user && !frm.is_new() && frm.perm[0].write) {
+		if (!frm.doc.user && !frm.is_new() && frm.perm[0].write && frappe.model.can_create("User")) {
 			frm.add_custom_button(__("Invite as User"), function () {
 				return frappe.call({
 					method: "frappe.contacts.doctype.contact.contact.invite_user",
