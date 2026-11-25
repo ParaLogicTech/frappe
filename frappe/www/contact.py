@@ -51,45 +51,20 @@ def process_contact_message(
 
 	sender = validate_email_address(sender, throw=True)
 
-	message = escape_html(message)
-
-	if not args:
-		args = {}
-	if isinstance(args, str):
+	if args and isinstance(args, str):
 		args = json.loads(args)
 
-	# args and subject come from guests and are rendered into HTML emails
-	context = {
-		"sender": sender,
-		"subject": escape_html(subject),
-	}
-	for key, value in args.items():
-		if not context.get(key):
-			context[key] = escape_html(value)
-
-	context["message"] = message
+	context = get_contact_message_context(sender, subject, message, args)
+	message = context["message"]
 
 	with suppress(frappe.OutgoingEmailError):
 		# Internal / Forward Email
 		if forward_to_email := frappe.db.get_single_value("Contact Us Settings", "forward_to_email"):
-			forward_email_content = []
-			for key, value in context.items():
-				if not value:
-					continue
-
-				label = escape_html(unscrub(key))
-
-				if isinstance(value, str):
-					value = frappe.format(value, df={"fieldtype": "Text"})
-				else:
-					value = escape_html(cstr(frappe.format(value)))
-
-				forward_email_content.append(f"<b>{label}:</b> {value}")
-
-			forward_email_content = "<br>".join(forward_email_content)
-
 			frappe.sendmail(
-				recipients=forward_to_email, reply_to=sender, content=forward_email_content, subject=subject
+				recipients=forward_to_email,
+				reply_to=sender,
+				content=get_contact_message_html(context),
+				subject=subject,
 			)
 
 		# Acknowledgement / Confirmation Email
@@ -125,3 +100,36 @@ def process_contact_message(
 				status="Open",
 			)
 		).insert(ignore_permissions=True)
+
+
+def get_contact_message_context(sender: str, subject: str, message: str, args: dict | None = None) -> dict:
+	# args, subject and message come from guests and are rendered into HTML emails, so escape them
+	context = {
+		"sender": sender,
+		"subject": escape_html(subject),
+	}
+	for key, value in (args or {}).items():
+		if not context.get(key):
+			context[key] = escape_html(value)
+
+	context["message"] = escape_html(message)
+	return context
+
+
+def get_contact_message_html(context: dict) -> str:
+	# One "Label: value" line per value; expects the escaped context from get_contact_message_context
+	lines = []
+	for key, value in context.items():
+		if not value:
+			continue
+
+		label = escape_html(unscrub(key))
+
+		if isinstance(value, str):
+			value = frappe.format(value, df={"fieldtype": "Text"})
+		else:
+			value = escape_html(cstr(frappe.format(value)))
+
+		lines.append(f"<b>{label}:</b> {value}")
+
+	return "<br>".join(lines)
