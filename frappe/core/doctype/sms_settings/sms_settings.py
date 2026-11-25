@@ -118,9 +118,20 @@ def process_and_send(sms_args):
 			sms_args.get("reference_doctype"), sms_args.get("reference_name")
 		)
 
-	run_before_send_methods(sms_args)
+	run_before_send_methods(
+		sms_args.doc,
+		sms_args.notification_key,
+		child_doctype=sms_args.child_doctype,
+		child_name=sms_args.child_name,
+	)
 	send_via_gateway(sms_args)
-	run_after_send_methods(sms_args)
+	run_after_send_methods(
+		sms_args.reference_doctype,
+		sms_args.reference_name,
+		sms_args.notification_key,
+		child_doctype=sms_args.child_doctype,
+		child_name=sms_args.child_name,
+	)
 
 
 def create_communication(args, automated=False):
@@ -157,34 +168,35 @@ def create_communication(args, automated=False):
 		args["communication"] = comm.name
 
 
-def run_before_send_methods(args):
+def run_before_send_methods(doc, notification_key, child_doctype=None, child_name=None):
 	from frappe.email.doctype.notification.notification import run_validate_notification
 
-	doc = args.get("doc")
-	notification_key = cstr(args.get("notification_key"))
+	notification_key = cstr(notification_key)
 
 	if doc and notification_key:
 		validation = run_validate_notification(
 			doc,
 			notification_key,
-			child_doctype=args.get("child_doctype"),
-			child_name=args.get("child_name"),
+			child_doctype=child_doctype,
+			child_name=child_name,
 			throw=True,
 		)
 		if not validation:
 			frappe.throw(_("{0} Notification Validation Failed").format(notification_key))
 
 
-def run_after_send_methods(args):
-	notification_key = cstr(args.get("notification_key"))
-	if args.get("reference_doctype") and args.get("reference_name") and notification_key:
+def run_after_send_methods(
+	reference_doctype, reference_name, notification_key, child_doctype=None, child_name=None
+):
+	notification_key = cstr(notification_key)
+	if reference_doctype and reference_name and notification_key:
 		add_notification_count(
-			args.get("reference_doctype"),
-			args.get("reference_name"),
+			reference_doctype,
+			reference_name,
 			notification_key,
 			"SMS",
-			child_doctype=args.get("child_doctype"),
-			child_name=args.get("child_name"),
+			child_doctype=child_doctype,
+			child_name=child_name,
 		)
 
 
