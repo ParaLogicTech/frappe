@@ -74,7 +74,7 @@ def get_title_html(title):
 def enqueue_create_notification(
 	users: list[str] | str,
 	doc: dict,
-	notification_type=None,
+	notification_key=None,
 	child_doctype=None,
 	child_name=None,
 	enqueue_after_commit=True,
@@ -101,7 +101,7 @@ def enqueue_create_notification(
 		"frappe.desk.doctype.notification_log.notification_log.make_notification_logs",
 		doc=doc,
 		users=users,
-		notification_type=notification_type,
+		notification_key=notification_key,
 		child_doctype=child_doctype,
 		child_name=child_name,
 		now=frappe.flags.in_test,
@@ -112,7 +112,7 @@ def enqueue_create_notification(
 def make_notification_logs(
 	doc,
 	users,
-	notification_type=None,
+	notification_key=None,
 	child_doctype=None,
 	child_name=None,
 ):
@@ -127,11 +127,11 @@ def make_notification_logs(
 		):
 			notification.insert(ignore_permissions=True)
 
-			if notification_type and doc.get("document_type") and doc.get("document_name"):
+			if notification_key and doc.get("document_type") and doc.get("document_name"):
 				add_notification_count(
 					doc.get("document_type"),
 					doc.get("document_name"),
-					notification_type,
+					notification_key,
 					"System Notification",
 					child_doctype=child_doctype,
 					child_name=child_name,

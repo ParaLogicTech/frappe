@@ -38,7 +38,7 @@ def send_sms(
 	receiver_list: str | list[str],
 	message: str,
 	success_msg: bool = True,
-	notification_type: str | None = None,
+	notification_key: str | None = None,
 	reference_doctype: str | None = None,
 	reference_name: str | None = None,
 	child_doctype: str | None = None,
@@ -52,7 +52,7 @@ def send_sms(
 	automated: bool = False,
 	priority: int = 1,
 ):
-	notification_type = cstr(notification_type)
+	notification_key = cstr(notification_key)
 
 	receiver_list = clean_receiver_nos(receiver_list, format_sms=True)
 
@@ -61,7 +61,7 @@ def send_sms(
 			"receiver_list": receiver_list,
 			"message": message,
 			"success_msg": success_msg,
-			"notification_type": notification_type,
+			"notification_key": notification_key,
 			"reference_doctype": reference_doctype,
 			"reference_name": reference_name,
 			"child_doctype": child_doctype,
@@ -127,8 +127,8 @@ def create_communication(args, automated=False):
 	"""Make communication entry"""
 	if args.get("reference_doctype") and args.get("reference_name"):
 		subject = "SMS"
-		if args.get("subject") or args.get("notification_type"):
-			subject = "{0} SMS".format(args.get("subject") or args.get("notification_type"))
+		if args.get("subject") or args.get("notification_key"):
+			subject = "{0} SMS".format(args.get("subject") or args.get("notification_key"))
 
 		receiver_list = args.get("receiver_list") or []
 
@@ -161,27 +161,27 @@ def run_before_send_methods(args):
 	from frappe.email.doctype.notification.notification import run_validate_notification
 
 	doc = args.get("doc")
-	notification_type = cstr(args.get("notification_type"))
+	notification_key = cstr(args.get("notification_key"))
 
-	if doc and notification_type:
+	if doc and notification_key:
 		validation = run_validate_notification(
 			doc,
-			notification_type,
+			notification_key,
 			child_doctype=args.get("child_doctype"),
 			child_name=args.get("child_name"),
 			throw=True,
 		)
 		if not validation:
-			frappe.throw(_("{0} Notification Validation Failed").format(notification_type))
+			frappe.throw(_("{0} Notification Validation Failed").format(notification_key))
 
 
 def run_after_send_methods(args):
-	notification_type = cstr(args.get("notification_type"))
-	if args.get("reference_doctype") and args.get("reference_name") and notification_type:
+	notification_key = cstr(args.get("notification_key"))
+	if args.get("reference_doctype") and args.get("reference_name") and notification_key:
 		add_notification_count(
 			args.get("reference_doctype"),
 			args.get("reference_name"),
-			notification_type,
+			notification_key,
 			"SMS",
 			child_doctype=args.get("child_doctype"),
 			child_name=args.get("child_name"),

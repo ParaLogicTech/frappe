@@ -6,7 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "reference_doctype",
-  "notification_type",
+  "notification_key",
   "enabled",
   "column_break_3",
   "message"
@@ -33,23 +33,24 @@
    "reqd": 1
   },
   {
-   "fieldname": "notification_type",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Notification Type",
-   "set_only_once": 1
-  },
-  {
    "default": "1",
    "fieldname": "enabled",
    "fieldtype": "Check",
    "in_standard_filter": 1,
    "label": "Enabled"
+  },
+  {
+   "fieldname": "notification_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Notification Key",
+   "set_only_once": 1
   }
  ],
+ "grid_page_length": 500,
  "links": [],
- "modified": "2025-03-18 23:27:05.337102",
+ "modified": "2026-11-25 21:23:17.337576",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "SMS Template",
@@ -69,6 +70,8 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

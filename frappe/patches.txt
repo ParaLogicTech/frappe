@@ -260,3 +260,4 @@ frappe.printing.doctype.print_format.patches.sets_wkhtmltopdf_as_default_for_pdf
 frappe.patches.v16_0.social_eps_deprecation_warning
 frappe.core.doctype.communication_link.patches.copy_communication_date_to_link
 frappe.core.doctype.communication.patches.drop_ref_dt_dn_index
+frappe.patches.v15_0.rename_notification_type_to_notification_key

@@ -8,7 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "sender",
-  "notification_type",
+  "notification_key",
   "recipients",
   "show_as_cc",
   "message",
@@ -153,14 +153,6 @@
    "options": "Email Account"
   },
   {
-   "fieldname": "notification_type",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Notification Type",
-   "read_only": 1
-  },
-  {
    "fieldname": "child_doctype",
    "fieldtype": "Link",
    "label": "Child DocType",
@@ -172,6 +164,14 @@
    "fieldtype": "Data",
    "label": "Child Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "notification_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Notification Key",
+   "read_only": 1
   }
  ],
  "grid_page_length": 500,
@@ -179,7 +179,7 @@
  "idx": 1,
  "in_create": 1,
  "links": [],
- "modified": "2025-11-27 10:23:25.692735",
+ "modified": "2026-11-25 21:23:16.715881",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Email Queue",
@@ -196,6 +196,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

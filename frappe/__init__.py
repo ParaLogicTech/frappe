@@ -720,7 +720,7 @@ def sendmail(
 	email_read_tracker_url=None,
 	x_priority: Literal[1, 3, 5] = 3,
 	email_headers=None,
-	notification_type=None,
+	notification_key=None,
 	child_doctype=None,
 	child_name=None,
 ) -> Optional["EmailQueue"]:
@@ -809,7 +809,7 @@ def sendmail(
 		email_read_tracker_url=email_read_tracker_url,
 		x_priority=x_priority,
 		email_headers=email_headers,
-		notification_type=notification_type,
+		notification_key=notification_key,
 		child_doctype=child_doctype,
 		child_name=child_name,
 	)

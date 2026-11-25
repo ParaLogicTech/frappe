@@ -24,7 +24,7 @@ frappe.SMSManager = function SMSManager(doc, options) {
 		}
 
 		me.message = options.message;
-		me.notification_type = options.notification_type;
+		me.notification_key = options.notification_key;
 		me.contact = options.contact;
 		me.mobile_no = options.mobile_no;
 		me.party_doctype = options.party_doctype;
@@ -39,7 +39,7 @@ frappe.SMSManager = function SMSManager(doc, options) {
 			args: {
 				dt: me.doctype,
 				dn: me.name,
-				notification_type: me.notification_type,
+				notification_key: me.notification_key,
 				contact: me.contact,
 				mobile_no: me.mobile_no,
 				party_doctype: me.party_doctype,
@@ -69,7 +69,7 @@ frappe.SMSManager = function SMSManager(doc, options) {
 
 	this.make_dialog = function () {
 		var d = new frappe.ui.Dialog({
-			title: __("Send {0} SMS", [me.notification_type || ""]),
+			title: __("Send {0} SMS", [me.notification_key || ""]),
 			width: 400,
 			fields: [
 				{ label: __("Mobile Number"), fieldname: "mobile_no", fieldtype: "Data", reqd: 1 },
@@ -89,7 +89,7 @@ frappe.SMSManager = function SMSManager(doc, options) {
 					args: {
 						receiver_list: [v.mobile_no],
 						message: v.message,
-						notification_type: me.notification_type,
+						notification_key: me.notification_key,
 						reference_doctype: me.reference_doctype,
 						reference_name: me.reference_name,
 						party_doctype: me.party_doctype,
@@ -115,10 +115,10 @@ frappe.SMSManager = function SMSManager(doc, options) {
 	this.show();
 };
 
-frappe.get_notification_count_str = function (frm, notification_type) {
+frappe.get_notification_count_str = function (frm, notification_key) {
 	let counts = (frm.doc.__onload?.notification_count || [])
 		.filter((d) => {
-			return d.notification_type == notification_type && cint(d.notification_count);
+			return d.notification_key == notification_key && cint(d.notification_count);
 		})
 		.map((d) => `${cint(d.notification_count)} ${d.notification_medium}`);
 
@@ -129,10 +129,10 @@ frappe.get_notification_count_str = function (frm, notification_type) {
 	return counts_str;
 };
 
-frappe.get_notification_count = function (frm, notification_type, notification_medium) {
+frappe.get_notification_count = function (frm, notification_key, notification_medium) {
 	let rows = (frm.doc.__onload?.notification_count || []).filter((d) => {
 		return (
-			d.notification_type == notification_type &&
+			d.notification_key == notification_key &&
 			(!notification_medium || d.notification_medium == notification_medium)
 		);
 	});

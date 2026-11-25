@@ -252,6 +252,55 @@ class TestNotification(FrappeTestCase):
 		notification.delete()
 		event.delete()
 
+	def test_notification_key(self):
+		from frappe.core.doctype.notification_count.notification_count import (
+			get_notification_count,
+			get_notification_last_scheduled,
+		)
+		from frappe.email.doctype.notification.notification import has_notification
+		from frappe.email.queue import flush
+
+		config = {
+			"name": "_Test Notification Key",
+			"subject": "_Test Notification Key",
+			"document_type": "ToDo",
+			"event": "New",
+			"channel": "Email",
+			"message": "Test notification key",
+			"notification_key": "_Test Key",
+			"recipients": [{"receiver_by_document_field": "owner"}],
+		}
+		with get_test_notification(config) as notification:
+			self.assertEqual(notification.get_notification_key(), "_Test Key")
+			self.assertTrue(has_notification("ToDo", "_Test Key"))
+			self.assertFalse(has_notification("ToDo", "_Test Other Key"))
+
+			todo = frappe.get_doc(doctype="ToDo", description="Test notification key").insert()
+
+			email_keys = frappe.get_all(
+				"Email Queue",
+				filters={"reference_doctype": "ToDo", "reference_name": todo.name},
+				pluck="notification_key",
+			)
+			self.assertEqual(email_keys, ["_Test Key"])
+			self.assertTrue(get_notification_last_scheduled("ToDo", todo.name, "_Test Key", "Email"))
+
+			flush()
+			self.assertEqual(get_notification_count("ToDo", todo.name, "_Test Key", "Email"), 1)
+
+	def test_notification_key_defaults_to_name(self):
+		config = {
+			"name": "_Test Notification Without Key",
+			"subject": "_Test Notification Without Key",
+			"document_type": "ToDo",
+			"event": "New",
+			"channel": "Email",
+			"message": "Test notification without key",
+			"recipients": [{"receiver_by_document_field": "owner"}],
+		}
+		with get_test_notification(config) as notification:
+			self.assertEqual(notification.get_notification_key(), "_Test Notification Without Key")
+
 	def test_date_changed(self):
 		event = frappe.new_doc("Event")
 		event.subject = "test"

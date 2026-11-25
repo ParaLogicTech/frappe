@@ -22,8 +22,8 @@ class NotificationCount(Document):
 		last_scheduled_dt: DF.Datetime | None
 		last_sent_dt: DF.Datetime | None
 		notification_count: DF.Int
+		notification_key: DF.Data
 		notification_medium: DF.Data | None
-		notification_type: DF.Data
 		reference_doctype: DF.Link
 		reference_name: DF.DynamicLink | None
 	# end: auto-generated types
@@ -33,7 +33,7 @@ class NotificationCount(Document):
 def add_notification_count(
 	reference_doctype,
 	reference_name,
-	notification_type,
+	notification_key,
 	notification_medium,
 	child_doctype=None,
 	child_name=None,
@@ -44,7 +44,7 @@ def add_notification_count(
 	doc = get_notification_count_doc(
 		reference_doctype,
 		reference_name,
-		notification_type,
+		notification_key,
 		notification_medium,
 		child_doctype=child_doctype,
 		child_name=child_name,
@@ -58,7 +58,7 @@ def add_notification_count(
 def get_notification_count(
 	reference_doctype,
 	reference_name,
-	notification_type,
+	notification_key,
 	notification_medium,
 	child_doctype=None,
 	child_name=None,
@@ -66,7 +66,7 @@ def get_notification_count(
 	doc = get_notification_count_doc(
 		reference_doctype,
 		reference_name,
-		notification_type,
+		notification_key,
 		notification_medium,
 		child_doctype=child_doctype,
 		child_name=child_name,
@@ -77,7 +77,7 @@ def get_notification_count(
 def set_notification_last_scheduled(
 	reference_doctype,
 	reference_name,
-	notification_type,
+	notification_key,
 	notification_medium,
 	child_doctype=None,
 	child_name=None,
@@ -86,7 +86,7 @@ def set_notification_last_scheduled(
 	doc = get_notification_count_doc(
 		reference_doctype,
 		reference_name,
-		notification_type,
+		notification_key,
 		notification_medium,
 		child_doctype=child_doctype,
 		child_name=child_name,
@@ -99,7 +99,7 @@ def set_notification_last_scheduled(
 def get_notification_last_scheduled(
 	reference_doctype,
 	reference_name,
-	notification_type,
+	notification_key,
 	notification_medium,
 	child_doctype=None,
 	child_name=None,
@@ -107,7 +107,7 @@ def get_notification_last_scheduled(
 	doc = get_notification_count_doc(
 		reference_doctype,
 		reference_name,
-		notification_type,
+		notification_key,
 		notification_medium,
 		child_doctype=child_doctype,
 		child_name=child_name,
@@ -135,7 +135,7 @@ def get_all_notification_count(reference_doctype, reference_name, child_doctype=
 	reference_name = cstr(reference_name)
 
 	filters = {"reference_doctype": reference_doctype, "reference_name": reference_name}
-	fields = ["notification_type", "notification_medium", "notification_count"]
+	fields = ["notification_key", "notification_medium", "notification_count"]
 
 	if child_doctype and child_name:
 		filters.update(
@@ -151,7 +151,7 @@ def get_all_notification_count(reference_doctype, reference_name, child_doctype=
 def get_notification_count_doc(
 	reference_doctype,
 	reference_name,
-	notification_type,
+	notification_key,
 	notification_medium,
 	child_doctype=None,
 	child_name=None,
@@ -163,7 +163,7 @@ def get_notification_count_doc(
 	filters = {
 		"reference_doctype": reference_doctype,
 		"reference_name": reference_name,
-		"notification_type": notification_type,
+		"notification_key": notification_key,
 		"notification_medium": notification_medium,
 	}
 
