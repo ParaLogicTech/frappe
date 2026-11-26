@@ -49,21 +49,19 @@ test.describe("Form", () => {
 		page,
 		desk,
 	}) => {
-		await page.goto("/app/contact");
-
-		await desk.clear_filters();
-		const name_filter = page.locator('.standard-filter-section [data-fieldname="name"] input');
-		await name_filter.pressSequentially("Test Form Contact 3");
-		await name_filter.blur();
+		// contacts are named by a naming series, so filter by first name
+		await page.goto("/app/contact?first_name=Test%20Form%20Contact%203");
 		await desk.click_listview_row_item_with_text("Test Form Contact 3");
 
 		const title = page.locator("#page-Contact .page-head").getByTitle("Test Form Contact 3");
 		const no_further_records = page
 			.locator(".msgprint-dialog .modal-body")
 			.filter({ hasText: "No further records" });
-		for (const button of [".prev-doc", ".next-doc"]) {
+		// the form has no previous/next buttons, only their keyboard shortcuts
+		for (const shortcut of ["Control+Shift+<", "Control+Shift+>"]) {
 			await expect(title).toBeAttached();
-			await page.locator(button).click();
+			await page.waitForFunction(() => frappe.request.ajax_count === 0);
+			await page.keyboard.press(shortcut);
 			await expect(no_further_records).toBeVisible();
 			await desk.hide_dialog();
 		}
@@ -112,8 +110,14 @@ test.describe("Form", () => {
 		await expect(desk.get_field("location")).toHaveValue("Bermuda");
 	});
 
-	test("update docfield property using set_df_property in child table", async ({ page }) => {
-		await page.goto("/app/contact/Test Form Contact 1");
+	test("update docfield property using set_df_property in child table", async ({
+		page,
+		admin,
+	}) => {
+		const contact_name = await admin.get_name("Contact", {
+			first_name: "Test Form Contact 1",
+		});
+		await page.goto(`/app/contact/${contact_name}`);
 
 		const table = page.locator('.frappe-control[data-fieldname="phone_nos"]');
 		const table_form = page.locator(".grid-row-open");

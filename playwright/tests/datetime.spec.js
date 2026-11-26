@@ -82,14 +82,14 @@ test.describe("Control Date, Time and DateTime", () => {
 	test.describe("Time formats", () => {
 		const time_formats = [
 			{
-				time_format: "HH:mm:ss",
-				value: "  11:00:12",
-				match_value: "11:00:12",
+				time_format: "24 Hour",
+				value: "  23:00:12",
+				match_value: "23:00:12",
 			},
 			{
-				time_format: "HH:mm",
-				value: "  11:00:12",
-				match_value: "11:00",
+				time_format: "12 Hour",
+				value: "  11:00:12 PM",
+				match_value: "11:00:12 PM",
 			},
 		];
 
@@ -111,7 +111,7 @@ test.describe("Control Date, Time and DateTime", () => {
 			admin,
 		}) => {
 			await admin.set_value("System Settings", "System Settings", {
-				time_format: "HH:mm:ss",
+				time_format: "24 Hour",
 			});
 			await desk.new_form(doctype_name);
 			const input = await fill_picker_field(page, desk, "time", "10:00:00", "Time");
@@ -135,17 +135,17 @@ test.describe("Control Date, Time and DateTime", () => {
 		const datetime_formats = [
 			{
 				date_format: "dd.mm.yyyy",
-				time_format: "HH:mm:ss",
+				time_format: "24 Hour",
 				value: "   02.12.2019 11:00:12",
 				doc_value: "2019-12-02 00:30:12", // system timezone (America/New_York)
 				input_value: "02.12.2019 11:00:12", // user timezone (Asia/Kolkata)
 			},
 			{
 				date_format: "mm-dd-yyyy",
-				time_format: "HH:mm",
-				value: "   12-02-2019 11:00:00",
-				doc_value: "2019-12-02 00:30:00", // system timezone (America/New_York)
-				input_value: "12-02-2019 11:00", // user timezone (Asia/Kolkata)
+				time_format: "12 Hour",
+				value: "   12-02-2019 11:00:00 PM",
+				doc_value: "2019-12-02 12:30:00", // system timezone (America/New_York)
+				input_value: "12-02-2019 11:00:00 PM", // user timezone (Asia/Kolkata)
 			},
 		];
 

@@ -1511,11 +1511,11 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 	}
 
 	setup_realtime_updates() {
-		this.pending_document_refreshes = [];
-
+		// runs after every refresh, and a refresh can be skipped (throttled), so keep the queued updates
 		if (this.list_view_settings?.disable_auto_refresh || this.realtime_events_setup) {
 			return;
 		}
+		this.pending_document_refreshes = [];
 		frappe.realtime.doctype_subscribe(this.doctype);
 		frappe.realtime.off("list_update");
 		frappe.realtime.on("list_update", (data) => {
@@ -2164,14 +2164,18 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 	parse_filters_from_route_options() {
 		const filters = [];
 
-		for (let field in frappe.route_options) {
+		let params = new URLSearchParams(window.location.search);
+		if (!params.toString() && frappe.route_options) {
+			params = new Map(Object.entries(frappe.route_options));
+		}
+
+		params.forEach((value, field) => {
 			let doctype = null;
-			let value = frappe.route_options[field];
 
 			if (field == "selected_page_count" && cint(value)) {
 				this.page_length = this.selected_page_count = cint(value);
 				this.update_paging_button();
-				continue;
+				return;
 			}
 
 			let value_array;
@@ -2214,7 +2218,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 					filters.push([doctype, field, "=", value]);
 				}
 			}
-		}
+		});
 
 		return filters;
 	}

@@ -53,7 +53,7 @@ test.describe("Awesome Bar", () => {
 		).toBeVisible();
 		await search.press("Enter");
 		await expect(page.locator(".title-text:visible")).toContainText("To Do");
-		await expect(page).toHaveURL((url) => url.pathname === "/app/todo");
+		await expect(page).toHaveURL((url) => url.pathname === "/app/todo/view/list");
 	});
 
 	test("navigates to new form", async () => {

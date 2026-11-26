@@ -27,7 +27,8 @@ test.describe("Realtime updates", () => {
 		const doc = await api.insert_doc("ToDo", { description: original });
 		await expect(page.getByText(original).first()).toBeVisible();
 
-		await api.update_doc("ToDo", doc.name, { description: updated });
+		// the list shows the title, which is set from the description only while it's empty
+		await api.update_doc("ToDo", doc.name, { title: updated });
 		await expect(page.getByText(updated).first()).toBeVisible();
 	});
 

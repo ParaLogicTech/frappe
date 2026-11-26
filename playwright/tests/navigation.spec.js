@@ -34,6 +34,7 @@ test.describe("Navigation", () => {
 		await expect.poll(() => pathname(page)).toBe("/login");
 		await desk.login();
 		await page.reload();
-		await expect.poll(() => pathname(page)).toBe("/app/todo");
+		// the list route is rewritten to its view
+		await expect.poll(() => pathname(page)).toBe("/app/todo/view/list");
 	});
 });

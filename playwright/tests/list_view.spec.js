@@ -15,7 +15,10 @@ test.describe("List View", () => {
 		await desk.go_to_list("ToDo");
 		await desk.clear_filters();
 		await page.locator(CHECK_ALL).click();
-		await page.locator("button[data-original-title='Reload List']").click();
+		await page
+			.locator(".page-head .custom-actions")
+			.getByRole("button", { name: "Reload", exact: true })
+			.click();
 		await expect(
 			page.locator(".list-row-container .list-row-checkbox:checked").first()
 		).toBeVisible();

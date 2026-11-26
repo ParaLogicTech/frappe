@@ -1,12 +1,32 @@
 import { test, expect } from "../support";
 
 test.describe("Grid Pagination", () => {
+	let contact_name;
+
 	test.beforeAll(async ({ admin }) => {
+		// grids show 500 rows per page by default, these tests use pages of 50
+		await admin.insert_doc(
+			"Property Setter",
+			{
+				doctype_or_field: "DocType",
+				doc_type: "Contact Phone",
+				property: "grid_page_length",
+				property_type: "Int",
+				value: "50",
+			},
+			true
+		);
 		await admin.call("frappe.tests.ui_test_helpers.create_contact_phone_nos_records");
+		// contacts are named by a naming series
+		contact_name = await admin.get_name("Contact", { first_name: "Test Contact" });
+	});
+
+	test.afterAll(async ({ admin }) => {
+		await admin.remove_doc("Property Setter", "Contact Phone-main-grid_page_length", true);
 	});
 
 	test.beforeEach(async ({ page }) => {
-		await page.goto("/app/contact/Test Contact");
+		await page.goto(`/app/contact/${contact_name}`);
 	});
 
 	const get_table = (page) => page.locator('.frappe-control[data-fieldname="phone_nos"]');

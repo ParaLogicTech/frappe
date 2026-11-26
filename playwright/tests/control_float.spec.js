@@ -1,5 +1,6 @@
 import { test, expect } from "../support";
 
+// a focused field shows the plain number for editing, and formats it again on blur
 const TEST_CASES = [
 	{
 		number_format: "#.###,##",
@@ -7,17 +8,17 @@ const TEST_CASES = [
 			{
 				input: "364.87,334",
 				blur_expected: "36.487,334",
-				focus_expected: "36.487,334",
+				focus_expected: "36487.334",
 			},
 			{
 				input: "36487,335",
 				blur_expected: "36.487,335",
-				focus_expected: "36.487,335",
+				focus_expected: "36487.335",
 			},
 			{
 				input: "2*(2+47)+1,5+1",
 				blur_expected: "100,500",
-				focus_expected: "100,500",
+				focus_expected: "100.5",
 			},
 		],
 	},
@@ -27,17 +28,17 @@ const TEST_CASES = [
 			{
 				input: "464,87.334",
 				blur_expected: "46,487.334",
-				focus_expected: "46,487.334",
+				focus_expected: "46487.334",
 			},
 			{
 				input: "46487.335",
 				blur_expected: "46,487.335",
-				focus_expected: "46,487.335",
+				focus_expected: "46487.335",
 			},
 			{
 				input: "3*(2+47)+1.5+1",
 				blur_expected: "149.500",
-				focus_expected: "149.500",
+				focus_expected: "149.5",
 			},
 		],
 	},
@@ -47,12 +48,12 @@ const TEST_CASES = [
 			{
 				input: "12.345",
 				blur_expected: "12.345,000",
-				focus_expected: "12.345,000",
+				focus_expected: "12345",
 			},
 			{
 				input: "12.340",
 				blur_expected: "12.340,000",
-				focus_expected: "12.340,000",
+				focus_expected: "12340",
 			},
 		],
 	},

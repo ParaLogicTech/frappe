@@ -2,6 +2,7 @@ import { test, expect } from "../support";
 
 test.describe("Grid", () => {
 	let original_log_settings_rows;
+	let contact_name;
 
 	test.afterEach(async ({ admin }) => {
 		if (!original_log_settings_rows) return;
@@ -12,14 +13,16 @@ test.describe("Grid", () => {
 
 	test.beforeAll(async ({ admin }) => {
 		await admin.call("frappe.tests.ui_test_helpers.create_contact_phone_nos_records");
+		// contacts are named by a naming series
+		contact_name = await admin.get_name("Contact", { first_name: "Test Contact" });
 	});
 
 	test.beforeEach(async ({ page }) => {
-		await page.goto("/app/contact/Test Contact");
+		await page.goto(`/app/contact/${contact_name}`);
 		await page.waitForFunction(
 			() =>
 				window.cur_frm &&
-				cur_frm.doc.name === "Test Contact" &&
+				cur_frm.doc.first_name === "Test Contact" &&
 				cur_frm.get_field("phone_nos")
 		);
 	});
@@ -77,7 +80,7 @@ test.describe("Grid", () => {
 		}
 	});
 
-	test("update docfield property using toggle_reqd", async ({ page, desk }) => {
+	test("update docfield property using toggle_reqd", async ({ page }) => {
 		const table = get_table(page);
 		const table_form = page.locator(".grid-row-open");
 		await page.evaluate(() => cur_frm.get_field("phone_nos").grid.toggle_reqd("phone", false));
@@ -85,7 +88,8 @@ test.describe("Grid", () => {
 		for (const idx of [1, 2]) {
 			await table.locator(`[data-idx="${idx}"] .btn-open-row`).click();
 			await expect(table_form).toBeVisible();
-			const phone_field = desk.get_field("phone");
+			// the contact has a phone field of its own
+			const phone_field = table_form.locator('[data-fieldname="phone"] input:visible');
 			await phone_field.focus();
 			await phone_field.clear();
 			await phone_field.blur();

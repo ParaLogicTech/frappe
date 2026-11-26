@@ -43,7 +43,7 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     needs: checkrun
-    if: ${{ needs.checkrun.outputs.build == 'strawberry' && github.repository_owner == 'frappe' }}
+    if: ${{ needs.checkrun.outputs.build == 'strawberry' && github.repository_owner == 'ParaLogicTech' }}
     timeout-minutes: 60
     env:
       NODE_ENV: "production"
@@ -186,7 +186,7 @@ jobs:
   faux-test:
     runs-on: ubuntu-latest
     needs: checkrun
-    if: ${{ needs.checkrun.outputs.build != 'strawberry' && github.repository_owner == 'frappe' }}
+    if: ${{ needs.checkrun.outputs.build != 'strawberry' && github.repository_owner == 'ParaLogicTech' }}
     name: UI Tests (Cypress)
     strategy:
       matrix:

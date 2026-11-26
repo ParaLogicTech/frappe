@@ -155,7 +155,8 @@ test.describe("View", () => {
 		await page.goto("/app/event/view/list");
 		await expect.poll(() => pathname(page)).toBe("/app/event/view/list");
 		await page.goBack();
-		await expect.poll(() => pathname(page)).toBe("/app/event");
+		// /app/event was replaced by its default view in the history
+		await expect.poll(() => pathname(page)).toBe("/app/event/view/report");
 	});
 
 	test("Route to Form", async ({ page }) => {

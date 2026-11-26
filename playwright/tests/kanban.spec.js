@@ -80,6 +80,8 @@ test.describe("Kanban Board", () => {
 		await visit_todo_kanban(page);
 
 		await desk.click_primary_button("Add ToDo");
+		// once shown, the dialog focuses its first field (Title), which would take the typing
+		await page.waitForFunction(() => frappe.quick_entry?.dialog.display);
 
 		await desk.fill_field("description", "Test Kanban ToDo", "Text Editor");
 		await expect
@@ -162,11 +164,11 @@ test.describe("Kanban Board", () => {
 		await page.waitForFunction(() => cur_list.board_perms);
 		await settled(page);
 
-		await expect(
-			page.locator(
-				".no-list-sidebar .menu-btn-group .btn-default[data-original-title='Menu']"
-			)
-		).toBeHidden();
+		// the menu stays for its "New ToDo" item, without the board's own items
+		const menu_items = page.locator(".page-actions .menu-btn-group .dropdown-menu li");
+		for (const label of ["Kanban Settings", "Save filters", "Delete Kanban Board"]) {
+			await expect(menu_items.filter({ hasText: label })).toHaveCount(0);
+		}
 		await expect(page.locator(".kanban .add-card")).toHaveCount(2);
 		await expect(page.locator(".kanban .column-options")).toHaveCount(0);
 	});

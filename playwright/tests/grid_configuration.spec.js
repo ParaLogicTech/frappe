@@ -13,8 +13,8 @@ test.describe("Grid Configuration", () => {
 	});
 
 	test("Set user wise grid settings", async ({ page }) => {
-		await page.getByRole("tab", { name: "Settings", exact: true }).click();
-		await page.locator('.form-section[data-fieldname="fields_section"]').click();
+		// the fields table has a tab of its own
+		await page.getByRole("tab", { name: "Fields", exact: true }).click();
 		const table = page.locator('.frappe-control[data-fieldname="fields"]');
 		await table.locator(".icon-sm").click();
 		const modal = page.locator('.frappe-control[data-fieldname="fields_html"]');
