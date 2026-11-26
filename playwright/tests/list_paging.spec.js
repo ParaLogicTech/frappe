@@ -30,7 +30,8 @@ test.describe("List Paging", () => {
 		await expect(list_count).toContainText("300 of");
 
 		await page
-			.locator('.page-head .standard-actions [data-original-title="Reload List"]')
+			.locator(".page-head .custom-actions")
+			.getByRole("button", { name: "Reload", exact: true })
 			.click();
 		await expect(list_count).toContainText("300 of");
 

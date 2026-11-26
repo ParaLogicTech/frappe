@@ -166,6 +166,8 @@ export class Desk {
 		await this.page.waitForFunction((el) => !$(el).data("bs.modal")?._isTransitioning, dialog);
 		await this.get_open_dialog().locator(".btn-modal-close").click();
 		await expect(this.page.locator(".modal:visible")).toHaveCount(0);
+		// a dialog shown again before bootstrap has removed the backdrop stays hidden
+		await expect(this.page.locator(".modal-backdrop")).toHaveCount(0);
 	}
 
 	async save() {
@@ -178,9 +180,25 @@ export class Desk {
 		return await saved;
 	}
 
+	// list filters are edited inline above the list, not in a popover
+	list_filter_area() {
+		return this.page.locator(".page-container:visible .frappe-list .filter-list");
+	}
+
 	async open_list_filter() {
-		await this.page.locator(".filter-section .filter-button").click();
-		await expect(this.page.locator(".filter-popover")).toBeAttached();
+		await this.list_filter_area().locator(".add-filter").click();
+		await expect(this.list_filter_area().locator(".filter-box:visible")).toHaveCount(1);
+	}
+
+	async edit_list_filter(text) {
+		await this.list_filter_area()
+			.locator(".filter-tag .toggle-filter", { hasText: text })
+			.click();
+		await expect(this.list_filter_area().locator(".filter-box:visible")).toHaveCount(1);
+	}
+
+	async apply_list_filter() {
+		await this.list_filter_area().locator(".filter-box:visible .set-filter-and-run").click();
 	}
 
 	async clear_filters() {
@@ -192,7 +210,10 @@ export class Desk {
 			return;
 		}
 		const filtered_data = await this.page.evaluateHandle(() => cur_list.data);
-		await this.page.locator(".filter-x-button").dispatchEvent("click");
+		// the list skips a refresh that matches a request from the last 3 seconds (no_change),
+		// and opening a list with filters can already have fetched it without them
+		await this.page.evaluate(() => (cur_list.last_args = null));
+		await this.list_filter_area().locator(".clear-filters").dispatchEvent("click");
 		await this.page.waitForFunction((data) => cur_list.data !== data, filtered_data);
 	}
 

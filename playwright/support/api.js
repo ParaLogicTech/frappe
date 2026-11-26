@@ -39,6 +39,11 @@ export class Api {
 		return await res.json();
 	}
 
+	async get_name(doctype, filters) {
+		const { data } = await this.get_list(doctype, ["name"], filters);
+		return data[0]?.name;
+	}
+
 	async get_doc(doctype, name) {
 		const res = await this.request.get(`/api/resource/${doctype}/${name}`, {
 			headers: await this.headers(),

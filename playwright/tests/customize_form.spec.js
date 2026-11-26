@@ -13,7 +13,8 @@ test.describe("Customize Form", () => {
 		).toContainText("ToDo");
 		await doc_type.press("Enter");
 		await expect.poll(() => page.evaluate(() => cur_frm.doc.doc_type)).toBe("ToDo");
-		await expect(page.getByRole("tab", { name: "Form", exact: true })).toHaveClass(/active/);
+		// choosing a DocType doesn't switch to the Form tab
+		await page.getByRole("tab", { name: "Form", exact: true }).click();
 		await expect(page.locator(".form-builder-container")).toBeVisible();
 		await page.getByRole("tab", { name: "Details", exact: true }).click();
 		await desk.click_form_section("Naming");

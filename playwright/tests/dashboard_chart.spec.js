@@ -15,7 +15,7 @@ test.describe("Dashboard Chart", () => {
 		await page.locator('[data-fieldname="filters_json"]').click();
 		await expect(page.locator(".modal-dialog")).toBeVisible();
 
-		await page.locator(".modal-body .filter-action-buttons .add-filter").click();
+		await page.locator(".modal-body .active-tag-filters .add-filter").click();
 		await page.locator(".modal-body .fieldname-select-area").click();
 		await page.locator(".modal-actions .btn-modal-close").click();
 	});

@@ -131,8 +131,14 @@ test.describe("Sidebar", () => {
 		const group_by_items = page.locator(
 			".group-by-field.show > .dropdown-menu > .group-by-item > .dropdown-item"
 		);
+		// the list sidebar is hidden until it's toggled open
+		const open_todo_sidebar = async () => {
+			await page.goto("/app/todo");
+			await page.locator(".page-container:visible .sidebar-toggle-btn").click();
+			await expect(assigned_to).toBeVisible();
+		};
 
-		await page.goto("/app/todo");
+		await open_todo_sidebar();
 		await assigned_to.click();
 		await expect(page.locator(".group-by-field.show .empty-state")).toContainText(
 			"No filters found"
@@ -150,11 +156,12 @@ test.describe("Sidebar", () => {
 		await page.locator(".modal-footer > .standard-actions > .btn-primary:visible").click();
 		await assigned;
 
-		await page.goto("/app/todo");
+		await open_todo_sidebar();
 		await assigned_to.click();
 		await expect(group_by_items).toContainText("1");
 
-		await expect(page.locator(".filter-button")).toContainText("Filter");
+		const filter_tags = desk.list_filter_area().locator(".filter-tag");
+		await expect(filter_tags).toHaveCount(0);
 
 		const filtered = page.waitForResponse((res) =>
 			res.url().endsWith("/api/method/frappe.desk.reportview.get")
@@ -162,18 +169,14 @@ test.describe("Sidebar", () => {
 		await group_by_items.click();
 		await filtered;
 
-		await page.locator(".filter-button").click();
-		await expect(page.locator(".filter-label")).toContainText("1");
-		await expect(
-			page.locator(".fieldname-select-area > .awesomplete > .form-control")
-		).toHaveValue("Assigned To");
-		await expect(page.locator(".condition")).toHaveValue("like");
-		await expect(
-			page.locator(".filter-field > .form-group > .input-with-feedback")
-		).toHaveValue(`%${TEST_USER}%`);
-		await expect(page.locator(".filter-popover")).toHaveCSS("opacity", "1");
-		await page.locator(".filter-button").click();
-		await expect(page.locator(".filter-popover")).toBeHidden();
+		await expect(filter_tags).toHaveCount(1);
+		await desk.edit_list_filter("Assigned To");
+		const filter_box = desk.list_filter_area().locator(".filter-box:visible");
+		await expect(filter_box.locator(".fieldname-select-area input")).toHaveValue(
+			"Assigned To"
+		);
+		await expect(filter_box.locator(".condition")).toHaveValue("like");
+		await expect(filter_box.locator(".filter-field input")).toHaveValue(`%${TEST_USER}%`);
 
 		await desk.clear_filters();
 
@@ -185,7 +188,7 @@ test.describe("Sidebar", () => {
 		await page.locator(".remove-btn").dispatchEvent("click");
 		await removed;
 		await desk.hide_dialog();
-		await page.goto("/app/todo");
+		await open_todo_sidebar();
 		await assigned_to.click();
 		await expect(page.locator(".group-by-field.show .empty-state")).toContainText(
 			"No filters found"

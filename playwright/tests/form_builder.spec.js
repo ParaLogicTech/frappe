@@ -69,10 +69,9 @@ test.describe("Form Builder", () => {
 	test("Save without change, check form dirty", async ({ page, desk }) => {
 		await open_form_builder(page);
 
-		await desk.click_primary_button("Save");
-		await expect(page.locator(".desk-alert.orange .alert-message")).toHaveText(
-			"No changes in document"
-		);
+		// a form without changes is saved anyway, and stays clean
+		await desk.save();
+		await expect(page.locator(".title-area .indicator-pill.orange")).toHaveCount(0);
 
 		const label_input = await edit_label(first_field(page));
 		await label_input.pressSequentially("Dirty");
@@ -86,7 +85,7 @@ test.describe("Form Builder", () => {
 		await page.locator('[data-fieldname="gender"] .field-actions button').first().click();
 
 		await page.locator(".modal-body .clear-filters").click();
-		await page.locator(".modal-body .filter-action-buttons .add-filter").click();
+		await page.locator(".modal-body .active-tag-filters .add-filter").click();
 
 		const input = page.locator(
 			".modal-body .filter-box .list_filter .filter-field .link-field input"

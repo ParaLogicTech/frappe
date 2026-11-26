@@ -212,11 +212,13 @@ test.describe("Attach Control with Failed Document Save", () => {
 		await desk.go_to_list("File");
 		await desk.open_list_filter();
 		await select_filter_field("Attached To Name");
-		const attached_to_name = page.locator('input[data-fieldname="attached_to_name"]');
+		const attached_to_name = desk
+			.list_filter_area()
+			.locator('.filter-box:visible input[data-fieldname="attached_to_name"]');
 		await attached_to_name.click();
 		await attached_to_name.pressSequentially(docname);
 		await attached_to_name.blur();
-		await page.locator(".filter-popover .apply-filters").click();
+		await desk.apply_list_filter();
 		await expect(page.locator("header .level-right .list-count:visible")).toContainText(
 			"1 of 1"
 		);
@@ -224,13 +226,15 @@ test.describe("Attach Control with Failed Document Save", () => {
 
 	test("Check if file exists with temporary name", async () => {
 		const { page, desk } = shared;
-		await desk.open_list_filter();
-		const attached_to_name = page.locator('input[data-fieldname="attached_to_name"]');
+		await desk.edit_list_filter("Attached To Name");
+		const attached_to_name = desk
+			.list_filter_area()
+			.locator('.filter-box:visible input[data-fieldname="attached_to_name"]');
 		await attached_to_name.click();
 		await attached_to_name.clear();
 		await attached_to_name.pressSequentially(temp_name);
 		await attached_to_name.blur();
-		await page.locator(".filter-popover .apply-filters").click();
+		await desk.apply_list_filter();
 		await expect(page.locator(".frappe-list > .no-result")).toBeVisible();
 	});
 });
