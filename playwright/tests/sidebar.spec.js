@@ -134,6 +134,10 @@ test.describe("Sidebar", () => {
 		// the list sidebar is hidden until it's toggled open
 		const open_todo_sidebar = async () => {
 			await page.goto("/app/todo");
+			// the list hides the sidebar while it sets up, which would undo an earlier toggle
+			await expect(
+				page.locator(".list-paging-area:visible, .no-result:visible").first()
+			).toBeVisible();
 			await page.locator(".page-container:visible .sidebar-toggle-btn").click();
 			await expect(assigned_to).toBeVisible();
 		};
