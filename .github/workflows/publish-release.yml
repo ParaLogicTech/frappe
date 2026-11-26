@@ -1,0 +1,50 @@
+# Creates a draft GitHub release when __version__ changes to a new fork version (<upstream version>+pl.<n>), usually
+# by merging the PR from prepare-release.yml. Notes list the PRs merged since the last published fork release.
+name: Publish Release
+
+on:
+  push:
+    branches:
+      - version-15
+    paths:
+      - frappe/__init__.py
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Draft GitHub release
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'ParaLogicTech'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(sed -nE 's/^__version__ = "(.*)"$/\1/p' frappe/__init__.py)
+          # merging an upstream release brings its plain version; only fork versions are released
+          if [[ "$version" != *+pl.* ]]; then
+            echo "$version is not a fork version, nothing to release"
+            exit 0
+          fi
+
+          tag="v$version"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "$tag already exists"
+            exit 0
+          fi
+
+          previous=$(git tag --list 'v*+pl.*' --sort=-version:refname | head -n 1)
+          if [ -n "$previous" ]; then
+            gh release create "$tag" --draft --target "$GITHUB_SHA" --title "$tag" \
+              --generate-notes --notes-start-tag "$previous"
+          else
+            gh release create "$tag" --draft --target "$GITHUB_SHA" --title "$tag" \
+              --notes "First ParaLogic release of the frappe fork."
+          fi
