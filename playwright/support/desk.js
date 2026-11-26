@@ -210,9 +210,6 @@ export class Desk {
 			return;
 		}
 		const filtered_data = await this.page.evaluateHandle(() => cur_list.data);
-		// the list skips a refresh that matches a request from the last 3 seconds (no_change),
-		// and opening a list with filters can already have fetched it without them
-		await this.page.evaluate(() => (cur_list.last_args = null));
 		await this.list_filter_area().locator(".clear-filters").dispatchEvent("click");
 		await this.page.waitForFunction((data) => cur_list.data !== data, filtered_data);
 	}
