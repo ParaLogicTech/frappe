@@ -1737,6 +1737,83 @@ class TestRounding(FrappeTestCase):
 		self.assertEqual(cint(str(floating_point)), int(floating_point))
 
 
+class TestDataHelpers(FrappeTestCase):
+	def test_original_name(self):
+		from frappe.utils import original_name
+
+		self.assertEqual(
+			original_name(frappe._dict(name="SINV-0001-2", amended_from="SINV-0001-1")), "SINV-0001"
+		)
+		self.assertEqual(original_name(frappe._dict(name="SINV-0001", amended_from=None)), "SINV-0001")
+		self.assertEqual(original_name(None), "")
+
+	def test_combine_datetime(self):
+		from frappe.utils.data import combine_datetime
+
+		self.assertEqual(combine_datetime("2026-01-02", "10:30:00"), datetime(2026, 1, 2, 10, 30))
+
+	def test_clean_whitespace(self):
+		from frappe.utils.data import clean_whitespace, sanitize_whitespace
+
+		self.assertEqual(sanitize_whitespace("a\xa0b\u200bc\u2003d"), "a b c d")
+		self.assertEqual(sanitize_whitespace(None), None)
+		self.assertEqual(clean_whitespace("  John\xa0\xa0 Doe\n\n\nStreet 1  "), "John Doe\nStreet 1")
+		self.assertEqual(clean_whitespace(None), "")
+
+	def test_rounding_helpers(self):
+		from frappe.utils.data import (
+			round_down,
+			round_half_away_from_zero,
+			round_half_down,
+			round_half_up,
+			round_up,
+		)
+
+		self.assertEqual((round_half_up(2.5), round_half_up(-2.5)), (3, -2))
+		self.assertEqual((round_half_down(2.5), round_half_down(-2.5)), (2, -3))
+		self.assertEqual((round_half_away_from_zero(2.5), round_half_away_from_zero(-2.5)), (3, -3))
+		self.assertEqual(round_half_away_from_zero(-0.125, 2), -0.13)
+
+		self.assertEqual(round_up(1.231, 2), 1.24)
+		self.assertEqual(round_up(1.23, 2), 1.23)
+		self.assertEqual(round_down(1.239, 2), 1.23)
+		self.assertEqual(round_down(-1.231, 2), -1.24)
+
+	def test_smallest_currency_fraction(self):
+		from frappe.utils.data import round_based_on_smallest_currency_fraction
+
+		self.assertEqual(
+			round_based_on_smallest_currency_fraction(10.07, "USD", smallest_currency_fraction_value=0.05),
+			10.05,
+		)
+		self.assertEqual(
+			round_based_on_smallest_currency_fraction(10.08, "USD", smallest_currency_fraction_value=0.05),
+			10.1,
+		)
+		self.assertEqual(
+			round_based_on_smallest_currency_fraction(10.4, "USD", smallest_currency_fraction_value=0), 10
+		)
+
+	def test_strip_html_and_link(self):
+		from frappe.utils import get_link_to_form, strip_html
+
+		self.assertEqual(strip_html("<b>a</b><i>b</i>", repl=" "), " a  b ")
+		self.assertEqual(strip_html(None), "")
+		self.assertIn(' target="_blank">', get_link_to_form("ToDo", "_Test", target="_blank"))
+		self.assertNotIn("target", get_link_to_form("ToDo", "_Test"))
+
+	def test_user_time_format(self):
+		from frappe.utils.data import get_user_time_format
+
+		previous = getattr(frappe.local, "user_time_format", None)
+		self.addCleanup(setattr, frappe.local, "user_time_format", previous)
+
+		frappe.local.user_time_format = "12 Hour"
+		self.assertEqual(get_user_time_format(), "hh:mm:ss a")
+		frappe.local.user_time_format = "24 Hour"
+		self.assertEqual(get_user_time_format(), "HH:mm:ss")
+
+
 class TestArgumentTypingValidations(FrappeTestCase):
 	def test_validate_argument_types(self):
 		from frappe.core.doctype.doctype.doctype import DocType

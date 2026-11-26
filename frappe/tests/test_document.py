@@ -12,7 +12,7 @@ from frappe.model.base_document import BaseDocument
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname, parse_naming_series, revert_series_if_last
 from frappe.tests.utils import FrappeTestCase, timeout
-from frappe.utils import cint, get_datetime, now_datetime, set_request
+from frappe.utils import cint, fmt_money, get_datetime, now_datetime, set_request
 from frappe.website.serve import get_response
 
 
@@ -678,3 +678,181 @@ class TestDocumentWebView(FrappeTestCase):
 
 		self.assertEqual(doc.config, payload)
 		self.assertNotIn("onclick", doc.description)
+
+
+SUBMITTABLE_DOCTYPE = "Test Submittable With Rows"
+SUBMITTABLE_ROW_DOCTYPE = "Test Submittable Row"
+
+
+def make_submittable_doctypes():
+	if not frappe.db.exists("DocType", SUBMITTABLE_ROW_DOCTYPE):
+		new_doctype(
+			SUBMITTABLE_ROW_DOCTYPE,
+			istable=1,
+			fields=[
+				{"fieldname": "item", "fieldtype": "Data", "label": "Item"},
+				{"fieldname": "qty", "fieldtype": "Float", "label": "Qty", "allow_on_submit": 1},
+			],
+		).insert()
+
+	if not frappe.db.exists("DocType", SUBMITTABLE_DOCTYPE):
+		new_doctype(
+			SUBMITTABLE_DOCTYPE,
+			is_submittable=1,
+			fields=[
+				{"fieldname": "title", "fieldtype": "Data", "label": "Title"},
+				{"fieldname": "remarks", "fieldtype": "Data", "label": "Remarks", "allow_on_submit": 1},
+				{"fieldname": "amount", "fieldtype": "Currency", "label": "Amount", "allow_on_submit": 1},
+				{"fieldname": "price", "fieldtype": "Currency", "label": "Price"},
+				{"fieldname": "rate", "fieldtype": "Float", "label": "Rate", "precision": "2"},
+				{"fieldname": "discount", "fieldtype": "Percent", "label": "Discount", "non_negative": 1},
+				{"fieldname": "user", "fieldtype": "Link", "label": "User", "options": "User"},
+				{
+					"fieldname": "user_name",
+					"fieldtype": "Data",
+					"label": "User Name",
+					"fetch_from": "user.full_name",
+				},
+				{
+					"fieldname": "items",
+					"fieldtype": "Table",
+					"label": "Items",
+					"options": SUBMITTABLE_ROW_DOCTYPE,
+					"allow_on_submit": 1,
+				},
+			],
+			permissions=[
+				{"role": "System Manager", "read": 1, "write": 1, "create": 1, "submit": 1, "cancel": 1}
+			],
+		).insert()
+
+
+class TestDocumentValues(FrappeTestCase):
+	@classmethod
+	def setUpClass(cls):
+		make_submittable_doctypes()
+		super().setUpClass()
+
+	def make_doc(self, **values):
+		return frappe.get_doc(
+			{
+				"doctype": SUBMITTABLE_DOCTYPE,
+				"title": "Test",
+				"price": 100,
+				"rate": 10,
+				"items": [{"item": "Row 1", "qty": 1}],
+				**values,
+			}
+		)
+
+	def test_getone(self):
+		doc = self.make_doc(items=[{"item": "Row 1"}, {"item": "Row 2"}])
+		self.assertEqual(doc.getone("items").item, "Row 1")
+		self.assertEqual(doc.getone("items", {"item": "Row 2"}).item, "Row 2")
+		self.assertIsNone(doc.getone("items", {"item": "Row 3"}))
+
+	def test_update_if_missing_with_force_fields(self):
+		doc = self.make_doc(remarks=None)
+		doc.update_if_missing({"title": "Other", "remarks": "Filled"})
+		self.assertEqual((doc.title, doc.remarks), ("Test", "Filled"))
+
+		doc.update_if_missing({"title": "Other", "price": None}, force_fields=["title", "price"])
+		self.assertEqual((doc.title, doc.price), ("Other", None))
+
+	def test_disallow_on_submit(self):
+		doc = self.make_doc().insert()
+		doc.submit()
+
+		doc.flags.disallow_on_submit = doc.get_fields_for_disallow_on_submit(excluding_fields=["remarks"])
+		self.assertCountEqual(
+			doc.flags.disallow_on_submit, [("amount", None), ("items", None), ("qty", "items")]
+		)
+
+		doc.remarks = "Allowed"
+		doc.save()
+
+		doc.amount = 50
+		self.assertRaises(frappe.UpdateAfterSubmitError, doc.save)
+		doc.reload()
+
+		doc.items[0].qty = 2
+		self.assertRaises(frappe.UpdateAfterSubmitError, doc.save)
+		doc.reload()
+
+		# a new row in an allow-on-submit table is disallowed too
+		doc.append("items", {"item": "Row 2"})
+		self.assertRaises(frappe.UpdateAfterSubmitError, doc.save)
+		doc.reload()
+
+		# without the flag, the same changes are allowed
+		doc.flags.disallow_on_submit = None
+		doc.amount = 50
+		doc.items[0].qty = 2
+		doc.append("items", {"item": "Row 2"})
+		doc.save()
+
+	def test_float_noise_after_submit(self):
+		doc = self.make_doc().insert()
+		doc.submit()
+
+		doc.price = 100.0000000000001
+		doc.rate = 10.0000000000001
+		doc.save()
+
+		doc.price = 150
+		with self.assertRaises(frappe.UpdateAfterSubmitError) as error:
+			doc.save()
+		self.assertIn(frappe.format(150, df=doc.meta.get_field("price"), doc=doc), str(error.exception))
+
+	def test_get_formatted_precision_and_negative(self):
+		doc = self.make_doc(rate=1234.567)
+		self.assertEqual(doc.get_formatted("rate", precision=1), fmt_money(1234.6, precision=1))
+		self.assertEqual(doc.get_formatted("rate", negative_value=True), fmt_money(-1234.57, precision=2))
+
+	def test_non_negative_percent(self):
+		self.assertRaises(frappe.NonNegativeError, self.make_doc(discount=-1).insert)
+
+	def test_round_floats_in_excluding(self):
+		doc = self.make_doc(rate=1.23456)
+		doc.round_floats_in(doc, ["rate"], excluding=["rate"])
+		self.assertEqual(doc.rate, 1.23456)
+
+		doc.round_floats_in(doc, ["rate"])
+		self.assertEqual(doc.rate, 1.23)
+
+	def test_missing_link_with_fetch_from(self):
+		doc = self.make_doc(user="_test_no_such_user@example.com")
+		self.assertRaises(frappe.LinkValidationError, doc.insert)
+
+		doc.user = "test@example.com"
+		doc.insert()
+		self.assertEqual(doc.user_name, frappe.db.get_value("User", "test@example.com", "full_name"))
+
+	def test_before_validate_links(self):
+		doc = self.make_doc()
+		with patch.object(doc, "run_method", wraps=doc.run_method) as run_method:
+			doc.insert()
+			doc.submit()
+
+		methods = [call.args[0] for call in run_method.call_args_list]
+		# runs on save, not on submit
+		self.assertEqual(methods.count("before_validate_links"), 1)
+
+	def test_check_if_latest_without_docstatus_transition(self):
+		doc = self.make_doc().insert()
+		doc.submit()
+
+		stale = frappe.get_doc(SUBMITTABLE_DOCTYPE, doc.name)
+		stale.docstatus = 0
+		# as save() sets it
+		stale._original_modified = stale.modified
+		self.assertRaises(frappe.ValidationError, stale.check_if_latest)
+		stale.check_if_latest(check_docstatus_transition=False)
+
+	def test_has_method(self):
+		self.assertTrue(Document.has_method("ToDo", "validate"))
+		self.assertFalse(Document.has_method("ToDo", "_test_no_such_method"))
+		self.assertFalse(Document.has_method("_Test No Such DocType", "validate"))
+
+		with patch.dict(frappe.get_doc_hooks(), {"ToDo": {"_test_hooked_method": ["frappe.msgprint"]}}):
+			self.assertTrue(Document.has_method("ToDo", "_test_hooked_method"))

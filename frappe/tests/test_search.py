@@ -1,6 +1,7 @@
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 
+import datetime
 import re
 from functools import partial
 from typing import Any
@@ -9,11 +10,18 @@ from unittest.mock import patch
 import frappe
 from frappe.app import make_form_dict
 from frappe.core.doctype.doctype.test_doctype import new_doctype
-from frappe.desk.search import awesomebar_search, get_names_for_mentions, search_link, search_widget
+from frappe.desk.search import (
+	awesomebar_search,
+	format_response_values,
+	get_names_for_mentions,
+	relevance_sorter,
+	search_link,
+	search_widget,
+)
 from frappe.permissions import add_user_permission
 from frappe.tests.ui_test_helpers import whitelist_for_tests
 from frappe.tests.utils import FrappeTestCase
-from frappe.utils import set_request
+from frappe.utils import fmt_money, formatdate, set_request
 from frappe.website.serve import get_response
 
 
@@ -277,6 +285,30 @@ class TestSearch(FrappeTestCase):
 		# Assume that "es" is used at least 10 times, it should now be first
 		frappe.db.set_value("Language", "es", "idx", 100)
 		self.assertEqual("es", search(txt="es")[0]["value"])
+
+	def test_format_values(self):
+		query = "frappe.tests.test_search.query_with_typed_values"
+		formatted = search_widget("ToDo", "", query=query)
+		self.assertEqual(formatted, [["_Test", formatdate("2026-01-02"), fmt_money(1234.5), "3", None, 0]])
+
+		raw = search_widget("ToDo", "", query=query, format_values=False)
+		self.assertEqual(raw, [["_Test", datetime.date(2026, 1, 2), 1234.5, 3, None, 0]])
+
+		self.assertEqual(
+			format_response_values([{"date": datetime.date(2026, 1, 2), "empty": None}], as_dict=True),
+			[{"date": formatdate("2026-01-02"), "empty": None}],
+		)
+
+	def test_exact_match_and_match_position_first(self):
+		results = [row["value"] for row in search_link("Language", "en", filters=None, page_length=10)]
+		self.assertEqual(results[0], "en")
+		self.assertLess(results.index("en-US"), results.index("sv"))
+
+		# exact match, then prefix, then the rest
+		self.assertEqual(
+			sorted(["Les", "es-MX", "es"], key=lambda x: relevance_sorter([x], "es", False)),
+			["es", "es-MX", "Les"],
+		)
 
 	def test_search_with_paren(self):
 		search = partial(search_link, doctype="Language", filters=None, page_length=10)
@@ -570,6 +602,19 @@ def _awesomebar_bad_items(txt):
 		{"label": "Proto", "route": "//evil.com"},
 		{"label": "ToDo List", "route": ["List", "ToDo"]},
 	]
+
+
+@whitelist_for_tests
+@frappe.validate_and_sanitize_search_inputs
+def query_with_typed_values(
+	doctype: str,
+	txt: str,
+	searchfield: str,
+	start: int,
+	page_len: int,
+	filters: str | list | dict[str, Any],
+):
+	return [["_Test", datetime.date(2026, 1, 2), 1234.5, 3, None, 0]]
 
 
 @frappe.validate_and_sanitize_search_inputs

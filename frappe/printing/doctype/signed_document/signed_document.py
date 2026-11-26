@@ -62,7 +62,7 @@ class SignedDocument(Document):
 def sign_pdf(
 	doctype: str,
 	name: str,
-	signature_data: str | dict,
+	signature_data: str | list,
 	format: str | None = None,
 	doc: Document | None = None,
 	no_letterhead: int = 0,
@@ -248,6 +248,8 @@ def sign_pdf(
 	file_doc.attached_to_doctype = signed_document_doc.doctype
 	file_doc.attached_to_name = signed_document_doc.name
 	file_doc.attached_to_field = "signed_pdf"
+	# only Administrator can write to Signed Documents
+	file_doc.flags.ignore_permissions = True
 	file_doc.save()
 
 	signed_document_doc.db_set("signed_pdf", file_doc.file_url)
@@ -278,7 +280,8 @@ def trim_image(im):
 	# Amplify differences slightly to eliminate minor JPEG compression noise
 	diff = ImageChops.add(diff, diff, 2.0, -100)
 
-	color_bbox = diff.getbbox()
+	# without alpha: getbbox on an RGBA image only looks at transparency
+	color_bbox = diff.convert("RGB").getbbox()
 	if color_bbox:
 		return im.crop(color_bbox)
 
