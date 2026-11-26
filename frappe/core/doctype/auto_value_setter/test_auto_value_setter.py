@@ -62,15 +62,15 @@ class TestAutoValueSetter(FrappeTestCase):
 		return frappe.get_doc({"doctype": TEST_DOCTYPE, "title": "Test", **values})
 
 	def test_validation(self):
-		for document_type, field_name in (
-			("Auto Value Setter", "field_name"),
-			("DocType", "name"),
-			("Auto Value Setter Condition", "value"),
-			("ToDo", "description"),
-			(TEST_DOCTYPE, "_no_such_field"),
+		for document_type, field_name, error in (
+			("Auto Value Setter", "field_name", "for itself"),
+			("DocType", "name", "for itself"),
+			("Auto Value Setter Condition", "value", "for itself"),
+			("ToDo", "description", "not allowed"),
+			(TEST_DOCTYPE, "_no_such_field", "does not exist"),
 		):
-			self.assertRaises(
-				frappe.ValidationError, self.make_setter, field_name, [], document_type=document_type
+			self.assertRaisesRegex(
+				frappe.ValidationError, error, self.make_setter, field_name, [], document_type=document_type
 			)
 
 		self.assertRaises(frappe.ValidationError, self.make_setter, "code", [("", "{{ doc.title ")])

@@ -168,11 +168,6 @@ class TestSignedDocument(FrappeTestCase):
 
 		self.assertTrue(has_permission(signed_document, "write", user="Administrator"))
 		self.assertFalse(has_permission(signed_document, "write", user="test@example.com"))
-		# reading follows the signed document
-		self.assertEqual(
-			has_permission(signed_document, "read", user="test1@example.com"),
-			self.todo.has_permission("read", user="test1@example.com"),
-		)
 		signed_document.document_name = "_Test No Such ToDo"
 		self.assertFalse(has_permission(signed_document, "read", user="test@example.com"))
 

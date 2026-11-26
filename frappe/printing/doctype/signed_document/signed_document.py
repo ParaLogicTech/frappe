@@ -248,6 +248,7 @@ def sign_pdf(
 	file_doc.attached_to_doctype = signed_document_doc.doctype
 	file_doc.attached_to_name = signed_document_doc.name
 	file_doc.attached_to_field = "signed_pdf"
+	# only Administrator can write to Signed Documents
 	file_doc.flags.ignore_permissions = True
 	file_doc.save()
 

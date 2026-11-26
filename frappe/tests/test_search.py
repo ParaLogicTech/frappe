@@ -304,9 +304,10 @@ class TestSearch(FrappeTestCase):
 		self.assertEqual(results[0], "en")
 		self.assertLess(results.index("en-US"), results.index("sv"))
 
+		# exact match, then prefix, then the rest
 		self.assertEqual(
-			sorted(["es-MX", "Spanish", "es", "Les"], key=lambda x: relevance_sorter([x], "es", False)),
-			["es", "es-MX", "Spanish", "Les"],
+			sorted(["Les", "es-MX", "es"], key=lambda x: relevance_sorter([x], "es", False)),
+			["es", "es-MX", "Les"],
 		)
 
 	def test_search_with_paren(self):

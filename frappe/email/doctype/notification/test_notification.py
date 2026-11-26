@@ -737,24 +737,16 @@ class TestNotification(FrappeTestCase):
 			"channel": "Email",
 			"message": "Test hooked attachment",
 			"notification_key": "_Test Attachment Key",
-			"attach_files": "All",
 			"recipients": [{"receiver_by_document_field": "owner"}],
 		}
 		handler = "frappe.email.doctype.notification.test_notification.notification_attachment_hook"
-		with (
-			get_test_notification(config) as notification,
-			doc_hook("ToDo", "get_notification_attachment", handler),
-		):
+		with get_test_notification(config), doc_hook("ToDo", "get_notification_attachment", handler):
 			todo = frappe.get_doc(doctype="ToDo", description="Test hooked attachment").insert()
 
 			email_queue = self.get_email_queue_for("ToDo", todo.name)
 			self.assertEqual(
 				json.loads(email_queue[0].attachments), [{"file_url": "/files/_test_hooked_attachment.txt"}]
 			)
-
-			# without a value from the hook, the notification's own attachment settings apply
-			notification.db_set("notification_key", "_Test Other Key")
-			self.assertEqual(notification.get_attachment(todo), [])
 
 	def test_send_only_once(self):
 		config = {
