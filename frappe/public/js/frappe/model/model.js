@@ -8,6 +8,7 @@ $.extend(frappe.model, {
 		"Autocomplete",
 		"Attach",
 		"Attach Image",
+		"Attachment Gallery",
 		"Barcode",
 		"Button",
 		"Check",
@@ -50,6 +51,7 @@ $.extend(frappe.model, {
 		"Section Break",
 		"Column Break",
 		"Tab Break",
+		"Attachment Gallery",
 		"HTML",
 		"Table",
 		"Table MultiSelect",
@@ -68,7 +70,6 @@ $.extend(frappe.model, {
 		"modified",
 		"modified_by",
 		"_user_tags",
-		"_comments",
 		"_assign",
 		"_liked_by",
 		"docstatus",
@@ -132,7 +133,6 @@ $.extend(frappe.model, {
 		},
 		{ fieldname: "_user_tags", fieldtype: "Data", label: __("Tags") },
 		{ fieldname: "_liked_by", fieldtype: "Data", label: __("Liked By") },
-		{ fieldname: "_comments", fieldtype: "Text", label: __("Comments") },
 		{ fieldname: "_assign", fieldtype: "Text", label: __("Assigned To") },
 		{ fieldname: "docstatus", fieldtype: "Int", label: __("Document Status") },
 	],
@@ -460,7 +460,7 @@ $.extend(frappe.model, {
 	},
 
 	can_share: function (doctype, frm) {
-		let disable_sharing = cint(frappe.sys_defaults.disable_document_sharing);
+		let disable_sharing = frappe.defaults.is_enabled("disable_document_sharing");
 
 		if (disable_sharing && frappe.session.user !== "Administrator") {
 			return false;
@@ -724,7 +724,7 @@ $.extend(frappe.model, {
 				callback: function (r, rt) {
 					if (!r.exc) {
 						frappe.utils.play_sound("delete");
-						frappe.model.clear_doc(doctype, docname);
+						frappe.model.delete_from_locals(doctype, docname);
 						if (callback) callback(r, rt);
 					}
 				},
@@ -751,10 +751,8 @@ $.extend(frappe.model, {
 			],
 		});
 
-		d.set_primary_action(__("Rename"), function () {
+		d.set_primary_action(__("Rename"), function (args) {
 			d.hide();
-			var args = d.get_values();
-			if (!args) return;
 			return frappe.call({
 				method: "frappe.rename_doc",
 				freeze: true,
@@ -768,13 +766,17 @@ $.extend(frappe.model, {
 				btn: d.get_primary_btn(),
 				callback: function (r, rt) {
 					if (!r.exc) {
+						frappe.model.rename_doc_in_locals(
+							doctype,
+							docname,
+							r.message || args.new_name,
+							args.merge
+						);
 						$(document).trigger("rename", [
 							doctype,
 							docname,
 							r.message || args.new_name,
 						]);
-						if (locals[doctype] && locals[doctype][docname])
-							delete locals[doctype][docname];
 						d.hide();
 						if (callback) callback(r.message);
 					}

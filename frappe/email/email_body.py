@@ -7,7 +7,6 @@ import email.utils
 import os
 import re
 from email import policy
-from email.header import Header
 from email.mime.multipart import MIMEMultipart
 from typing import TYPE_CHECKING
 
@@ -15,6 +14,7 @@ import frappe
 from frappe import _
 from frappe.email.doctype.email_account.email_account import EmailAccount
 from frappe.utils import (
+	EMAIL_STRING_PATTERN,
 	cint,
 	expand_relative_urls,
 	get_url,
@@ -299,17 +299,13 @@ class EMail:
 
 	def replace_sender(self):
 		if cint(self.email_account.always_use_account_email_id_as_sender):
-			sender_name, _ = parse_addr(self.sender)
-			self.sender = email.utils.formataddr(
-				(str(Header(sender_name or self.email_account.name, "utf-8")), self.email_account.email_id)
-			)
+			sender_name, _ = email.utils.parseaddr(self.sender)
+			self.sender = format_sender((sender_name, self.email_account.name), self.email_account.email_id)
 
 	def replace_sender_name(self):
 		if cint(self.email_account.always_use_account_name_as_sender_name):
 			_, sender_email = parse_addr(self.sender)
-			self.sender = email.utils.formataddr(
-				(str(Header(self.email_account.name, "utf-8")), sender_email)
-			)
+			self.sender = format_sender((self.email_account.name,), sender_email)
 
 	def set_message_id(self, message_id, is_notification=False):
 		if message_id:
@@ -418,7 +414,14 @@ def get_formatted_html(
 
 
 @frappe.whitelist()
-def get_email_html(template, args, subject, header=None, with_container=False):
+def get_email_html(
+	template: str,
+	args: str,
+	subject: str,
+	header: str | list | None = None,
+	with_container: str | int | bool = False,
+):
+	frappe.only_for("System Manager")
 	import json
 
 	with_container = cint(with_container)
@@ -582,8 +585,15 @@ def replace_filename_with_cid(message, provided_images=None):
 			continue
 
 		content_id = random_string(10)
+		extension = re.search(r"\.[a-zA-Z0-9]+$", filename)
 
-		inline_images.append({"filename": filename, "filecontent": filecontent, "content_id": content_id})
+		inline_images.append(
+			{
+				"filename": f"{content_id}{extension.group() if extension else ''}",
+				"filecontent": filecontent,
+				"content_id": content_id,
+			}
+		)
 
 		message = re.sub(f"""embed=['"]{re.escape(img_path)}['"]""", f'src="cid:{content_id}"', message)
 
@@ -599,15 +609,21 @@ def get_filecontent_from_path(path):
 
 	if path.startswith("assets/"):
 		# from public folder
+		base_path = os.path.abspath("assets")
 		full_path = os.path.abspath(path)
 	elif path.startswith("files/"):
 		# public file
-		full_path = frappe.get_site_path("public", path)
+		base_path = os.path.abspath(frappe.get_site_path("public", "files"))
+		full_path = os.path.abspath(frappe.get_site_path("public", path))
 	elif path.startswith("private/files/"):
 		# private file
-		full_path = frappe.get_site_path(path)
+		base_path = os.path.abspath(frappe.get_site_path("private", "files"))
+		full_path = os.path.abspath(frappe.get_site_path(path))
 	else:
-		full_path = path
+		return None
+
+	if os.path.commonpath((base_path, full_path)) != base_path:
+		return None
 
 	if os.path.exists(full_path):
 		with open(full_path, "rb") as f:
@@ -642,6 +658,22 @@ def get_header(header=None):
 	)
 
 	return email_header
+
+
+def get_display_name(name: str) -> str:
+	"""Return the decoded name, or an empty string if it has an email address or a nested encoded word."""
+	decoded_name = " ".join(str(policy.SMTP.header_factory("Subject", name)).split())
+	return "" if "=?" in decoded_name or EMAIL_STRING_PATTERN.search(decoded_name) else decoded_name
+
+
+def format_sender(names: tuple[str, ...], email_id: str) -> str:
+	"""Return an unencoded address with the first valid name that fits `Email Queue.sender`."""
+	for name in names:
+		display_name = get_display_name(name)
+		sender = str(policy.SMTP.header_factory("From", email.utils.formataddr((display_name, email_id))))
+		if display_name and len(sender) <= frappe.db.VARCHAR_LEN:
+			return sender
+	return email_id
 
 
 def sanitize_email_header(header: str):

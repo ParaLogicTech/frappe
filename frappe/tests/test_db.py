@@ -11,7 +11,7 @@ from frappe.core.utils import find
 from frappe.custom.doctype.custom_field.custom_field import create_custom_field
 from frappe.database import savepoint
 from frappe.database.database import get_query_execution_timeout
-from frappe.database.utils import FallBackDateTimeStr
+from frappe.database.utils import FallBackDateTimeStr, convert_backtick_identifiers
 from frappe.query_builder import Field
 from frappe.query_builder.functions import Concat_ws
 from frappe.tests.test_query_builder import db_type_is, run_only_if
@@ -733,6 +733,16 @@ class TestDDLCommandsMaria(FrappeTestCase):
 		)
 		self.assertEqual(len(indexs_in_table), 2)
 
+	def test_db_table_columns_only_from_site_database(self) -> None:
+		self.assertEqual(frappe.db.get_db_table_columns("COLUMNS"), [])
+
+	def test_table_count_cache_only_from_site_database(self) -> None:
+		from frappe.cache_manager import build_table_count_cache
+
+		counts = build_table_count_cache()
+		self.assertIn(self.test_table_name, counts)
+		self.assertNotIn("COLUMNS", counts)
+
 
 class TestDBSetValue(FrappeTestCase):
 	@classmethod
@@ -1131,3 +1141,107 @@ class TestSqlIterator(FrappeTestCase):
 	def test_unbuffered_cursor(self):
 		with frappe.db.unbuffered_cursor():
 			self.test_db_sql_iterator()
+
+
+class TestMariaDBExceptionUtil(FrappeTestCase):
+	@run_only_if(db_type_is.MARIADB)
+	def test_exception_utils_handle_empty_args(self):
+		"""Exception utility methods should not raise IndexError when e.args is empty."""
+		import pymysql
+
+		from frappe.database.mariadb.database import MariaDBExceptionUtil
+
+		e = pymysql.Error()  # no args
+
+		# None of these should raise; all should return False
+		self.assertFalse(MariaDBExceptionUtil.is_deadlocked(e))
+		self.assertFalse(MariaDBExceptionUtil.is_timedout(e))
+		self.assertFalse(MariaDBExceptionUtil.is_read_only_mode_error(e))
+		self.assertFalse(MariaDBExceptionUtil.is_table_missing(e))
+		self.assertFalse(MariaDBExceptionUtil.is_missing_column(e))
+		self.assertFalse(MariaDBExceptionUtil.is_duplicate_fieldname(e))
+		self.assertFalse(MariaDBExceptionUtil.is_duplicate_entry(e))
+		self.assertFalse(MariaDBExceptionUtil.is_access_denied(e))
+		self.assertFalse(MariaDBExceptionUtil.cant_drop_field_or_key(e))
+		self.assertFalse(MariaDBExceptionUtil.is_syntax_error(e))
+		self.assertFalse(MariaDBExceptionUtil.is_statement_timeout(e))
+		self.assertFalse(MariaDBExceptionUtil.is_data_too_long(e))
+		self.assertFalse(MariaDBExceptionUtil.is_db_table_size_limit(e))
+
+
+class TestBacktickIdentifierConversion(FrappeTestCase):
+	"""The postgres driver translates MySQL-style raw SQL into ANSI quoting.
+
+	Only backticks that delimit an identifier may be rewritten: one inside a string literal or a
+	``"..."`` identifier is content, and promoting it into a quote char ends the identifier early.
+	"""
+
+	def test_identifiers_are_translated(self):
+		for src, want in (
+			("select `name` from `tabUser`", 'select "name" from "tabUser"'),
+			("select `tabA`.`b` from `tabA`", 'select "tabA"."b" from "tabA"'),
+			("select `Note Seen By`.`user`", 'select "Note Seen By"."user"'),
+			("select `na``me` from t", 'select "na`me" from t'),
+			('select `na"me` from t', 'select "na""me" from t'),
+		):
+			with self.subTest(src=src):
+				self.assertEqual(want, convert_backtick_identifiers(src))
+
+	def test_query_without_backticks_is_untouched(self):
+		self.assertEqual("select 1", convert_backtick_identifiers("select 1"))
+
+	def test_string_literals_are_not_rewritten(self):
+		for src in (
+			"select * from t where c = 'a`b'",
+			"select * from t where c = 'it''s `x`'",
+			"select * from t where c = 'SELECT `x` FROM `y`'",
+		):
+			with self.subTest(src=src):
+				self.assertEqual(src, convert_backtick_identifiers(src))
+
+	def test_existing_ansi_identifiers_are_not_rewritten(self):
+		for src in (
+			'select "na`me" from t',
+			'select "a""b" from t',
+			'select "name` FROM `tabUser` -- " from "tabUser"',
+		):
+			with self.subTest(src=src):
+				self.assertEqual(src, convert_backtick_identifiers(src))
+
+	def test_comments_are_not_rewritten(self):
+		# a comment is data, so the pattern already steps over one
+		for src, want in (
+			("select `a` -- `b`", 'select "a" -- `b`'),
+			("select /* `b` */ `a`", 'select /* `b` */ "a"'),
+		):
+			with self.subTest(src=src):
+				self.assertEqual(want, convert_backtick_identifiers(src))
+
+	def test_apostrophe_in_a_comment_does_not_swallow_identifiers(self):
+		# An apostrophe inside a comment is not a string delimiter, so it must not pair with the
+		# next quote: everything between them -- real identifiers included -- would then read as
+		# one literal and go out untranslated.
+		for src in (
+			"/* it's */ select `tabUser`.`name` from `tabUser` where c = 'a'",
+			"-- it's\nselect `tabUser`.`name` from `tabUser` where c = 'a'",
+		):
+			with self.subTest(src=src):
+				out = convert_backtick_identifiers(src)
+				self.assertIn('"tabUser"."name"', out)
+				self.assertNotIn("`", out)
+
+	def test_injected_column_name_stays_one_identifier(self):
+		# as pypika renders `table[payload]` when the quote char is "
+		for payload in (
+			"name` FROM `tabUser` WHERE `name`='Administrator' -- ",
+			"name`=1 UNION SELECT `name` FROM `tabUser` -- ",
+			"` blah`",
+			'a`b"c',
+		):
+			with self.subTest(payload=payload):
+				rendered = '"{}"'.format(payload.replace('"', '""'))
+				out = convert_backtick_identifiers(f'SELECT {rendered} FROM "tabUser"')
+				body = out[len("SELECT ") : out.index(' FROM "tabUser"')]
+				self.assertTrue(body.startswith('"') and body.endswith('"'), body)
+				for run in body[1:-1].split('""'):  # every quote char must be in an escaped pair
+					self.assertNotIn('"', run, f"identifier closed early: {body}")

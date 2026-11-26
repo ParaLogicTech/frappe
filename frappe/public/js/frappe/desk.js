@@ -76,6 +76,7 @@ frappe.Application = class Application {
 		this.make_page_container();
 		if (
 			!window.Cypress &&
+			!navigator.webdriver &&
 			frappe.boot.onboarding_tours &&
 			frappe.boot.user.onboarding_status != null
 		) {
@@ -104,8 +105,17 @@ frappe.Application = class Application {
 		if (frappe.user_roles.includes("System Manager")) {
 			// delayed following requests to make boot faster
 			setTimeout(() => {
-				this.show_change_log();
-				this.show_update_available();
+				if (
+					!frappe.ui.maybe_show_legacy_gravatar_cleanup_prompt({
+						onhide: () => {
+							this.show_change_log();
+							this.show_update_available();
+						},
+					})
+				) {
+					this.show_change_log();
+					this.show_update_available();
+				}
 			}, 1000);
 		}
 
@@ -433,7 +443,8 @@ frappe.Application = class Application {
 			!Array.isArray(change_log) ||
 			!change_log.length ||
 			window.Cypress ||
-			cint(frappe.boot.sysdefaults.disable_change_log_notification)
+			navigator.webdriver ||
+			frappe.defaults.is_enabled("disable_change_log_notification")
 		) {
 			return;
 		}

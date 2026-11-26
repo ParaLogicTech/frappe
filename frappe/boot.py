@@ -20,7 +20,7 @@ from frappe.desk.doctype.route_history.route_history import frequently_visited_l
 from frappe.desk.form.load import get_meta_bundle
 from frappe.email.inbox import get_email_accounts
 from frappe.integrations.frappe_providers.frappecloud_billing import is_fc_site
-from frappe.model.base_document import get_controller
+from frappe.model.document import get_controller
 from frappe.permissions import has_permission
 from frappe.query_builder import DocType
 from frappe.query_builder.functions import Count
@@ -31,7 +31,6 @@ from frappe.social.doctype.energy_point_settings.energy_point_settings import (
 )
 from frappe.utils import add_user_info, cstr, get_system_timezone
 from frappe.utils.change_log import get_versions
-from frappe.utils.frappecloud import on_frappecloud
 from frappe.website.doctype.web_page_view.web_page_view import is_tracking_enabled
 
 
@@ -102,6 +101,7 @@ def get_bootinfo():
 	bootinfo.error_report_email = frappe.conf.error_report_email or "info@paralogic.io"
 	bootinfo.calendars = sorted(frappe.get_hooks("calendars"))
 	bootinfo.treeviews = frappe.get_hooks("treeviews") or []
+	bootinfo.has_awesomebar_search = bool(hooks.awesomebar_search)
 	bootinfo.lang_dict = get_lang_dict()
 	bootinfo.success_action = get_success_action()
 	bootinfo.update(get_email_accounts(user=frappe.session.user))
@@ -117,7 +117,6 @@ def get_bootinfo():
 	bootinfo.link_title_doctypes = get_link_title_doctypes()
 	bootinfo.translated_doctypes = get_translated_doctypes()
 	bootinfo.subscription_conf = add_subscription_conf()
-	bootinfo.marketplace_apps = get_marketplace_apps()
 	bootinfo.is_fc_site = is_fc_site()
 	bootinfo.changelog_feed = get_changelog_feed_items()
 
@@ -207,7 +206,7 @@ def get_allowed_report_names(cache=False) -> set[str]:
 def get_user_pages_or_reports(parent, cache=False):
 	if cache:
 		has_role = frappe.cache.get_value("has_role:" + parent, user=frappe.session.user)
-		if has_role:
+		if has_role is not None:
 			return has_role
 
 	roles = frappe.get_roles()
@@ -227,8 +226,11 @@ def get_user_pages_or_reports(parent, cache=False):
 	hasRole = DocType("Has Role")
 	parentTable = DocType(parent)
 
+	def exclude_disabled_reports(query):
+		return query.where(report.disabled == 0) if is_report else query
+
 	# get pages or reports set on custom role
-	pages_with_custom_roles = (
+	pages_with_custom_roles = exclude_disabled_reports(
 		frappe.qb.from_(customRole)
 		.from_(hasRole)
 		.from_(parentTable)
@@ -255,7 +257,7 @@ def get_user_pages_or_reports(parent, cache=False):
 		.where(customRole[parent.lower()].isnotnull())
 	)
 
-	pages_with_standard_roles = (
+	pages_with_standard_roles = exclude_disabled_reports(
 		frappe.qb.from_(hasRole)
 		.from_(parentTable)
 		.select(parentTable.name.as_("name"), parentTable.modified, *columns)
@@ -263,12 +265,7 @@ def get_user_pages_or_reports(parent, cache=False):
 			(hasRole.role.isin(roles)) & (hasRole.parent == parentTable.name) & (parentTable.name.notin(subq))
 		)
 		.distinct()
-	)
-
-	if is_report:
-		pages_with_standard_roles = pages_with_standard_roles.where(report.disabled == 0)
-
-	pages_with_standard_roles = pages_with_standard_roles.run(as_dict=True)
+	).run(as_dict=True)
 
 	for p in pages_with_standard_roles:
 		if p.name not in has_role:
@@ -281,7 +278,7 @@ def get_user_pages_or_reports(parent, cache=False):
 	)
 
 	# pages and reports with no role are allowed
-	rows_with_no_roles = (
+	rows_with_no_roles = exclude_disabled_reports(
 		frappe.qb.from_(parentTable)
 		.select(parentTable.name, parentTable.modified, *columns)
 		.where(no_of_roles == 0)
@@ -295,7 +292,9 @@ def get_user_pages_or_reports(parent, cache=False):
 
 	if is_report:
 		if not has_permission("Report", raise_exception=False):
-			return {}
+			has_role = {}
+			frappe.cache.set_value("has_role:" + parent, has_role, frappe.session.user, 21600)
+			return has_role
 
 		reports = frappe.get_list(
 			"Report",
@@ -497,32 +496,6 @@ def load_currency_docs(bootinfo):
 	)
 
 	bootinfo.docs += currency_docs
-
-
-def get_marketplace_apps():
-	import requests
-
-	apps = []
-	cache_key = "frappe_marketplace_apps"
-
-	if frappe.conf.developer_mode or not on_frappecloud():
-		return apps
-
-	def get_apps_from_fc():
-		remote_site = frappe.conf.frappecloud_url or "frappecloud.com"
-		request_url = f"https://{remote_site}/api/method/press.api.marketplace.get_marketplace_apps"
-		request = requests.get(request_url, timeout=2.0)
-		return request.json()["message"]
-
-	try:
-		apps = frappe.cache.get_value(cache_key, get_apps_from_fc, shared=True)
-		installed_apps = set(frappe.get_installed_apps())
-		apps = [app for app in apps if app["name"] not in installed_apps]
-	except Exception:
-		# Don't retry for a day
-		frappe.cache.set_value(cache_key, apps, shared=True, expires_in_sec=24 * 60 * 60)
-
-	return apps
 
 
 def add_subscription_conf():

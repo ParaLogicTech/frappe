@@ -57,6 +57,21 @@ class TestNaming(FrappeTestCase):
 		self.assertEqual(country.name, original_name)
 		self.assertEqual(country.name, country.country_name)
 
+	def test_field_autoname_keeps_fieldtype(self):
+		doctype = new_doctype(
+			autoname="field:number",
+			fields=[{"label": "Number", "fieldname": "number", "fieldtype": "Int", "set_only_once": 1}],
+		).insert()
+
+		doc = frappe.get_doc(doctype=doctype.name, number=3).insert()
+		self.assertEqual(doc.number, 3)
+
+		doc = frappe.get_doc(doctype.name, doc.name)
+		doc.some_fieldname = "changed"
+		doc.save()
+
+		doctype.delete()
+
 	def test_child_table_naming(self):
 		child_dt_with_naming = new_doctype(istable=1, autoname="field:some_fieldname").insert()
 		dt_with_child_autoname = new_doctype(
@@ -213,6 +228,22 @@ class TestNaming(FrappeTestCase):
 
 		self.assertEqual(current_index.get("current"), 2)
 
+		frappe.db.delete("Series", {"name": series})
+
+	def test_revert_series_date_based_cross_date(self):
+		# A date-templated series must revert against the date embedded in the name,
+		# not the current date. Deleting a doc created on a different day should still
+		# decrement that day's counter.
+		key = "PO-.YYYY.-.MM.-.DD.-.###"
+		series = "PO-2020-01-01-"
+		name = "PO-2020-01-01-005"
+		frappe.db.delete("Series", {"name": series})
+		frappe.db.sql("""INSERT INTO `tabSeries` (name, current) values (%s, 5)""", (series,))
+		revert_series_if_last(key, name)
+		current_index = frappe.db.sql(
+			"""SELECT current from `tabSeries` where name = %s""", series, as_dict=True
+		)[0]
+		self.assertEqual(current_index.get("current"), 4)
 		frappe.db.delete("Series", {"name": series})
 
 	def test_naming_for_cancelled_and_amended_doc(self):

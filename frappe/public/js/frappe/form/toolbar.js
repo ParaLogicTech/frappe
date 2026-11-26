@@ -105,7 +105,12 @@ frappe.ui.form.Toolbar = class Toolbar {
 		}
 	}
 	can_rename() {
-		return this.frm.perm[0].write && this.frm.meta.allow_rename && !this.frm.doc.__islocal;
+		return (
+			this.frm.perm[0].write &&
+			this.frm.meta.allow_rename &&
+			!this.frm.doc.__islocal &&
+			!this.frm.meta.issingle
+		);
 	}
 	show_unchanged_document_alert() {
 		frappe.show_alert({
@@ -148,9 +153,8 @@ frappe.ui.form.Toolbar = class Toolbar {
 				})
 				.then((new_docname) => {
 					const reload_form = (input_name) => {
+						frappe.model.rename_doc_in_locals(doctype, docname, input_name, merge);
 						$(document).trigger("rename", [doctype, docname, input_name]);
-						if (locals[doctype] && locals[doctype][docname])
-							delete locals[doctype][docname];
 						this.frm.reload_doc();
 					};
 
@@ -309,9 +313,7 @@ frappe.ui.form.Toolbar = class Toolbar {
 		this.page.clear_icons();
 		this.page.clear_menu();
 
-		if (frappe.boot.desk_settings.form_sidebar) {
-			this.make_menu_items();
-		}
+		this.make_menu_items();
 
 		if (frappe.boot.desk_settings.form_navigation_buttons) {
 			this.make_navigation();

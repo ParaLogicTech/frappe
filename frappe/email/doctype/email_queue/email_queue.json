@@ -25,10 +25,12 @@
   "add_unsubscribe_link",
   "unsubscribe_param",
   "unsubscribe_method",
+  "email_read_tracker_url",
   "expose_recipients",
   "attachments",
   "retry",
-  "email_account"
+  "email_account",
+  "redact_message_after_send"
  ],
  "fields": [
   {
@@ -129,6 +131,12 @@
    "label": "Unsubscribe Method"
   },
   {
+   "fieldname": "email_read_tracker_url",
+   "fieldtype": "Small Text",
+   "label": "Email Read Tracker URL",
+   "read_only": 1
+  },
+  {
    "fieldname": "expose_recipients",
    "fieldtype": "Data",
    "label": "Expose Recipients"
@@ -171,6 +179,14 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Notification Key",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Replace the message body with a placeholder once the email has been sent, so that sensitive content like password reset links is not retained in the queue.",
+   "fieldname": "redact_message_after_send",
+   "fieldtype": "Check",
+   "label": "Redact Message After Send",
    "read_only": 1
   }
  ],

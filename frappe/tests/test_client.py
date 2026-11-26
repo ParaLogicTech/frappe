@@ -3,11 +3,39 @@
 from unittest.mock import patch
 
 import frappe
+from frappe.tests.ui_test_helpers import whitelist_for_tests
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import get_site_url
 
 
+@whitelist_for_tests(methods=["GET"])
+def _get_only_marker():
+	return "executed"
+
+
 class TestClient(FrappeTestCase):
+	def test_get_doc_permissions_does_not_reveal_unreadable_documents(self):
+		email = "doc-perm-probe@example.com"
+		user = frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": email,
+				"first_name": "Probe",
+				"user_type": "Website User",
+				"send_welcome_email": 0,
+			}
+		).insert()
+		self.addCleanup(frappe.delete_doc, "User", user.name, force=True)
+
+		with self.set_user(user.name):
+			existing = frappe.client.get_doc_permissions("User", "Administrator")
+			missing = frappe.client.get_doc_permissions("User", "missing@example.com")
+		self.assertEqual(existing, missing)
+
+	def test_get_doc_permissions_for_readable_document(self):
+		permissions = frappe.client.get_doc_permissions("User", "Administrator")["permissions"]
+		self.assertTrue(permissions["read"])
+
 	def test_set_value(self):
 		todo = frappe.get_doc(dict(doctype="ToDo", description="test")).insert()
 		frappe.set_value("ToDo", todo.name, "description", "test 1")
@@ -70,6 +98,17 @@ class TestClient(FrappeTestCase):
 		)
 
 		self.assertRaises(frappe.PermissionError, execute_cmd, "frappe.client.save")
+
+	def test_upload_file_respects_method_http_restriction(self):
+		"""`upload_file`'s `method` param must respect the target's HTTP method policy."""
+		from frappe.handler import upload_file
+
+		frappe.set_user("Administrator")
+
+		frappe.local.request = frappe._dict(method="POST", files={})
+		frappe.local.form_dict = frappe._dict(method="frappe.tests.test_client._get_only_marker")
+
+		self.assertRaises(frappe.PermissionError, upload_file)
 
 	def test_run_doc_method(self):
 		from frappe.handler import execute_cmd
@@ -176,6 +215,15 @@ class TestClient(FrappeTestCase):
 			self.assertEqual(
 				validate_link("User", "Guest", fields=["enabled"]), {"name": "Guest", "enabled": 1}
 			)
+
+	def test_validate_link_fetches_child_table_field(self):
+		from frappe.client import validate_link
+
+		role_row = frappe.get_doc("User", "Administrator").roles[0]
+		self.assertEqual(
+			validate_link("Has Role", role_row.name, fields=["role"]),
+			{"name": role_row.name, "role": role_row.role},
+		)
 
 	def test_client_insert(self):
 		from frappe.client import insert

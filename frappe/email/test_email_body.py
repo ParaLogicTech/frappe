@@ -3,6 +3,7 @@
 
 import base64
 import os
+import re
 
 import frappe
 from frappe import safe_decode
@@ -82,14 +83,37 @@ This is the text version of this email
 		self.assertTrue(result.count("\n") == result.count("\r"))
 
 	def test_image(self):
-		img_signature = """
+		content_id = re.search(r"Content-ID: <(\w+)>", self.email_string).group(1)
+		img_signature = f"""
 Content-Type: image/svg+xml
 MIME-Version: 1.0
 Content-Transfer-Encoding: base64
-Content-Disposition: inline; filename="frappe-favicon.svg"
+Content-Disposition: inline; filename="{content_id}.svg"
 """
 		self.assertTrue(img_signature in self.email_string)
 		self.assertTrue(self.img_base64 in self.email_string)
+
+	def test_inline_image_filename_uses_content_id(self):
+		for image_name, extension, content_type in (
+			("Screenshot 2026-01-01 at 6.07.26\u202fPM.png", ".png", "image/png"),
+			("photo.jpeg", ".jpeg", "image/jpeg"),
+			("logo.svg", ".svg", "image/svg+xml"),
+			("Screenshot 6.07.26\u202fPM", "", "application/octet-stream"),
+			("photo.png?fid=abc", "", "application/octet-stream"),
+		):
+			with self.subTest(image_name=image_name):
+				mail = get_email(
+					recipients=["test@example.com"],
+					sender="me@example.com",
+					subject="Inline Image",
+					content=f'<img embed="files/{image_name}">',
+					inline_images=[{"filename": f"files/{image_name}", "filecontent": b"image"}],
+				)
+				part = next(part for part in mail.msg_root.walk() if part.get("Content-ID"))
+				content_id = part["Content-ID"].strip("<>")
+
+				self.assertEqual(part.get_filename(), f"{content_id}{extension}")
+				self.assertEqual(part.get_content_type(), content_type)
 
 	def test_text_content(self):
 		text_content = """
@@ -238,6 +262,25 @@ Reply-To: test2_@erpnext.com
 			"=?iso-2022-jp?B?VEFLQVlBTUEgS2FvcnUgWxskQnxiOzMbKEIgGyRCNzAbKEJd?=\n\t<user@example.com>"
 		)
 		self.assertIn("user@example.com", mail)
+
+	def test_rejects_encoded_addr_spec_without_raw_at_sign(self):
+		email = Email.decode_email("=?utf-8?Q?admin=40example=2Ecom?=")
+		self.assertIsNone(email)
+
+		content_bytes = b"""MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+To: support@example.com
+From: =?utf-8?Q?admin=40example=2Ecom?=
+"""
+
+		mail = Email(content_bytes)
+		self.assertIsNone(mail.from_email)
+
+	def test_allows_encoded_display_name_with_valid_addr_spec(self):
+		email = Email.decode_email("=?utf-8?Q?Jane_Doe?= <jane@example.com>")
+		self.assertIn("jane@example.com", email)
 
 
 def fixed_column_width(string, chunk_size):

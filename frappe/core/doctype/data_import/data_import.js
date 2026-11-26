@@ -186,7 +186,7 @@ frappe.ui.form.on("Data Import", {
 				})
 				.then((result) => {
 					if (result.length > 0) {
-						frm.add_custom_button("Report Error", () => {
+						frm.add_custom_button(__("Report Error"), () => {
 							let fake_xhr = {
 								responseText: JSON.stringify({
 									exc: result[0].error,
@@ -509,12 +509,10 @@ frappe.ui.form.on("Data Import", {
 		}
 
 		frappe.call({
-			method: "frappe.client.get_count",
+			method: "frappe.core.doctype.data_import.data_import.get_import_log_count",
+			type: "GET",
 			args: {
-				doctype: "Data Import Log",
-				filters: {
-					data_import: frm.doc.name,
-				},
+				data_import: frm.doc.name,
 			},
 			callback: function (r) {
 				let count = r.message;

@@ -37,8 +37,8 @@ def add_comment(
 			"comment_type": "Comment",
 			"reference_doctype": reference_doctype,
 			"reference_name": reference_name,
-			"comment_email": comment_email,
-			"comment_by": comment_by,
+			"comment_email": frappe.session.user,
+			"comment_by": frappe.utils.get_fullname(),
 			"content": extract_images_from_html(reference_doc, content, is_private=True),
 		}
 	)
@@ -51,7 +51,7 @@ def add_comment(
 
 
 @frappe.whitelist()
-def update_comment(name, content):
+def update_comment(name: str | int, content: str):
 	"""allow only owner to update comment"""
 	doc = frappe.get_doc("Comment", name)
 

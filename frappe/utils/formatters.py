@@ -104,7 +104,7 @@ def format_value(value, df=None, doc=None, currency=None, translated=False, form
 		return fmt_money(value, precision=precision, currency=currency)
 
 	elif df.get("fieldtype") == "Int":
-		return fmt_money(value, precision=0)
+		return "" if value == "" else fmt_money(value, precision=0)
 
 	elif df.get("fieldtype") == "Percent":
 		precision = cint(precision) if precision is not None else 2

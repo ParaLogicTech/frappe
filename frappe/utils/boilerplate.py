@@ -334,7 +334,7 @@ authors = [
     {{ name = "{app_publisher}", email = "{app_email}"}}
 ]
 description = "{app_description}"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 readme = "README.md"
 dynamic = ["version"]
 dependencies = [
@@ -355,7 +355,7 @@ packages = []
 
 [tool.ruff]
 line-length = 110
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = [
@@ -499,11 +499,28 @@ app_license = "{app_license}"
 # before_app_uninstall = "{app_name}.utils.before_app_uninstall"
 # after_app_uninstall = "{app_name}.utils.after_app_uninstall"
 
+# Build
+# ------------------
+# To hook into the build process
+
+# after_build = "{app_name}.build.after_build"
+
+# To hook into the build process of other apps
+# The list of apps being built is passed as an argument
+
+# after_app_build = "{app_name}.build.after_app_build"
+
 # Desk Notifications
 # ------------------
 # See frappe.core.notifications.get_notification_config
 
 # notification_config = "{app_name}.notifications.get_notification_config"
+
+# Awesome Bar
+# -----------
+# Extra search results: list of dicts with label, description, route, index.
+# route: ["List", "ToDo"], "/desk/docs/some/page", or "https://example.com"
+# awesomebar_search = ["{app_name}.search.awesomebar_results"]
 
 # Permissions
 # -----------
@@ -703,7 +720,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Setup Node
         uses: actions/setup-node@v3
@@ -733,7 +750,10 @@ jobs:
             ${{{{ runner.os }}}}-yarn-
 
       - name: Install MariaDB Client
-        run: sudo apt-get install mariadb-client-10.6
+        run: |
+          sudo apt-get install mariadb-client
+          # MariaDB 10.6 server has no TLS, but newer clients require it by default
+          printf "[client]\\nskip-ssl\\n" > ~/.my.cnf
 
       - name: Setup
         run: |
@@ -865,7 +885,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
           cache: pip
       - uses: pre-commit/action@v3.0.0
 
@@ -884,7 +904,7 @@ jobs:
     steps:
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - uses: actions/checkout@v4
 

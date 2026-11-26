@@ -13,6 +13,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.workbook.child import INVALID_TITLE_REGEX
 
 import frappe
+from frappe.utils.csvutils import FORMULA_TRIGGER_CHARS
 from frappe.utils.html_utils import unescape_html
 
 ILLEGAL_CHARACTERS_RE = re.compile(
@@ -85,6 +86,10 @@ def make_xlsx(data, sheet_name, wb=None, column_widths=None, column_formats=None
 					cell.number_format = date_format
 				elif isinstance(value, datetime.time | datetime.timedelta):
 					cell.number_format = time_format
+
+			if isinstance(value, str) and value.startswith(FORMULA_TRIGGER_CHARS):
+				# force literal text so the cell isn't parsed as a formula
+				cell.data_type = "s"
 
 			if row_i == 0:
 				cell.font = Font(name="Calibri", bold=True)

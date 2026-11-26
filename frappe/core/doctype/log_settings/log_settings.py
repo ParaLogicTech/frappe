@@ -5,8 +5,7 @@ from typing import Protocol, runtime_checkable
 
 import frappe
 from frappe import _
-from frappe.model.base_document import get_controller
-from frappe.model.document import Document
+from frappe.model.document import Document, get_controller
 from frappe.utils import cint
 from frappe.utils.caching import site_cache
 
@@ -130,7 +129,7 @@ def has_unseen_error_log():
 
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
-def get_log_doctypes(doctype, txt, searchfield, start, page_len, filters):
+def get_log_doctypes(doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: list):
 	filters = filters or {}
 
 	filters.extend(

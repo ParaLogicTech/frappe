@@ -707,6 +707,22 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 
 				this.execution_time = data.execution_time || 0.1;
 
+				this.snapshot_report = data.snapshot_report;
+				this.snapshot_at = data.snapshot_at;
+				if (this.snapshot_report) {
+					if (data.result.length > 0) {
+						let diff = frappe.datetime.comment_when(this.snapshot_at);
+						let pretty_diff = `<span style="color:var(--red-600)">${diff}</span>`;
+						this.show_status(`
+						<div class="indicator orange pl-1">
+							<span>
+								${__("This is a snapshot report generated {0}.", [pretty_diff])}
+							</span>
+						</div>
+					`);
+					}
+				}
+
 				if (data.custom_filters) {
 					this.set_filters(data.custom_filters);
 					this.previous_filters = data.custom_filters;
@@ -791,7 +807,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 	}
 
 	add_prepared_report_buttons(doc) {
-		if (doc) {
+		if (doc && frappe.model.can_read("Prepared Report")) {
 			this.page.add_inner_button(
 				__("Download Report"),
 				function () {
@@ -805,7 +821,9 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				},
 				__("Actions")
 			);
+		}
 
+		if (doc) {
 			let pretty_diff = frappe.datetime.comment_when(doc.report_end_time);
 			const days_old = frappe.datetime.get_day_diff(
 				frappe.datetime.now_datetime(),
@@ -817,13 +835,16 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			const part1 = __("This report was generated {0}.", [pretty_diff]);
 			const part2 = __("To get the updated report, click on {0}.", [__("Rebuild")]);
 			const part3 = __("See all past reports.");
+			const past_reports_link = frappe.model.can_read("Prepared Report")
+				? `<a href="/app/List/Prepared%20Report?report_name=${this.report_name}"> ${part3}</a>`
+				: "";
 
 			this.show_status(`
 				<div class="indicator orange">
 					<span>
 						${part1}
 						${part2}
-						<a href="/app/List/Prepared%20Report?report_name=${this.report_name}"> ${part3}</a>
+						${past_reports_link}
 					</span>
 				</div>
 			`);
@@ -920,13 +941,13 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 	}
 
 	get_queued_prepared_reports_warning_message(reports) {
+		const can_read = frappe.model.can_read("Prepared Report");
 		const route = `/app/List/Prepared Report/List?status=Queued&report_name=${this.report_name}`;
-		const report_link_html =
-			reports.length == 1
-				? `<a class="underline" href="${route}">${__("1 Report")}</a>`
-				: `<a class="underline" href="${route}">${__("{0} Reports", [
-						reports.length,
-				  ])}</a>`;
+		const report_count =
+			reports.length == 1 ? __("1 Report") : __("{0} Reports", [reports.length]);
+		const report_link_html = can_read
+			? `<a class="underline" href="${route}">${report_count}</a>`
+			: report_count;
 
 		const no_of_reports_html =
 			reports.length == 1
@@ -944,7 +965,9 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			</p>`;
 
 		let get_item_html = (item) =>
-			`<a class="underline" href="/app/prepared-report/${item.name}">${item.name}</a>`;
+			can_read
+				? `<a class="underline" href="/app/prepared-report/${item.name}">${item.name}</a>`
+				: item.name;
 
 		warning_message += reports.map(get_item_html).join(", ");
 
@@ -979,10 +1002,11 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				const data = r.message;
 				// Rememeber the name of Prepared Report doc
 				this.prepared_report_doc_name = data.name;
-				let alert_message =
-					`<a href='/app/prepared-report/${data.name}'>` +
-					__("Report initiated, click to view status") +
-					`</a>`;
+				let alert_message = frappe.model.can_read("Prepared Report")
+					? `<a href='/app/prepared-report/${data.name}'>` +
+					  __("Report initiated, click to view status") +
+					  `</a>`
+					: __("Queued");
 				frappe.show_alert({ message: alert_message, indicator: "orange" }, 10);
 				this.toggle_nothing_to_show(true);
 			});
@@ -1685,12 +1709,11 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		return print_settings.columns?.length || !custom_format ? "print_grid" : custom_format;
 	}
 
-	async get_report_print_format(report_name) {
-		const filters = {
-			name: report_name,
-			disabled: 0,
-		};
-		const r = await frappe.db.get_value("Print Format", filters, ["html", "css"]);
+	async get_report_print_format(print_format) {
+		const r = await frappe.call({
+			method: "frappe.desk.query_report.get_print_format_data",
+			args: { print_format },
+		});
 		if (r && r.message && r.message.html) {
 			const css = r.message.css || "";
 			const html = r.message.html || "";
@@ -1950,6 +1973,8 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 						this.get_filter_value("no_letterhead") || this.report_doc.letter_head,
 						this.get_visible_columns(),
 						true,
+						null,
+						null,
 						this.get_filter_value("orientation")
 					);
 					this.add_portrait_warning(dialog);
@@ -1967,6 +1992,8 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 						this.get_filter_value("no_letterhead") || this.report_doc.letter_head,
 						this.get_visible_columns(),
 						true,
+						"PDF Settings",
+						this.report_doc.default_print_format,
 						this.get_filter_value("orientation")
 					);
 
@@ -2134,12 +2161,18 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 							},
 						],
 						primary_action: (values) => {
+							const resized_widths = this.datatable.getResizedColumnWidths();
 							frappe.call({
 								method: "frappe.desk.query_report.save_report",
 								args: {
 									reference_report: this.report_name,
 									report_name: values.report_name,
-									columns: this.get_visible_columns(),
+									columns: this.get_visible_columns().map((column) => ({
+										...column,
+										width: resized_widths.has(column.id)
+											? parseInt(resized_widths.get(column.id))
+											: column.width,
+									})),
 									filters: this.get_filter_values(),
 								},
 								callback: function (r) {

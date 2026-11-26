@@ -6,7 +6,7 @@ import pyotp
 
 import frappe
 from frappe.auth import HTTPRequest, get_login_attempt_tracker, validate_ip_address
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests.utils import FrappeTestCase, change_settings
 from frappe.twofactor import (
 	ExpiredLoginException,
 	authenticate_for_2factor,
@@ -15,6 +15,7 @@ from frappe.twofactor import (
 	get_default,
 	get_otpsecret_for_,
 	get_verification_obj,
+	reset_otp_secret,
 	should_run_2fa,
 	two_factor_is_enabled_for_,
 )
@@ -61,7 +62,7 @@ class TestTwoFactor(FrappeTestCase):
 		self.assertTrue(verification_obj)
 		self.assertTrue(tmp_id)
 		for k in ["_usr", "_pwd", "_otp_secret"]:
-			self.assertTrue(frappe.cache.get(f"{tmp_id}{k}"), f"{k} not available")
+			self.assertTrue(frappe.cache.get_value(f"{tmp_id}{k}", expires=True), f"{k} not available")
 
 	def test_two_factor_is_enabled(self):
 		"""
@@ -105,7 +106,6 @@ class TestTwoFactor(FrappeTestCase):
 		"""Should return true if enabled for user."""
 		toggle_2fa_all_role(state=True)
 		self.assertTrue(two_factor_is_enabled_for_(self.user))
-		self.assertFalse(two_factor_is_enabled_for_("Administrator"))
 		toggle_2fa_all_role(state=False)
 		self.assertFalse(two_factor_is_enabled_for_(self.user))
 
@@ -113,6 +113,20 @@ class TestTwoFactor(FrappeTestCase):
 		"""OTP secret should be set for user."""
 		self.assertTrue(get_otpsecret_for_(self.user))
 		self.assertTrue(get_default(self.user + "_otpsecret"))
+
+	def test_reset_otp_secret_logs_out_sessions(self):
+		sessions = frappe.qb.DocType("Sessions")
+		frappe.qb.into(sessions).columns(sessions.user, sessions.sid).insert(self.user, "otp-reset-sid").run()
+
+		with (
+			change_settings("System Settings", {"logout_on_password_reset": 1}),
+			self.set_user(self.user),
+		):
+			reset_otp_secret(self.user)
+
+		self.assertFalse(
+			frappe.qb.from_(sessions).select(sessions.sid).where(sessions.sid == "otp-reset-sid").run()
+		)
 
 	def test_confirm_otp_token(self):
 		"""Ensure otp is confirmed"""

@@ -89,9 +89,8 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 			size: this.size || "extra-large",
 			primary_action_label: this.primary_action_label || __("Get Items"),
 			secondary_action_label: __("Make {0}", [__(this.doctype)]),
-			primary_action: () => {
+			primary_action: (data_values) => {
 				let filters_data = this.get_custom_filters();
-				const data_values = cur_dialog.get_values(); // to pass values of data fields
 				const filtered_children = this.get_selected_child_names();
 				const selected_documents = [
 					...this.get_checked_values(),
@@ -539,38 +538,41 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 			if (column == "name" && me.name_label) {
 				label = me.name_label;
 			}
+			let column_label = frappe.utils.escape_html(__(label));
 
+			// escape text before formatting, as formatters like Data return it as is
+			let raw_value = result[column];
+			if (typeof raw_value === "string") {
+				raw_value = frappe.utils.escape_html(raw_value);
+			}
+			let value = frappe.utils.escape_html(__(result[column] || ""));
 			let formatted_value =
 				df && !head && result[column]
-					? frappe.format(result[column], df, { only_value: 1 }, result)
-					: result[column] || "";
+					? frappe.format(raw_value, df, { only_value: 1 }, result)
+					: value;
+			let id_href = frappe.utils.escape_html(
+				"/app/" + frappe.router.slug(me.doctype) + "/" + (result[column] || "")
+			);
 
 			contents += `<div class="list-item__content ellipsis ${
 				column != "name" ? "list-item__content--flex-2" : ""
 			}">
 				${
 					head
-						? `<span class="ellipsis text-muted" title="${__(label)}">${__(
-								label
-						  )}</span>`
+						? `<span class="ellipsis text-muted" title="${column_label}">${column_label}</span>`
 						: column !== "name"
-						? `<span class="ellipsis result-row" title="${__(formatted_value)}">${__(
-								formatted_value
-						  )}</span>`
-						: `<a href="${
-								"/app/" + frappe.router.slug(me.doctype) + "/" + result[column] ||
-								""
-						  }" class="list-id ellipsis" title="${__(result[column] || "")}">
-							${__(result[column] || "")}</a>`
+						? `<span class="ellipsis result-row" title="${value}">${formatted_value}</span>`
+						: `<a href="${id_href}" class="list-id ellipsis" title="${value}">
+							${value}</a>`
 				}
 			</div>`;
 		});
 
 		let $row = $(`<div class="list-item">
 			<div class="list-item__content" style="flex: 0 0 10px;">
-				<input type="checkbox" class="list-row-check" data-item-name="${result.name}" ${
-			result.checked ? "checked" : ""
-		}>
+				<input type="checkbox" class="list-row-check" data-item-name="${frappe.utils.escape_html(
+					result.name
+				)}" ${result.checked ? "checked" : ""}>
 			</div>
 			${contents}
 		</div>`);
@@ -578,7 +580,9 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 		head
 			? $row.addClass("list-item--head")
 			: ($row = $(
-					`<div class="list-item-container" data-item-name="${result.name}"></div>`
+					`<div class="list-item-container" data-item-name="${frappe.utils.escape_html(
+						result.name
+					)}"></div>`
 			  ).append($row));
 
 		if (head && this.single_selection) {
@@ -635,7 +639,10 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 
 	get_filters_from_setters() {
 		let me = this;
-		let filters = (this.get_query ? this.get_query().filters : {}) || {};
+		let query_filters = (this.get_query ? this.get_query().filters : {}) || {};
+		let filters = Array.isArray(query_filters)
+			? query_filters.slice()
+			: Object.assign({}, query_filters);
 		let filter_fields = [];
 
 		if ($.isArray(this.setters)) {
@@ -751,9 +758,8 @@ frappe.ui.form.MultiSelectDialog = class MultiSelectDialog {
 
 	async add_parent_filters(filters) {
 		const parent_names = await this.get_filtered_parents_for_child_search();
-		if (parent_names.length) {
-			filters.push(["parent", "in", parent_names]);
-		}
+		// empty list must match nothing, else child search leaks every parent's rows
+		filters.push(["parent", "in", parent_names]);
 	}
 
 	add_custom_child_filters(filters) {

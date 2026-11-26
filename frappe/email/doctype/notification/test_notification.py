@@ -9,6 +9,8 @@ import frappe.utils
 from frappe.desk.form import assign_to
 from frappe.tests.utils import FrappeTestCase
 
+from .notification import get_comments_for_context
+
 test_dependencies = ["User", "Notification"]
 
 
@@ -134,6 +136,29 @@ class TestNotification(FrappeTestCase):
 
 		self.assertEqual(frappe.db.get_value("Communication", communication.name, "subject"), "__testing__")
 
+	def test_comments_in_context(self):
+		todo = frappe.get_doc(doctype="ToDo", description="comments context").insert()
+		self.assertIsNone(get_comments_for_context(todo))
+
+		comment = todo.add_comment("Comment", "hello")
+		email = frappe.get_doc(
+			doctype="Communication",
+			content="reply",
+			sender="a@example.com",
+			reference_doctype="ToDo",
+			reference_name=todo.name,
+		).insert()
+		self.assertEqual(
+			get_comments_for_context(todo),
+			[
+				{"comment": "hello", "by": comment.comment_email, "name": comment.name},
+				{"comment": "reply", "by": "a@example.com", "name": email.name},
+			],
+		)
+
+		todo.add_comment("Comment", "x" * 150)
+		self.assertEqual(get_comments_for_context(todo)[-1]["comment"], "x" * 97 + "...")
+
 	def test_condition(self):
 		"""Check notification is triggered based on a condition."""
 		event = frappe.new_doc("Event")
@@ -221,6 +246,31 @@ class TestNotification(FrappeTestCase):
 				{"reference_doctype": "Event", "reference_name": event.name, "status": "Not Sent"},
 			)
 		)
+
+	def test_system_notification_sets_app_from_module(self):
+		"""A System Notification rule records its owning app (from `module`) on the log."""
+		notification = {
+			"name": "Test App From Module",
+			"notification_title": "Test App From Module",
+			"document_type": "Event",
+			"module": "Core",  # owned by the frappe app
+			"event": "New",
+			"channel": "System Notification",
+			"notification_type": "Alert",
+			"recipients": [{"receiver_by_document_field": "owner"}],
+		}
+
+		with get_test_notification(notification) as n:
+			frappe.db.delete("Notification Log", {"title": n.notification_title})
+
+			event = frappe.new_doc("Event")
+			event.subject = "Test App From Module Event"
+			event.event_type = "Private"
+			event.starts_on = frappe.utils.add_to_date(frappe.utils.now_datetime(), minutes=14)
+			event.insert()
+
+			app = frappe.db.get_value("Notification Log", {"title": n.notification_title}, "app")
+			self.assertEqual(app, "frappe")
 
 	def test_alert_disabled_on_wrong_field(self):
 		frappe.set_user("Administrator")

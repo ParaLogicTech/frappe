@@ -300,6 +300,7 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 						me.df?.ignore_user_permissions || meta_df?.ignore_user_permissions,
 					reference_doctype: reference_doctype,
 					page_length: cint(frappe.boot.sysdefaults?.link_field_results_limit) || 20,
+					link_fieldname: me.df.fieldname,
 				};
 
 				me.set_custom_query(args);
@@ -310,7 +311,7 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 					no_spinner: true,
 					args: args,
 					callback: function (r) {
-						if (!window.Cypress && !me.$input.is(":focus")) {
+						if (!window.Cypress && !navigator.webdriver && !me.$input.is(":focus")) {
 							return;
 						}
 						r.message = me.merge_duplicates(r.message);
@@ -479,7 +480,7 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 
 		this.$input.on("awesomplete-selectcomplete", function (e) {
 			let o = e.originalEvent;
-			if (o.text.value.indexOf("__link_option") !== -1) {
+			if (cstr(o.text.value).indexOf("__link_option") !== -1) {
 				me.$input.val("");
 			}
 		});
@@ -494,9 +495,12 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 	 * @returns {boolean} - True if input matches the label, value, or description.
 	 */
 	input_matches_item(input, item) {
-		const item_label = (this.get_translated(item.label || item.value) || "").toLowerCase();
-		const item_description = (item.description || "").toLowerCase();
-		return input && (item_label.includes(input) || item_description.includes(input));
+		return (
+			input &&
+			[this.get_translated(item.label ?? item.value), item.value, item.description].some(
+				(value) => cstr(value).toLowerCase().includes(input)
+			)
+		);
 	}
 
 	show_untranslated() {
@@ -832,6 +836,13 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 					"Select",
 					"Duration",
 					"Time",
+					"Percent",
+					"Phone",
+					"Barcode",
+					"Autocomplete",
+					"Icon",
+					"Color",
+					"Rating",
 				].includes(df.fieldtype) ||
 				df.read_only == 1 ||
 				df.is_virtual == 1;

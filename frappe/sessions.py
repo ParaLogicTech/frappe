@@ -8,7 +8,7 @@ permission, homepage, default variables, system defaults etc
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import unquote
 
 import redis
@@ -130,6 +130,9 @@ def get():
 	"""get session boot info"""
 	from frappe.boot import get_bootinfo, get_notification_settings, get_unseen_notes
 	from frappe.utils.change_log import get_change_log
+	from frappe.utils.legacy_gravatar_cleanup import (
+		should_show_gravatar_deletion_prompt,
+	)
 
 	bootinfo = None
 	if not getattr(frappe.conf, "disable_session_cache", None):
@@ -183,6 +186,7 @@ def get():
 	bootinfo["user"]["impersonated_by"] = frappe.session.data.get("impersonated_by")
 	bootinfo["navbar_settings"] = frappe.get_cached_doc("Navbar Settings")
 	bootinfo.has_app_updates = has_app_update_notifications()
+	bootinfo.show_gravatar_deletion_prompt = should_show_gravatar_deletion_prompt()
 
 	return bootinfo
 
@@ -328,7 +332,7 @@ class Session:
 
 		r = self.get_session_data()
 
-		if not r:
+		if not (r and r.get("user")):
 			frappe.response["session_expired"] = 1
 			clear_cookies()
 			self.sid = "Guest"
@@ -341,7 +345,7 @@ class Session:
 			return frappe._dict({"user": "Guest"})
 
 		data = self.get_session_data_from_cache()
-		if not data:
+		if not (data and data.get("user")):
 			self._update_in_cache = True
 			data = self.get_session_data_from_db()
 		return data
@@ -360,7 +364,7 @@ class Session:
 
 			if self.time_diff > expiry or (
 				(session_end := session_data.get("session_end"))
-				and datetime.now(tz=timezone.utc) > datetime.fromisoformat(session_end)
+				and datetime.now(tz=UTC) > datetime.fromisoformat(session_end)
 			):
 				self._delete_session()
 				data = None

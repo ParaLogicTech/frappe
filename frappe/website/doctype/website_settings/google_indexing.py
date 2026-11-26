@@ -12,8 +12,9 @@ from frappe.integrations.google_oauth import GoogleOAuth
 
 
 @frappe.whitelist(methods=["POST"])
-def authorize_access(reauthorize=False, code=None):
+def authorize_access(reauthorize: bool = False, code: str | None = None):
 	"""If no Authorization code get it from Google and then request for Refresh Token."""
+	frappe.has_permission("Website Settings", "write", throw=True)
 
 	oauth_code = (
 		frappe.db.get_single_value("Website Settings", "indexing_authorization_code") if not code else code
@@ -29,10 +30,10 @@ def authorize_access(reauthorize=False, code=None):
 		)
 
 	res = oauth_obj.authorize(oauth_code)
-	frappe.db.set_single_value(
-		"Website Settings",
-		{"indexing_authorization_code": oauth_code, "indexing_refresh_token": res.get("refresh_token")},
-	)
+	settings = frappe.get_doc("Website Settings")
+	settings.indexing_authorization_code = oauth_code
+	settings.indexing_refresh_token_secret = res.get("refresh_token")
+	settings.save()
 
 
 def get_google_indexing_object():
@@ -42,7 +43,7 @@ def get_google_indexing_object():
 
 	return oauth_obj.get_google_service_object(
 		account.get_access_token(),
-		account.get_password(fieldname="indexing_refresh_token", raise_exception=False),
+		account.get_password(fieldname="indexing_refresh_token_secret", raise_exception=False),
 	)
 
 

@@ -113,7 +113,6 @@ export default class Grid {
 						</div>
 					</div>
 				</div>
-				<div class="grid-selection-toast"><span class="grid-selection-toast__message"></span></div>
 			</div>
 		`;
 
@@ -219,22 +218,7 @@ export default class Grid {
 				this.last_checked_docname = docname;
 			}
 			this.refresh_remove_rows_button();
-			this.update_selection_banner();
 		});
-	}
-
-	update_selection_banner() {
-		const num_selected_rows = this.get_selected_children().length;
-
-		let $toast = this.wrapper.find(".grid-selection-toast");
-		if (num_selected_rows > 0) {
-			$toast
-				.find(".grid-selection-toast__message")
-				.text(__("{0} row(s) selected", [num_selected_rows]));
-			$toast.show();
-		} else if ($toast.length) {
-			$toast.hide();
-		}
 	}
 
 	/**
@@ -309,7 +293,11 @@ export default class Grid {
 
 	delete_all_rows() {
 		frappe.confirm(__("Are you sure you want to delete all rows?"), () => {
-			this.frm.doc[this.df.fieldname] = [];
+			if (this.frm) {
+				this.frm.doc[this.df.fieldname] = [];
+			} else {
+				this.df.data = [];
+			}
 			$(this.parent).find(".rows").empty();
 			this.grid_rows = [];
 			this.refresh();
@@ -350,6 +338,12 @@ export default class Grid {
 		).length;
 
 		this.remove_rows_button.toggleClass("hidden", !(has_checked_row && is_editable));
+
+		// show how many rows will be deleted
+		const num_selected_rows = this.get_selected_children().length;
+		this.remove_rows_button.text(
+			num_selected_rows <= 1 ? __("Delete") : __("Delete ({0} rows)", [num_selected_rows])
+		);
 
 		let select_all_checkbox_checked = this.wrapper.find(
 			".grid-heading-row .grid-row-check:checked:first"
@@ -512,7 +506,6 @@ export default class Grid {
 		this.refresh_remove_rows_button();
 
 		this.wrapper.trigger("change");
-		this.update_selection_banner();
 	}
 
 	set_display_status() {
@@ -915,7 +908,10 @@ export default class Grid {
 
 	set_value(fieldname, value, doc) {
 		if (this.display_status !== "None" && doc?.name && this.grid_rows_by_docname?.[doc.name]) {
-			this.grid_rows_by_docname[doc.name].refresh_field(fieldname, value);
+			let grid_row = this.grid_rows_by_docname[doc.name];
+			grid_row.refresh_field(fieldname, value);
+			// re-evaluate depends_on of sibling columns that reference this field
+			grid_row.refresh_dependency();
 		}
 	}
 

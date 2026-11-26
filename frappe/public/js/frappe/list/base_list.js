@@ -852,6 +852,7 @@ class FilterArea {
 					"Long Text",
 					"Text Editor",
 					"HTML Editor",
+					"Markdown Editor",
 					"Data",
 					"Code",
 					"Phone",

@@ -10,7 +10,7 @@ from unittest.mock import patch
 import frappe
 from frappe.core.doctype.doctype.test_doctype import new_doctype
 from frappe.exceptions import DoesNotExistError
-from frappe.model.base_document import get_controller
+from frappe.model.document import get_controller
 from frappe.model.rename_doc import bulk_rename, update_document_title
 from frappe.modules.utils import get_doc_path
 from frappe.tests.utils import FrappeTestCase
@@ -249,7 +249,7 @@ class TestRenameDoc(FrappeTestCase):
 		name = choice(self.available_documents)
 		new_name = f"{name}-{frappe.generate_hash(length=4)}"
 		doc = frappe.get_doc(self.test_doctype, name)
-		doc.rename(new_name, merge=frappe.db.exists(self.test_doctype, new_name))
+		doc.rename(new_name, merge=bool(frappe.db.exists(self.test_doctype, new_name)))
 		self.assertEqual(doc.name, new_name)
 		self.available_documents.append(new_name)
 		self.available_documents.remove(name)

@@ -5,7 +5,7 @@ import json
 import os
 
 import frappe
-from frappe.model.base_document import get_controller
+from frappe.model.document import get_controller
 from frappe.modules import get_module_path, scrub_dt_dn
 from frappe.query_builder import DocType
 from frappe.utils import get_datetime, now
@@ -173,7 +173,7 @@ def import_file_by_path(
 def read_doc_from_file(path):
 	doc = None
 	if os.path.exists(path):
-		with open(path) as f:
+		with open(path, encoding="utf-8") as f:
 			try:
 				doc = json.loads(f.read())
 			except ValueError:

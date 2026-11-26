@@ -110,7 +110,7 @@
    "label": "Field Type",
    "oldfieldname": "fieldtype",
    "oldfieldtype": "Select",
-   "options": "Autocomplete\nAttach\nAttach Image\nBarcode\nButton\nCheck\nCode\nColor\nColumn Break\nCurrency\nData\nDate\nDatetime\nDuration\nDynamic Link\nFloat\nFold\nGeolocation\nHeading\nHTML\nHTML Editor\nIcon\nImage\nInt\nJSON\nLink\nLong Text\nMarkdown Editor\nPassword\nPercent\nPhone\nRead Only\nRating\nSection Break\nSelect\nSignature\nSmall Text\nTab Break\nTable\nTable MultiSelect\nText\nText Editor\nTime",
+   "options": "Autocomplete\nAttach\nAttach Image\nAttachment Gallery\nBarcode\nButton\nCheck\nCode\nColor\nColumn Break\nCurrency\nData\nDate\nDatetime\nDuration\nDynamic Link\nFloat\nFold\nGeolocation\nHeading\nHTML\nHTML Editor\nIcon\nImage\nInt\nJSON\nLink\nLong Text\nMarkdown Editor\nPassword\nPercent\nPhone\nRead Only\nRating\nSection Break\nSelect\nSignature\nSmall Text\nTab Break\nTable\nTable MultiSelect\nText\nText Editor\nTime",
    "reqd": 1,
    "search_index": 1,
    "sort_options": 1
@@ -129,7 +129,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:!in_list([\"Section Break\", \"Column Break\", \"Button\", \"HTML\"], doc.fieldtype)",
+   "depends_on": "eval:!['Section Break', 'Column Break', 'Button', 'HTML', 'Attachment Gallery'].includes(doc.fieldtype)",
    "fieldname": "reqd",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -156,6 +156,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "search_index",
    "fieldtype": "Check",
    "label": "Search Index",
@@ -166,7 +167,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:!doc.is_virtual",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery' && (!doc.is_virtual)",
    "fieldname": "in_list_view",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -176,6 +177,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "in_standard_filter",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -190,19 +192,21 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:!in_list(['Table', 'Table MultiSelect'], doc.fieldtype);",
+   "depends_on": "eval:!['Table', 'Table MultiSelect', 'Attachment Gallery'].includes(doc.fieldtype)",
    "fieldname": "in_preview",
    "fieldtype": "Check",
    "label": "In Preview"
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "allow_in_quick_entry",
    "fieldtype": "Check",
    "label": "Allow in Quick Entry"
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "bold",
    "fieldtype": "Check",
    "label": "Bold"
@@ -236,6 +240,7 @@
   },
   {
    "columns": 2,
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "description": "For Links, enter the DocType as range.\nFor Select, enter list of Options, each on a new line.",
    "fieldname": "options",
    "fieldtype": "Small Text",
@@ -246,6 +251,7 @@
    "oldfieldtype": "Text"
   },
   {
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "default",
    "fieldtype": "Small Text",
    "label": "Default",
@@ -303,12 +309,14 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "unique",
    "fieldtype": "Check",
    "label": "Unique"
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "set_only_once",
    "fieldtype": "Check",
    "label": "Set Only Once"
@@ -354,6 +362,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "report_hide",
    "fieldtype": "Check",
    "label": "Report Hide",
@@ -371,6 +380,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "description": "Don't encode HTML tags like &lt;script&gt; or just characters like &lt; or &gt;, as they could be intentionally used in this field",
    "fieldname": "ignore_xss_filter",
    "fieldtype": "Check",
@@ -383,6 +393,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "in_filter",
    "fieldtype": "Check",
    "label": "In Filter",
@@ -393,6 +404,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "no_copy",
    "fieldtype": "Check",
    "label": "No Copy",
@@ -403,6 +415,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "print_hide",
    "fieldtype": "Check",
    "label": "Print Hide",
@@ -419,12 +432,14 @@
    "label": "Print Hide If No Value"
   },
   {
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "print_width",
    "fieldtype": "Data",
    "label": "Print Width",
    "length": 10
   },
   {
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "width",
    "fieldtype": "Data",
    "label": "Width",
@@ -435,6 +450,7 @@
    "width": "50px"
   },
   {
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "description": "Number of columns for a field in a List View or a Grid (Total Columns should be less than 11)",
    "fieldname": "columns",
    "fieldtype": "Int",
@@ -478,6 +494,7 @@
    "label": "Always Show Currency Symbol"
   },
   {
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "mandatory_depends_on",
    "fieldtype": "Code",
    "label": "Mandatory Depends On (JS)",
@@ -548,6 +565,7 @@
    "label": "Constraints"
   },
   {
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "max_height",
    "fieldtype": "Data",
    "label": "Max Height",
@@ -571,12 +589,13 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "is_virtual",
    "fieldtype": "Check",
    "label": "Virtual"
   },
   {
-   "depends_on": "eval:!in_list([\"Tab Break\", \"Section Break\", \"Column Break\", \"Button\", \"HTML\"], doc.fieldtype)",
+   "depends_on": "eval:!['Tab Break', 'Section Break', 'Column Break', 'Button', 'HTML', 'Attachment Gallery'].includes(doc.fieldtype)",
    "fieldname": "documentation_url",
    "fieldtype": "Data",
    "label": "Documentation URL",
@@ -590,25 +609,28 @@
    "label": "Sort Options"
   },
   {
+   "depends_on": "eval:['Attachment Gallery', 'Link'].includes(doc.fieldtype)",
+   "description": "Filters applied to Link queries and Attachment Gallery files.",
    "fieldname": "link_filters",
    "fieldtype": "JSON",
-   "label": "Link Filters"
+   "label": "Filters"
   },
   {
    "default": "0",
-   "depends_on": "eval: doc.hidden",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery' && (doc.hidden)",
    "fieldname": "show_on_timeline",
    "fieldtype": "Check",
    "label": "Show on Timeline"
   },
   {
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "placeholder",
    "fieldtype": "Data",
    "label": "Placeholder"
   },
   {
    "default": "0",
-   "depends_on": "eval:['Attach', 'Attach Image'].includes(doc.fieldtype)",
+   "depends_on": "eval:['Attach', 'Attach Image', 'Attachment Gallery'].includes(doc.fieldtype)",
    "fieldname": "make_attachment_public",
    "fieldtype": "Check",
    "label": "Make Attachment Public (by default)"
@@ -618,13 +640,14 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-10 21:39:58.400441",
+ "modified": "2026-09-20 19:27:13.075415",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",
  "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "ASC",
  "states": []

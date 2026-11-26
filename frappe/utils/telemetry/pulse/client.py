@@ -1,6 +1,7 @@
 import time
 from contextlib import suppress
 from json import JSONDecodeError
+from typing import Any
 
 import frappe
 from frappe.rate_limiter import rate_limit
@@ -22,8 +23,40 @@ def is_enabled() -> bool:
 	)
 
 
+@frappe.whitelist(allow_guest=True)
+def boot_config() -> dict:
+	"""Telemetry config for frappe-ui apps, which fetch it since they can't read desk's boot."""
+	if not is_enabled():
+		return {"enabled": False}
+
+	# local import: telemetry/__init__ imports this module
+	from frappe.utils.telemetry import site_age
+
+	host = ensure_http(frappe.conf.get("pulse_host") or "https://pulse.m.frappe.cloud").rstrip("/")
+	user = frappe.session.user
+
+	return {
+		"enabled": True,
+		"host": host,
+		"client_url": f"{host}/assets/pulse/js/pulse_client.js",
+		"key": frappe.conf.get("pulse_api_key"),
+		"site": frappe.local.site,
+		"user": None if user in frappe.STANDARD_USERS else anonymize_user(user),
+		"team": frappe.conf.get("fc_team"),
+		"site_age": site_age(),
+	}
+
+
 @frappe.whitelist()
-def capture(event_name, site=None, app=None, user=None, captured_at=None, properties=None, interval=None):
+def capture(
+	event_name: str,
+	site: str | None = None,
+	app: str | None = None,
+	user: str | None = None,
+	captured_at: str | None = None,
+	properties: dict[str, Any] | None = None,
+	interval: int | str | None = None,
+):
 	if not is_enabled():
 		return
 
@@ -45,7 +78,7 @@ def capture(event_name, site=None, app=None, user=None, captured_at=None, proper
 
 
 @frappe.whitelist()
-def bulk_capture(events):
+def bulk_capture(events: str | list[dict[str, Any]]):
 	if not is_enabled():
 		return
 
@@ -226,7 +259,9 @@ class EventQueue:
 
 
 @frappe.whitelist()
-def get_debug_info(fetch_events=None, fetch_rate_limited_events=None):
+def get_debug_info(
+	fetch_events: int | str | bool | None = None, fetch_rate_limited_events: int | str | bool | None = None
+):
 	frappe.only_for("System Manager")
 
 	info = frappe._dict()

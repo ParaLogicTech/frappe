@@ -303,7 +303,7 @@ def convert_markdown(doc: "Document"):
 		if field.fieldtype == "Text Editor":
 			value = doc.get(field.fieldname)
 			if value and "<!-- markdown -->" in value:
-				doc.set(field.fieldname, frappe.utils.md_to_html(value))
+				doc.set(field.fieldname, frappe.utils.sanitize_html(frappe.utils.md_to_html(value)))
 
 
 @frappe.whitelist()
@@ -401,10 +401,6 @@ def validate_key(key, doc):
 			raise frappe.exceptions.LinkExpired
 		else:
 			return
-
-	# TODO: Deprecate this! kept it for backward compatibility
-	if frappe.get_system_settings("allow_older_web_view_links") and key == doc.get_signature():
-		return
 
 	return False
 
@@ -717,7 +713,14 @@ window.print();
 // NOTE: doesn't close if print is cancelled in Chrome
 // Changed timeout to 5s from 1s because it blocked mobile view rendering
 setTimeout(function() {
-	window.close();
+	// mobile browsers return from print() while their print dialog is still open
+	if (document.hasFocus()) {
+		window.close();
+	} else {
+		window.addEventListener("focus", function() {
+			window.close();
+		});
+	}
 }, 5000);
 </script>
 """

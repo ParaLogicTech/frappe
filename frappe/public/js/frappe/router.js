@@ -111,6 +111,7 @@ frappe.router = {
 		image: "Image",
 		inbox: "Inbox",
 		file: "Home",
+		home: "Home",
 		map: "Map",
 	},
 	layout_mapped: {},

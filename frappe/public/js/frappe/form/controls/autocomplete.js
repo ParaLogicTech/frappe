@@ -37,7 +37,7 @@ frappe.ui.form.ControlAutocomplete = class ControlAutoComplete extends frappe.ui
 	get_awesomplete_settings() {
 		var me = this;
 		return {
-			// tabSelect: true,
+			tabSelect: false,
 			minChars: 0,
 			maxItems: this.df.max_items || 99,
 			autoFirst: true,
@@ -54,7 +54,8 @@ frappe.ui.form.ControlAutocomplete = class ControlAutoComplete extends frappe.ui
 				};
 			},
 			filter: function (item, input) {
-				let hay = item.label + item.value;
+				const d = this.get_item(item.value);
+				const hay = d.description ? d.label + d.description + d.value : d.label + d.value;
 				return Awesomplete.FILTER_CONTAINS(hay, input);
 			},
 			item: function (item) {
@@ -157,7 +158,7 @@ frappe.ui.form.ControlAutocomplete = class ControlAutoComplete extends frappe.ui
 
 		options = options.map((o) => {
 			if (typeof o !== "string") {
-				o.label = __(cstr(o.label));
+				o.label = __(cstr(o.label)) || cstr(o.value);
 				o.value = cstr(o.value);
 			}
 			return o;
