@@ -450,6 +450,29 @@ class TestNaming(FrappeTestCase):
 			names.append(make_autoname("hash"))
 		self.assertEqual(names, sorted(names))
 
+	def test_series_with_parentheses(self):
+		series = NamingSeries("TEST(A)-.####")
+		series.validate()
+		self.assertRaises(InvalidNamingSeriesError, NamingSeries("TEST[A]-.####").validate)
+
+	def test_series_value_field(self):
+		doc = frappe.new_doc("ToDo", series_no=0)
+		name = make_autoname("TESTSVF-.####", doc=doc, series_value_field="series_no")
+		self.assertEqual(name, f"TESTSVF-{doc.series_no:04d}")
+		current = frappe.db.get_value("Series", "TESTSVF-", "current", order_by=None)
+		self.assertEqual(current, doc.series_no)
+
+		# a value that's already set is used instead of the counter
+		doc = frappe.new_doc("ToDo", series_no=42)
+		self.assertEqual(
+			make_autoname("TESTSVF-.####", doc=doc, series_value_field="series_no"), "TESTSVF-0042"
+		)
+		self.assertEqual(frappe.db.get_value("Series", "TESTSVF-", "current", order_by=None), current)
+
+	def test_date_parts_use_creation(self):
+		doc = frappe._dict(creation="2020-05-17 10:00:00")
+		self.assertEqual(parse_naming_series("TEST-.YYYY.-.MM.-.DD.-", doc=doc), "TEST-2020-05-17-")
+
 
 def parse_naming_series_variable(doc, variable):
 	if variable == "PM":
