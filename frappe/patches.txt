@@ -208,6 +208,7 @@ execute:frappe.delete_doc('Page', 'recorder', ignore_missing=True, force=True)
 frappe.patches.v14_0.modify_value_column_size_for_singles
 execute:frappe.db.sql('update `tabDocType` set grid_page_length = 500')
 frappe.patches.v15_0.remove_integration_request_from_log_settings
+frappe.patches.v15_0.rename_notification_type_to_notification_key
 
 [post_model_sync]
 execute:frappe.get_doc('Role', 'Guest').save() # remove desk access

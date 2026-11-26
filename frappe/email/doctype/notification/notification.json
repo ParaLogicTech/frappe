@@ -18,7 +18,7 @@
   "with_container",
   "filters",
   "subject",
-  "notification_type",
+  "notification_key",
   "email_template",
   "use_email_template",
   "col_break_1",
@@ -298,11 +298,6 @@
    "options": "Markdown\nHTML\nPlain Text"
   },
   {
-   "fieldname": "notification_type",
-   "fieldtype": "Data",
-   "label": "Notification Type"
-  },
-  {
    "fieldname": "column_break_d5m8",
    "fieldtype": "Column Break"
   },
@@ -355,13 +350,18 @@
    "fieldtype": "Select",
    "label": "From Attach Field",
    "mandatory_depends_on": "eval:doc.attach_files === \"From Field\""
+  },
+  {
+   "fieldname": "notification_key",
+   "fieldtype": "Data",
+   "label": "Notification Key"
   }
  ],
  "grid_page_length": 500,
  "icon": "fa fa-envelope",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-22 13:06:41.542265",
+ "modified": "2026-11-25 21:23:15.786151",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Notification",

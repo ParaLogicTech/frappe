@@ -69,7 +69,7 @@ class Notification(Document):
 		message_type: DF.Literal["Markdown", "HTML", "Plain Text"]
 		method: DF.Data | None
 		module: DF.Link | None
-		notification_type: DF.Data | None
+		notification_key: DF.Data | None
 		print_format: DF.Link | None
 		property_value: DF.Data | None
 		recipients: DF.Table[NotificationRecipient]
@@ -294,12 +294,12 @@ def get_context(context):
 			"attached_file": json.dumps(attachments) if attachments else None,
 		}
 
-		notification_type = self.get_notification_type()
-		if notification_type:
+		notification_key = self.get_notification_key()
+		if notification_key:
 			set_notification_last_scheduled(
 				doc.doctype,
 				doc.name,
-				notification_type,
+				notification_key,
 				"System Notification",
 				child_doctype=context.get("child_doctype"),
 				child_name=context.get("child_name"),
@@ -308,7 +308,7 @@ def get_context(context):
 		enqueue_create_notification(
 			users,
 			notification_doc,
-			notification_type=notification_type,
+			notification_key=notification_key,
 			child_doctype=context.get("child_doctype"),
 			child_name=context.get("child_name"),
 			enqueue_after_commit=True,
@@ -365,12 +365,12 @@ def get_context(context):
 				timeline_name=timeline_name,
 			).get("name")
 
-		notification_type = self.get_notification_type()
-		if notification_type:
+		notification_key = self.get_notification_key()
+		if notification_key:
 			set_notification_last_scheduled(
 				doc.doctype,
 				doc.name,
-				notification_type,
+				notification_key,
 				"Email",
 				child_doctype=context.get("child_doctype"),
 				child_name=context.get("child_name"),
@@ -398,7 +398,7 @@ def get_context(context):
 			expose_recipients="header",
 			print_letterhead=print_letterhead,
 			communication=communication,
-			notification_type=notification_type,
+			notification_key=notification_key,
 			with_container=self.with_container,
 		)
 
@@ -421,17 +421,17 @@ def get_context(context):
 		self.flags.message = message
 
 		timeline_doctype, timeline_name = self.get_timeline_doctype_and_name(doc)
-		notification_type = self.get_notification_type()
+		notification_key = self.get_notification_key()
 
 		receiver_list = self.get_receiver_list(doc, context, format_sms=True)
 		if not receiver_list:
 			return
 
-		if notification_type:
+		if notification_key:
 			set_notification_last_scheduled(
 				doc.doctype,
 				doc.name,
-				notification_type,
+				notification_key,
 				"SMS",
 				child_doctype=context.get("child_doctype"),
 				child_name=context.get("child_name"),
@@ -444,7 +444,7 @@ def get_context(context):
 			reference_name=get_reference_name(doc),
 			child_doctype=context.get("child_doctype"),
 			child_name=context.get("child_name"),
-			notification_type=notification_type,
+			notification_key=notification_key,
 			party_doctype=timeline_doctype,
 			party=timeline_name,
 			queue=True,
@@ -540,7 +540,7 @@ def get_context(context):
 	def get_attachment(self, doc) -> list[dict]:
 		"""Check Attachment Settings and return attachments accordingly"""
 
-		hooked_attachment = doc.run_method("get_notification_attachment", self.get_notification_type())
+		hooked_attachment = doc.run_method("get_notification_attachment", self.get_notification_key())
 		if hooked_attachment is not None:
 			return hooked_attachment
 
@@ -625,8 +625,8 @@ def get_context(context):
 	def on_trash(self):
 		frappe.cache.hdel("notifications", self.document_type)
 
-	def get_notification_type(self):
-		return self.get("notification_type") or self.name
+	def get_notification_key(self):
+		return self.get("notification_key") or self.name
 
 
 @frappe.whitelist()
@@ -674,10 +674,10 @@ def evaluate_alert(doc: Document, alert, event, context=None):
 			if not frappe.safe_eval(alert.condition, get_safe_globals(), condition_context):
 				return
 
-		notification_type = alert.get_notification_type()
+		notification_key = alert.get_notification_key()
 		validation = run_validate_notification(
 			doc,
-			notification_type,
+			notification_key,
 			child_doctype=context.get("child_doctype"),
 			child_name=context.get("child_name"),
 			throw=False,
@@ -689,7 +689,7 @@ def evaluate_alert(doc: Document, alert, event, context=None):
 			notification_count = get_notification_last_scheduled(
 				doc.doctype,
 				doc.name,
-				notification_type,
+				notification_key,
 				alert.channel,
 				child_doctype=context.get("child_doctype"),
 				child_name=context.get("child_name"),
@@ -743,11 +743,11 @@ def get_doc_for_notification_triggers(reference_doctype, reference_name):
 		pass
 
 
-def run_validate_notification(doc, notification_type=None, child_doctype=None, child_name=None, throw=True):
-	notification_type = cstr(notification_type)
+def run_validate_notification(doc, notification_key=None, child_doctype=None, child_name=None, throw=True):
+	notification_key = cstr(notification_key)
 	validation = doc.run_method(
 		"validate_notification",
-		notification_type=notification_type,
+		notification_key=notification_key,
 		child_doctype=child_doctype,
 		child_name=child_name,
 		throw=throw,
@@ -759,21 +759,21 @@ def run_validate_notification(doc, notification_type=None, child_doctype=None, c
 		return cint(validation)
 
 
-def has_notification(reference_doctype, notification_type=None, trigger_method=None):
+def has_notification(reference_doctype, notification_key=None, trigger_method=None):
 	if trigger_method and Document.has_method(reference_doctype, trigger_method):
 		return True
 
-	notification_type = cstr(notification_type)
+	notification_key = cstr(notification_key)
 
 	template = frappe.db.sql_list(
 		"""
 		select name
 		from `tabNotification`
-		where document_type = %s and ifnull(notification_type, '') = %s
+		where document_type = %s and ifnull(notification_key, '') = %s
 			and enabled = 1
 		limit 1
 	""",
-		[reference_doctype, notification_type],
+		[reference_doctype, notification_key],
 	)
 
 	return len(template) > 0

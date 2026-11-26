@@ -24,7 +24,7 @@ class SMSQueue(Document):
 		error: DF.Code | None
 		is_promotional: DF.Check
 		message: DF.SmallText | None
-		notification_type: DF.Data | None
+		notification_key: DF.Data | None
 		party: DF.DynamicLink | None
 		party_doctype: DF.Link | None
 		priority: DF.Int
@@ -88,7 +88,7 @@ def send_one(sms_queue, auto_commit=True, now=False, from_test=False):
 	sms_queue = frappe.db.sql(
 		"""
 		select name, status, message, sender, reference_doctype, reference_name, retry, party_doctype, party,
-			child_doctype, child_name, notification_type, communication
+			child_doctype, child_name, notification_key, communication
 		from `tabSMS Queue`
 		where name = %s
 		for update
@@ -237,7 +237,7 @@ def prepare_sms(sms_queue, recipient):
 			"receiver_list": [recipient],
 			"message": sms_queue.message,
 			"success_msg": False,
-			"notification_type": sms_queue.notification_type,
+			"notification_key": sms_queue.notification_key,
 			"reference_doctype": sms_queue.reference_doctype,
 			"reference_name": sms_queue.reference_name,
 			"party_doctype": sms_queue.party_doctype,

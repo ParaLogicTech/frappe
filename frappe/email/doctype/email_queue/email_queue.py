@@ -61,7 +61,7 @@ class EmailQueue(Document):
 		expose_recipients: DF.Data | None
 		message: DF.Code | None
 		message_id: DF.SmallText | None
-		notification_type: DF.Data | None
+		notification_key: DF.Data | None
 		priority: DF.Int
 		recipients: DF.Table[EmailQueueRecipient]
 		reference_doctype: DF.Link | None
@@ -129,11 +129,11 @@ class EmailQueue(Document):
 		if status == "Sent":
 			from frappe.core.doctype.notification_count.notification_count import add_notification_count
 
-			if self.reference_doctype and self.reference_name and self.notification_type:
+			if self.reference_doctype and self.reference_name and self.notification_key:
 				add_notification_count(
 					self.reference_doctype,
 					self.reference_name,
-					self.notification_type,
+					self.notification_key,
 					"Email",
 					child_doctype=self.child_doctype,
 					child_name=self.child_name,
@@ -183,7 +183,7 @@ class EmailQueue(Document):
 			return
 
 		with SendMailContext(self, smtp_server_instance) as ctx:
-			if self.reference_doctype and self.reference_name and self.notification_type:
+			if self.reference_doctype and self.reference_name and self.notification_key:
 				from frappe.email.doctype.notification.notification import (
 					get_doc_for_notification_triggers,
 					run_validate_notification,
@@ -193,7 +193,7 @@ class EmailQueue(Document):
 				if doc:
 					run_validate_notification(
 						doc,
-						self.notification_type,
+						self.notification_key,
 						child_doctype=self.child_doctype,
 						child_name=self.child_name,
 						throw=True,
@@ -553,7 +553,7 @@ class QueueBuilder:
 		email_read_tracker_url=None,
 		x_priority: Literal[1, 3, 5] = 3,
 		email_headers=None,
-		notification_type=None,
+		notification_key=None,
 		child_doctype=None,
 		child_name=None,
 	):
@@ -624,7 +624,7 @@ class QueueBuilder:
 		self.print_letterhead = print_letterhead
 		self.email_read_tracker_url = email_read_tracker_url
 		self.email_headers = email_headers
-		self.notification_type = notification_type
+		self.notification_key = notification_key
 		self.child_doctype = child_doctype
 		self.child_name = child_name
 
@@ -892,7 +892,7 @@ class QueueBuilder:
 			"show_as_bcc": ",".join(self.final_bcc()),
 			"email_account": email_account_name or None,
 			"email_read_tracker_url": self.email_read_tracker_url,
-			"notification_type": self.notification_type,
+			"notification_key": self.notification_key,
 			"child_doctype": self.child_doctype,
 			"child_name": self.child_name,
 		}

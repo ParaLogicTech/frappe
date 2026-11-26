@@ -18,14 +18,14 @@ class SMSTemplate(Document):
 
 		enabled: DF.Check
 		message: DF.Text
-		notification_type: DF.Data | None
+		notification_key: DF.Data | None
 		reference_doctype: DF.Link
 
 	# end: auto-generated types
 	def autoname(self):
 		self.name = self.reference_doctype
-		if self.notification_type:
-			self.name += "-" + self.notification_type
+		if self.notification_key:
+			self.name += "-" + self.notification_key
 
 	def get_rendered_message(self, context=None, doc=None):
 		context = get_context(context, doc)
@@ -37,7 +37,7 @@ class SMSTemplate(Document):
 def get_sms_defaults(
 	dt: str,
 	dn: str,
-	notification_type: str | None = None,
+	notification_key: str | None = None,
 	contact: str | None = None,
 	mobile_no: str | None = None,
 	party_doctype: str | None = None,
@@ -46,7 +46,7 @@ def get_sms_defaults(
 	if not mobile_no and (contact or party_doctype or party):
 		mobile_no = get_contact_number(contact, party_doctype, party)
 
-	sms_template = get_sms_template(dt, notification_type)
+	sms_template = get_sms_template(dt, notification_key)
 
 	message = ""
 	if sms_template:
@@ -59,8 +59,8 @@ def get_sms_defaults(
 	}
 
 
-def get_sms_template_message(notification_type=None, doc=None, context=None):
-	sms_template = get_sms_template(doc.doctype, notification_type)
+def get_sms_template_message(notification_key=None, doc=None, context=None):
+	sms_template = get_sms_template(doc.doctype, notification_key)
 	if not sms_template:
 		return ""
 
@@ -68,17 +68,17 @@ def get_sms_template_message(notification_type=None, doc=None, context=None):
 	return sms_template.get_rendered_message(context=context)
 
 
-def get_sms_template(reference_doctype, notification_type=None):
-	notification_type = cstr(notification_type)
+def get_sms_template(reference_doctype, notification_key=None):
+	notification_key = cstr(notification_key)
 
 	template = frappe.db.sql_list(
 		"""
 		select name
 		from `tabSMS Template`
-		where reference_doctype = %s and ifnull(notification_type, '') = %s and enabled = 1
+		where reference_doctype = %s and ifnull(notification_key, '') = %s and enabled = 1
 		limit 1
 	""",
-		[reference_doctype, notification_type],
+		[reference_doctype, notification_key],
 	)
 
 	if template:
