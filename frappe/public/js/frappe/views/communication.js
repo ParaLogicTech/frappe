@@ -242,7 +242,7 @@ frappe.views.CommunicationComposer = class {
 		let print_format_lang;
 		if (print_format != "Standard") {
 			print_format_lang = frappe.get_doc(
-				"Print Format",
+				":Print Format",
 				print_format
 			)?.default_print_language;
 		}
@@ -547,8 +547,8 @@ frappe.views.CommunicationComposer = class {
 			format = this.selected_format();
 		}
 
-		if (locals["Print Format"] && locals["Print Format"][format]) {
-			return locals["Print Format"][format];
+		if (locals[":Print Format"] && locals[":Print Format"][format]) {
+			return locals[":Print Format"][format];
 		} else {
 			return {};
 		}
@@ -652,8 +652,10 @@ frappe.views.CommunicationComposer = class {
 	}
 
 	get_attachment_row(attachment, checked) {
+		const file_name = frappe.utils.escape_html(attachment.file_name);
+		const file_url = frappe.utils.escape_html(attachment.file_url);
 		return $(`<p class="checkbox flex">
-			<label title="${attachment.file_name}" style="max-width: 100%">
+			<label title="${file_name}" style="max-width: 100%">
 				<input
 					type="checkbox"
 					data-file-name="${attachment.name}"
@@ -663,10 +665,10 @@ frappe.views.CommunicationComposer = class {
 					class="ellipsis"
 					style="max-width: calc(100% - var(--checkbox-size) - var(--checkbox-right-margin) - var(--padding-xs) - 16px)"
 				>
-					${attachment.file_name}
+					${file_name}
 				</span>
 				<a
-					href="${attachment.file_url}"
+					href="${file_url}"
 					target="_blank"
 					class="btn-link"
 					style="padding-left: var(--padding-xs)"

@@ -228,7 +228,6 @@ $.extend(frappe.meta, {
 			owner: __("Created By"),
 			_user_tags: __("Tags"),
 			_liked_by: __("Liked By"),
-			_comments: __("Comments"),
 			_assign: __("Assigned To"),
 		};
 		if (standard[fn]) {
@@ -237,6 +236,28 @@ $.extend(frappe.meta, {
 			var df = this.get_docfield(dt, fn, dn);
 			return (df ? df.label : "") || fn;
 		}
+	},
+
+	get_translated_label: function (dt, fn, dn) {
+		if (
+			[
+				"name",
+				"creation",
+				"docstatus",
+				"idx",
+				"modified",
+				"modified_by",
+				"owner",
+				"_user_tags",
+				"_liked_by",
+				"_comments",
+				"_assign",
+			].includes(fn)
+		) {
+			return frappe.meta.get_label(dt, fn, dn);
+		}
+
+		return __(frappe.meta.get_label(dt, fn, dn), null, dt);
 	},
 
 	get_print_sizes: function () {
@@ -283,7 +304,7 @@ $.extend(frappe.meta, {
 			"Print Settings"
 		).enable_raw_printing;
 		var print_formats = frappe
-			.get_list("Print Format", { doc_type: doctype })
+			.get_list(":Print Format", { doc_type: doctype })
 			.sort(function (a, b) {
 				return a > b ? 1 : -1;
 			});
@@ -352,7 +373,8 @@ $.extend(frappe.meta, {
 		} else if (df && df.fieldtype === "Currency") {
 			precision = cint(frappe.defaults.get_default("currency_precision"));
 			if (!precision) {
-				var number_format = get_number_format();
+				var currency = frappe.meta.get_field_currency(df, doc);
+				var number_format = get_number_format(currency);
 				var number_format_info = get_number_format_info(number_format);
 				precision = number_format_info.precision;
 			}

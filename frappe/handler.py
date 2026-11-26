@@ -40,6 +40,9 @@ ALLOWED_MIMETYPES = (
 	"video/quicktime",
 	"video/mp4",
 	"text/csv",
+	"audio/mp4",
+	"audio/webm",
+	"audio/ogg",
 )
 
 
@@ -162,6 +165,7 @@ def uploadfile():
 			if frappe.form_dict.get("method"):
 				method = frappe.get_attr(frappe.form_dict.method)
 				is_whitelisted(method)
+				is_valid_http_method(method)
 				ret = method()
 	except Exception:
 		frappe.errprint(frappe.utils.get_traceback())
@@ -246,6 +250,7 @@ def upload_file():
 	if method:
 		method = frappe.get_attr(method)
 		is_whitelisted(method)
+		is_valid_http_method(method)
 		return method()
 	else:
 		return frappe.get_doc(
@@ -332,6 +337,8 @@ def run_doc_method(method, docs=None, dt=None, dn=None, arg=None, args=None):
 	else:
 		docs = frappe.parse_json(docs)
 		doc = frappe.get_doc(docs)
+		if not doc.is_new() or doc.meta.issingle or frappe.db.exists(doc.doctype, doc.name):
+			frappe.has_permission(doc.doctype, "read", doc.name, throw=True)
 		doc._original_modified = doc.modified
 		doc.check_if_latest(check_docstatus_transition=False)
 

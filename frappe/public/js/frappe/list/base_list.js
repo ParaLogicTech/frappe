@@ -675,6 +675,9 @@ class FilterArea {
 	refresh_list_view() {
 		if (this.trigger_refresh) {
 			this.list_view.start = 0;
+			// a filter change must reload: no_change can match a request made before the
+			// filters were set and leave the filtered rows on screen
+			this.list_view.last_args = null;
 			this.list_view.refresh();
 			this.list_view.on_filter_change();
 		}
@@ -852,6 +855,7 @@ class FilterArea {
 					"Long Text",
 					"Text Editor",
 					"HTML Editor",
+					"Markdown Editor",
 					"Data",
 					"Code",
 					"Phone",

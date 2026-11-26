@@ -18,9 +18,11 @@ class SMSSettings(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
+		from frappe.core.doctype.has_role.has_role import HasRole
 		from frappe.core.doctype.sms_parameter.sms_parameter import SMSParameter
 		from frappe.types import DF
 
+		allowed_roles: DF.Table[HasRole]
 		error_message: DF.Code | None
 		message_parameter: DF.Data
 		number_formatter: DF.Code | None
@@ -33,8 +35,53 @@ class SMSSettings(Document):
 	pass
 
 
+def check_sms_permission():
+	user_roles = set(frappe.get_roles())
+	if "System Manager" in user_roles:
+		return
+
+	allowed_roles = {d.role for d in frappe.get_single("SMS Settings").get("allowed_roles") if d.role}
+	if not user_roles & allowed_roles:
+		frappe.throw(_("You are not permitted to send SMS"), frappe.PermissionError)
+
+
 @frappe.whitelist()
 def send_sms(
+	receiver_list: str | list[str],
+	message: str,
+	notification_key: str | None = None,
+	reference_doctype: str | None = None,
+	reference_name: str | None = None,
+	child_doctype: str | None = None,
+	child_name: str | None = None,
+	party_doctype: str | None = None,
+	party: str | None = None,
+	is_promotional: bool = False,
+	queue: bool = False,
+	queue_separately: bool = False,
+	send_after: str | datetime | None = None,
+	priority: int = 1,
+):
+	check_sms_permission()
+	return queue_or_send_sms(
+		receiver_list=receiver_list,
+		message=message,
+		notification_key=notification_key,
+		reference_doctype=reference_doctype,
+		reference_name=reference_name,
+		child_doctype=child_doctype,
+		child_name=child_name,
+		party_doctype=party_doctype,
+		party=party,
+		is_promotional=is_promotional,
+		queue=queue,
+		queue_separately=queue_separately,
+		send_after=send_after,
+		priority=priority,
+	)
+
+
+def queue_or_send_sms(
 	receiver_list: str | list[str],
 	message: str,
 	success_msg: bool = True,
@@ -278,10 +325,15 @@ def send_request(gateway_url, params, headers=None, use_post=False, use_json=Fal
 	else:
 		kwargs["params"] = params
 
-	if use_post:
-		response = requests.post(gateway_url, **kwargs)
-	else:
-		response = requests.get(gateway_url, **kwargs)
+	try:
+		if use_post:
+			response = requests.post(gateway_url, **kwargs)
+		else:
+			response = requests.get(gateway_url, **kwargs)
+	except requests.RequestException as e:
+		# the exception text carries the gateway URL, which can include credentials
+		frappe.log_error(title="SMS gateway request failed", message=type(e).__name__)
+		raise frappe.ValidationError(_("SMS gateway request failed")) from None
 
 	return response
 

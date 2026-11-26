@@ -51,7 +51,7 @@ from .utils.jinja import (
 )
 from .utils.lazy_loader import lazy_import
 
-__version__ = "15.112.1"
+__version__ = "15.128.0"
 __title__ = "Frappe Framework"
 
 # This if block is never executed when running the code. It is only used for
@@ -136,6 +136,11 @@ def _(msg: str, lang: str | None = None, context: str | None = None) -> str:
 	return non_translated_string
 
 
+def N_(msg: str, context: str | None = None) -> str:
+	"""Mark a string for translation extraction without translating it."""
+	return msg
+
+
 def _lt(msg: str, lang: str | None = None, context: str | None = None):
 	"""Lazily translate a string.
 
@@ -208,7 +213,6 @@ def init(site: str, sites_path: str = ".", new_site: bool = False, force=False) 
 			"currently_saving": [],
 			"redirect_location": "",
 			"in_install_db": False,
-			"in_install_app": False,
 			"in_import": False,
 			"in_test": False,
 			"mute_messages": False,
@@ -239,7 +243,6 @@ def init(site: str, sites_path: str = ".", new_site: bool = False, force=False) 
 
 	local.user = None
 	local.user_perms = None
-	local.session = None
 	local.role_permissions = {}
 	local.valid_columns = {}
 	local.new_doc_templates = {}
@@ -250,8 +253,8 @@ def init(site: str, sites_path: str = ".", new_site: bool = False, force=False) 
 	local.cache = {}
 	local.form_dict = _dict()
 	local.preload_assets = {"style": [], "script": [], "icons": []}
-	local.session = _dict()
-	local.dev_server = _dev_server
+	local.session = _dict(user="Guest")
+	local.dev_server = _dev_server  # only for backwards compatibility
 	local.qb = get_query_builder(local.conf.db_type)
 	local.qb.get_query = get_query
 	setup_redis_cache_connection()
@@ -290,6 +293,7 @@ def connect(site: str | None = None, db_name: str | None = None, set_admin_as_us
 		password=local.conf.db_password,
 		cur_db_name=local.conf.db_name or db_name,
 	)
+
 	if set_admin_as_user:
 		set_user("Administrator")
 
@@ -723,6 +727,8 @@ def sendmail(
 	notification_key=None,
 	child_doctype=None,
 	child_name=None,
+	redact_message_after_send=False,
+	auto_submitted=None,
 ) -> Optional["EmailQueue"]:
 	"""Send email using user's default **Email Account** or global default **Email Account**.
 
@@ -741,7 +747,7 @@ def sendmail(
 	:param attachments: List of attachments.
 	:param reply_to: Reply-To Email Address.
 	:param message_id: Used for threading. If a reply is received to this email, Message-Id is sent back as In-Reply-To in received email.
-	:param in_reply_to: Used to send the Message-Id of a received email back as In-Reply-To.
+	:param in_reply_to: Name of the Communication this email replies to. Its Message-Id is sent as In-Reply-To.
 	:param send_after: Send after the given datetime.
 	:param expose_recipients: Display all recipients in the footer message - "This email was sent to"
 	:param communication: Communication link to be set in Email Queue record
@@ -752,6 +758,8 @@ def sendmail(
 	:param with_container: Wraps email inside a styled container
 	:param x_priority: 1 = HIGHEST, 3 = NORMAL, 5 = LOWEST
 	:param email_headers: Additional headers to be added in the email, e.g. {"X-Custom-Header": "value"} or {"Custom-Header": "value"}. Automatically prepends "X-" to the header name if not present.
+	:param redact_message_after_send: Replace the message body with a placeholder once sent, for emails carrying sensitive content.
+	:param auto_submitted: Value of the `Auto-Submitted` header (RFC 3834), e.g. "auto-replied".
 	"""
 
 	if recipients is None:
@@ -774,6 +782,9 @@ def sendmail(
 
 	if not delayed:
 		now = True
+
+	if communication and not (recipients or cc or bcc):
+		throw(_("At least one recipient is required"))
 
 	from frappe.email.doctype.email_queue.email_queue import QueueBuilder
 
@@ -812,6 +823,8 @@ def sendmail(
 		notification_key=notification_key,
 		child_doctype=child_doctype,
 		child_name=child_name,
+		redact_message_after_send=redact_message_after_send,
+		auto_submitted=auto_submitted,
 	)
 
 	# build email queue and send the email if send_now is True.
@@ -918,6 +931,7 @@ def read_only():
 def write_only():
 	# if replica connection exists, we have to replace it momentarily with the primary connection
 	def innfn(fn):
+		@functools.wraps(fn)
 		def wrapper_fn(*args, **kwargs):
 			primary_db = getattr(local, "primary_db", None)
 			replica_db = getattr(local, "replica_db", None)
@@ -1004,6 +1018,7 @@ def clear_cache(user: str | None = None, doctype: str | None = None):
 
 		reset_metadata_version()
 		local.cache = {}
+		local.valid_columns = {}
 		local.new_doc_templates = {}
 
 		for fn in get_hooks("clear_cache"):
@@ -1603,10 +1618,6 @@ def _load_app_hooks(app_name: str | None = None):
 		try:
 			app_hooks = get_module(f"{app}.hooks")
 		except ImportError as e:
-			if local.flags.in_install_app:
-				# if app is not installed while restoring
-				# ignore it
-				pass
 			print(f'Could not find app "{app}": \n{e}')
 			raise
 

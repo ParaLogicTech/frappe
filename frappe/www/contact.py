@@ -68,21 +68,26 @@ def process_contact_message(
 			)
 
 		# Acknowledgement / Confirmation Email
-		subject = "We've received your query!"
-		content = f"<div style='white-space: pre-wrap'>Thank you for reaching out to us. We will get back to you at the earliest.\n\n\nYour query:\n\n{message}</div>"
+		if frappe.db.get_single_value("Contact Us Settings", "send_acknowledgement_email"):
+			# the default reply doesn't quote the query, so a guest can't make the site send arbitrary text
+			subject = _("We've received your query!")
+			reply = _("Thank you for reaching out to us. We will get back to you at the earliest.")
+			content = f"<div style='white-space: pre-wrap'>{reply}</div>"
 
-		if email_template := frappe.db.get_single_value("Contact Us Settings", "confirmation_email_template"):
-			email_template_doc = frappe.get_cached_doc("Email Template", email_template)
-			formatted_template = email_template_doc.get_formatted_email(context)
+			if email_template := frappe.db.get_single_value(
+				"Contact Us Settings", "confirmation_email_template"
+			):
+				email_template_doc = frappe.get_cached_doc("Email Template", email_template)
+				formatted_template = email_template_doc.get_formatted_email(context)
 
-			subject = formatted_template["subject"]
-			content = formatted_template["message"]
+				subject = formatted_template["subject"]
+				content = formatted_template["message"]
 
-		frappe.sendmail(
-			recipients=sender,
-			subject=subject,
-			content=content,
-		)
+			frappe.sendmail(
+				recipients=sender,
+				subject=subject,
+				content=content,
+			)
 
 	# for clearing outgoing email error message
 	frappe.clear_last_message()

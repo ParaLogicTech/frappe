@@ -55,11 +55,15 @@ jobs:
   deps-vulnerable-check:
     name: 'Vulnerable Dependency Check'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11']
 
     steps:
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.14'
+          python-version: ${{ matrix.python-version }}
 
       - uses: actions/checkout@v4
 
@@ -67,13 +71,13 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py') }}
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
-            ${{ runner.os }}-
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
 
       - name: Install and run pip-audit
+        # CVE-2025-26240: no fix available upstream, but vulnerable `_find_options_in_meta` is monkey-patched in frappe (b828efe)
         run: |
           pip install pip-audit
           cd ${GITHUB_WORKSPACE}
-          pip-audit --desc on --ignore-vuln GHSA-4xqq-73wg-5mjp --ignore-vuln PYSEC-2023-312 .
+          pip-audit --desc on --ignore-vuln GHSA-4xqq-73wg-5mjp --ignore-vuln PYSEC-2023-312 --ignore-vuln CVE-2025-26240 .

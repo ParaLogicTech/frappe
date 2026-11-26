@@ -1,19 +1,24 @@
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 import datetime
+import inspect
 import time
+from unittest.mock import patch
 
 import requests
+from werkzeug.test import EnvironBuilder
+from werkzeug.wrappers import Request
 
 import frappe
-from frappe.auth import LoginAttemptTracker
+from frappe.auth import LoginAttemptTracker, validate_api_key_secret, validate_auth
+from frappe.core.doctype.user.user import generate_keys
 from frappe.frappeclient import AuthError, FrappeClient
 from frappe.sessions import Session, get_expired_sessions, get_expiry_in_seconds
 from frappe.tests.test_api import FrappeAPITestCase
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests.utils import FrappeTestCase, change_settings
 from frappe.utils import get_datetime, get_site_url, now
 from frappe.utils.data import add_to_date
-from frappe.www.login import _generate_temporary_login_link
+from frappe.www.login import _generate_temporary_login_link, _send_login_link, send_login_link
 
 
 def add_user(email, password, username=None, mobile_no=None):
@@ -159,6 +164,27 @@ class TestAuth(FrappeTestCase):
 		else:
 			self.fail("Rate limting not working")
 
+	def test_login_link_is_sent_from_a_job(self):
+		for email in (self.test_user_email, "no-such-user@example.com"):
+			with (
+				change_settings("System Settings", login_with_email_link=1),
+				patch("frappe.enqueue") as enqueue,
+				patch("frappe.sendmail") as sendmail,
+			):
+				inspect.unwrap(send_login_link)(email)
+
+			enqueue.assert_called_once()
+			self.assertEqual(enqueue.call_args.kwargs["lang"], frappe.local.lang)
+			sendmail.assert_not_called()
+
+	def test_login_link_job_uses_the_request_language(self):
+		self.addCleanup(setattr, frappe.local, "lang", frappe.local.lang)
+		sent_in = []
+		with patch("frappe.sendmail", side_effect=lambda **kwargs: sent_in.append(frappe.local.lang)):
+			_send_login_link(self.test_user_email, "de")
+
+		self.assertEqual(sent_in, ["de"])
+
 	def test_correct_cookie_expiry_set(self):
 		import pytz
 
@@ -167,6 +193,95 @@ class TestAuth(FrappeTestCase):
 		expiry_time = next(x for x in client.session.cookies if x.name == "sid").expires
 		current_time = datetime.datetime.now(tz=pytz.UTC).timestamp()
 		self.assertAlmostEqual(get_expiry_in_seconds(), expiry_time - current_time, delta=60 * 60)
+
+
+class TestAPIKeyAuthFailureLog(FrappeTestCase):
+	"""Failed API key authentication is written to the Activity Log, a bounded number of times."""
+
+	SUBJECT = "API key authentication failed%"
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		cls.user_email = "test_api_auth_failure@example.com"
+		if not frappe.db.exists("User", cls.user_email):
+			frappe.get_doc(doctype="User", email=cls.user_email, first_name="API Auth Failure").insert(
+				ignore_permissions=True
+			)
+		cls.api_secret = generate_keys(cls.user_email)["api_secret"]
+		cls.api_key = frappe.db.get_value("User", cls.user_email, "api_key")
+
+	def setUp(self):
+		self._request = getattr(frappe.local, "request", None)
+		self._request_ip = getattr(frappe.local, "request_ip", None)
+		self._login_manager = getattr(frappe.local, "login_manager", None)
+		self.addCleanup(self._restore)
+		self._reset()
+
+	def _restore(self):
+		frappe.local.request = self._request
+		frappe.local.request_ip = self._request_ip
+		frappe.local.login_manager = self._login_manager
+		frappe.set_user("Administrator")
+		self._reset()
+
+	def _reset(self):
+		frappe.db.delete("Activity Log", {"subject": ["like", self.SUBJECT]})
+		frappe.db.commit()
+		frappe.cache.delete_value(
+			[f"api_auth_failure_logged:{self.user_email}", "api_auth_failure_logged:unknown"]
+		)
+
+	def _entries(self):
+		return frappe.get_all(
+			"Activity Log",
+			filters={"subject": ["like", self.SUBJECT]},
+			fields=["user", "status", "operation", "subject", "ip_address"],
+		)
+
+	def _request_with(self, api_key, api_secret, request_ip="10.0.0.1"):
+		env = EnvironBuilder(headers={"Authorization": f"token {api_key}:{api_secret}"}).get_environ()
+		frappe.local.request = Request(env)
+		frappe.local.request_ip = request_ip
+		frappe.local.login_manager = frappe._dict(user="Guest")
+		frappe.set_user("Guest")
+
+	def _fail_with(self, api_key, api_secret, **kwargs):
+		self._request_with(api_key, api_secret, **kwargs)
+		with self.assertRaises(frappe.AuthenticationError):
+			validate_auth()
+
+	def test_failed_api_key_auth_is_logged_without_the_credentials(self):
+		self._fail_with(self.api_key, "not-the-secret")
+		self._fail_with("unknown-key-123", "unknown-secret-456")
+
+		entries = {entry.user: entry for entry in self._entries()}
+		self.assertEqual(len(entries), 2)
+
+		known = entries[self.user_email]
+		self.assertEqual(known.status, "Failed")
+		self.assertEqual(known.ip_address, "10.0.0.1")
+		self.assertEqual(known.subject, "API key authentication failed: invalid API secret")
+
+		unknown = next(entry for user, entry in entries.items() if user != self.user_email)
+		self.assertEqual(unknown.subject, "API key authentication failed: invalid API key")
+		for entry in entries.values():
+			for sent in ("not-the-secret", "unknown-key-123", "unknown-secret-456", self.api_key):
+				self.assertNotIn(sent, frappe.as_json(entry))
+
+	def test_repeated_failures_are_logged_once_per_interval(self):
+		for i in range(5):
+			self._fail_with(self.api_key, "not-the-secret")
+			self._fail_with(f"unknown-key-{i}", "x")
+
+		self.assertEqual(len(self._entries()), 2)
+
+	def test_failed_key_lookup_is_rejected_without_a_log_entry(self):
+		self._request_with(self.api_key, "x")
+		with self.assertRaises(frappe.AuthenticationError):
+			validate_api_key_secret(self.api_key, "x", frappe_authorization_source="ToDo")
+
+		self.assertEqual(self._entries(), [])
 
 
 class TestLoginAttemptTracker(FrappeTestCase):
@@ -230,3 +345,93 @@ class TestSessionExpiry(FrappeAPITestCase):
 		with self.freeze_time(time_of_expiry):
 			self.assertIn(sid, get_expired_sessions())
 			self.assertFalse(s.get_session_data_from_db())
+
+
+class TestIPRestrictionForAPIAuth(FrappeTestCase):
+	"""Header-authenticated requests must honour the user's `restrict_ip` allowlist.
+
+	`validate_ip_address` runs in `LoginManager.post_login` for interactive logins and in
+	`Session.resume` for cookie-based requests. A request authenticated purely from an
+	`Authorization` header takes neither path, so `validate_auth` has to enforce it.
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		cls.user_email = "test_api_ip_restriction@test.com"
+		if not frappe.db.exists("User", cls.user_email):
+			frappe.get_doc(doctype="User", email=cls.user_email, first_name="API IP Restricted").insert(
+				ignore_permissions=True
+			)
+
+		cls.api_secret = generate_keys(cls.user_email)["api_secret"]
+		cls.api_key = frappe.db.get_value("User", cls.user_email, "api_key")
+		frappe.db.commit()
+
+	def setUp(self):
+		self._request = getattr(frappe.local, "request", None)
+		self._request_ip = getattr(frappe.local, "request_ip", None)
+		self._login_manager = getattr(frappe.local, "login_manager", None)
+		self.addCleanup(self._restore)
+
+	def _restore(self):
+		frappe.local.request = self._request
+		frappe.local.request_ip = self._request_ip
+		frappe.local.login_manager = self._login_manager
+		frappe.set_user("Administrator")
+
+	def _authenticated_request_from(self, request_ip):
+		"""Simulate an unauthenticated request carrying an API key/secret token."""
+		from werkzeug.test import EnvironBuilder
+		from werkzeug.wrappers import Request
+
+		env = EnvironBuilder(
+			headers={"Authorization": f"token {self.api_key}:{self.api_secret}"}
+		).get_environ()
+		frappe.local.request = Request(env)
+		frappe.local.request_ip = request_ip
+		frappe.local.login_manager = frappe._dict(user="Guest")
+		frappe.set_user("Guest")
+
+	def _set_restrict_ip(self, value):
+		frappe.db.set_value("User", self.user_email, "restrict_ip", value)
+		frappe.clear_cache(user=self.user_email)
+
+	def test_api_auth_blocked_from_disallowed_ip(self):
+		self._set_restrict_ip("192.168.255.254")
+		self._authenticated_request_from("10.0.0.1")
+
+		with self.assertRaises(frappe.AuthenticationError):
+			validate_auth()
+
+	def test_api_auth_allowed_from_allowed_ip(self):
+		self._set_restrict_ip("10.0.0.1")
+		self._authenticated_request_from("10.0.0.1")
+
+		validate_auth()
+		self.assertEqual(frappe.session.user, self.user_email)
+
+	def test_api_auth_unaffected_without_ip_restriction(self):
+		self._set_restrict_ip("")
+		self._authenticated_request_from("10.0.0.1")
+
+		validate_auth()
+		self.assertEqual(frappe.session.user, self.user_email)
+
+	def test_auth_hook_user_without_user_record(self):
+		from unittest.mock import patch
+
+		from werkzeug.test import EnvironBuilder
+		from werkzeug.wrappers import Request
+
+		frappe.local.request = Request(EnvironBuilder().get_environ())
+		frappe.local.request_ip = "10.0.0.1"
+		frappe.set_user("Guest")
+
+		with patch(
+			"frappe.auth.validate_auth_via_hooks",
+			side_effect=lambda: frappe.set_user("no-such-user@example.com"),
+		):
+			validate_auth()
+
+		self.assertEqual(frappe.session.user, "no-such-user@example.com")

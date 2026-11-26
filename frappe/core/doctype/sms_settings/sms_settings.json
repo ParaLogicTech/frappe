@@ -17,7 +17,9 @@
   "column_break_9",
   "error_message",
   "number_formatting_section",
-  "number_formatter"
+  "number_formatter",
+  "allowed_roles_section",
+  "allowed_roles"
  ],
  "fields": [
   {
@@ -100,13 +102,24 @@
    "label": "Number Formatting Expression",
    "max_height": "100px",
    "options": "Python"
+  },
+  {
+   "fieldname": "allowed_roles_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "Only users with one of these roles can send SMS. Leave empty to allow only System Manager.",
+   "fieldname": "allowed_roles",
+   "fieldtype": "Table",
+   "label": "Allowed Roles",
+   "options": "Has Role"
   }
  ],
  "icon": "fa fa-cog",
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-01-24 16:42:38.743280",
+ "modified": "2026-08-31 10:48:45.735288",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "SMS Settings",
@@ -120,7 +133,8 @@
    "write": 1
   }
  ],
- "sort_field": "modified",
+ "row_format": "Dynamic",
+ "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
  "track_changes": 1

@@ -45,6 +45,25 @@ def get_files_list(pr_number, repo="frappe/frappe"):
 	return [change["filename"] for change in fetch_pr_data(pr_number, repo, "files")]
 
 
+def get_queue_files(repo, base, head):
+	"""Files a merge queue group changes, or None when GitHub cuts the list short."""
+	files = json.loads(req(f"https://api.github.com/repos/{repo}/compare/{base}...{head}").read())["files"]
+	if len(files) >= 300:
+		return None
+	return [
+		name for change in files for name in (change["filename"], change.get("previous_filename")) if name
+	]
+
+
+def queue_runs(build_type, files):
+	if files is None or any(is_ci(f) for f in files):
+		return True
+	files = [f for f in files if f.endswith(".csv") or not is_docs(f)]
+	if build_type == "server":
+		return any(not is_frontend_code(f) for f in files)
+	return any(not is_py(f) for f in files)
+
+
 def get_output(command, shell=True):
 	print(command)
 	command = shlex.split(command)
@@ -61,6 +80,11 @@ def has_run_server_tests_label(pr_number, repo="frappe/frappe"):
 
 def has_run_ui_tests_label(pr_number, repo="frappe/frappe"):
 	return has_label(pr_number, "Run UI Tests", repo)
+
+
+def is_hotfix_pr(pr_number, repo="frappe/frappe"):
+	"""Check if the PR targets a hotfix branch, whose tests run on the weekly release PR instead."""
+	return fetch_pr_data(pr_number, repo)["base"]["ref"].endswith("-hotfix")
 
 
 def has_label(pr_number, label, repo="frappe/frappe"):
@@ -82,19 +106,56 @@ def is_ci(file):
 
 
 def is_frontend_code(file):
+	if os.path.basename(file) in ("package.json", "yarn.lock") and not file.startswith("frappe/"):
+		return True
+	if file.endswith(".html") and file.startswith("frappe/") and not file.startswith("frappe/public/"):
+		return False
 	return file.lower().endswith((".css", ".scss", ".less", ".sass", ".styl", ".js", ".ts", ".vue", ".html"))
 
 
 def is_docs(file):
-	regex = re.compile(r"\.(md|png|jpg|jpeg|csv|svg)$|^.github|LICENSE")
+	"""Check if the file is documentation, image or the translation template (no runtime effect)."""
+	regex = re.compile(r"\.(md|png|jpg|jpeg|csv|svg)$|^.github|LICENSE|/locale/main\.pot$")
 	return bool(regex.search(file))
 
 
+def _selftest():
+	assert is_docs("frappe/locale/main.pot"), "translation template alone must skip tests"
+	assert not is_docs("frappe/locale/de.po"), "translations change output, must run tests"
+	assert not queue_runs("ui", ["frappe/model/document.py"]), "python alone skips the UI suite"
+	assert not queue_runs("server", ["frappe/public/js/frappe/form/form.js"]), (
+		"frontend alone skips the server suite"
+	)
+	assert queue_runs("ui", ["frappe/core/doctype/user/user.json"]), "doctype JSON runs UI tests"
+	assert queue_runs("server", ["frappe/core/doctype/user/user.json"]), "doctype JSON runs server tests"
+	assert queue_runs("server", ["frappe/templates/base.html"]), "Jinja runs server tests"
+	assert not queue_runs("server", ["README.md"]), "docs alone run nothing"
+	assert queue_runs("server", ["frappe/core/doctype/data_import/fixtures/sample_import_file.csv"]), (
+		"tests read CSV files"
+	)
+	assert queue_runs("ui", None), "a cut short file list runs everything"
+	assert queue_runs("ui", [".github/workflows/ui-tests.yml"])
+
+	print("roulette selftest OK")
+
+
 if __name__ == "__main__":
+	if sys.argv[1:] == ["selftest"]:
+		_selftest()
+		sys.exit(0)
+
 	files_list = sys.argv[1:]
 	build_type = os.environ.get("TYPE")
 	pr_number = os.environ.get("PR_NUMBER")
 	repo = os.environ.get("REPO_NAME")
+
+	base_sha, head_sha = os.environ.get("BASE_SHA"), os.environ.get("HEAD_SHA")
+	if not pr_number and base_sha and head_sha:
+		if queue_runs(build_type, files_list or get_queue_files(repo, base_sha, head_sha)):
+			os.system('echo "build=strawberry" >> $GITHUB_OUTPUT')
+		else:
+			print("The merge queue group does not touch this suite, stopping build process.")
+		sys.exit(0)
 
 	# this is a push build, run all builds
 	if not pr_number:
@@ -112,6 +173,15 @@ if __name__ == "__main__":
 	only_frontend_code_changed = len(list(filter(is_frontend_code, files_list))) == len(files_list)
 	updated_py_file_count = len(list(filter(is_py, files_list)))
 	only_py_changed = updated_py_file_count == len(files_list)
+
+	if build_type == "server":
+		tests_requested = has_run_server_tests_label(pr_number, repo)
+	else:
+		tests_requested = has_run_ui_tests_label(pr_number, repo)
+
+	if is_hotfix_pr(pr_number, repo) and not tests_requested:
+		print("Hotfix branch: the full suites run on the release pull request, stopping build process.")
+		sys.exit(0)
 
 	if has_skip_ci_label(pr_number, repo):
 		if build_type == "ui" and has_run_ui_tests_label(pr_number, repo):
@@ -138,7 +208,7 @@ if __name__ == "__main__":
 		sys.exit(0)
 
 	elif build_type == "ui" and only_py_changed and not has_run_ui_tests_label(pr_number, repo):
-		print("Only Python code was updated, stopping Cypress build process.")
+		print("Only Python code was updated, stopping UI test build process.")
 		sys.exit(0)
 
 	os.system('echo "build=strawberry" >> $GITHUB_OUTPUT')

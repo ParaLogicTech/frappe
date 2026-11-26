@@ -2,19 +2,22 @@ from unittest.mock import patch
 
 import frappe
 from frappe import get_hooks
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests.utils import FrappeTestCase, change_settings
 from frappe.utils import set_request
 from frappe.website.page_renderers.static_page import StaticPage
 from frappe.website.serve import get_response, get_response_content
-from frappe.website.utils import build_response, clear_website_cache, get_home_page
+from frappe.website.utils import build_response, clear_website_cache, get_boot_data, get_home_page
 
 
 class TestWebsite(FrappeTestCase):
 	def setUp(self):
 		frappe.set_user("Guest")
 		self._clearRequest()
+		self._developer_mode = frappe.conf.developer_mode
+		frappe.conf.developer_mode = 1
 
 	def tearDown(self):
+		frappe.conf.developer_mode = self._developer_mode
 		frappe.db.delete("Access Log")
 		frappe.set_user("Administrator")
 		self._clearRequest()
@@ -158,6 +161,12 @@ class TestWebsite(FrappeTestCase):
 		response = get_response()
 		self.assertEqual(response.status_code, 404)
 
+	def test_not_found_raised_while_rendering(self):
+		with patch.object(StaticPage, "render", side_effect=frappe.PageDoesNotExistError):
+			set_request(method="GET", path="/_test/assets/image")
+			response = get_response()
+		self.assertEqual(response.status_code, 404)
+
 	def test_redirect(self):
 		import frappe.hooks
 
@@ -289,6 +298,19 @@ class TestWebsite(FrappeTestCase):
 		# assert template block rendered
 		self.assertIn("<p>Test content</p>", content)
 
+	def test_boot_data_number_settings(self):
+		with change_settings(
+			"System Settings",
+			currency_precision=3,
+			float_precision=4,
+			rounding_method="Commercial Rounding",
+		):
+			sysdefaults = get_boot_data()["sysdefaults"]
+
+		self.assertEqual(sysdefaults["currency_precision"], 3)
+		self.assertEqual(sysdefaults["float_precision"], 4)
+		self.assertEqual(sysdefaults["rounding_method"], "Commercial Rounding")
+
 	def test_index_and_next_comment(self):
 		content = get_response_content("/_test/_test_folder")
 		# test if {index} was rendered
@@ -344,12 +366,28 @@ class TestWebsite(FrappeTestCase):
 	def test_safe_render(self):
 		content = get_response_content("/_test/_test_safe_render_on")
 		self.assertNotIn("Safe Render On", content)
-		self.assertIn("frappe.exceptions.ValidationError: Illegal template", content)
+		self.assertIn("Show Error", content)
 
 		content = get_response_content("/_test/_test_safe_render_off")
 		self.assertIn("Safe Render Off", content)
 		self.assertIn("test.__test", content)
-		self.assertNotIn("frappe.exceptions.ValidationError: Illegal template", content)
+		self.assertNotIn("Show Error", content)
+
+	@change_settings("System Settings", {"allow_error_traceback": 1})
+	def test_error_traceback_only_for_system_users(self):
+		traceback = "frappe.exceptions.ValidationError: Illegal template"
+
+		content = get_response_content("/_test/_test_safe_render_on")
+		self.assertNotIn(traceback, content)
+
+		frappe.set_user("Administrator")
+		content = get_response_content("/_test/_test_safe_render_on")
+		self.assertIn(traceback, content)
+
+	def test_render_error_hides_traceback_from_guest(self):
+		with patch.object(frappe, "_dev_server", 0), self.assertRaises(Exception) as error:
+			frappe.render_template("{{ frappe.form_dict.missing_key.upper() }}")
+		self.assertNotIn("Traceback", str(error.exception))
 
 	def test_never_render(self):
 		from pathlib import Path

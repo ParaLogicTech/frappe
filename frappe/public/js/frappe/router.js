@@ -111,6 +111,7 @@ frappe.router = {
 		image: "Image",
 		inbox: "Inbox",
 		file: "Home",
+		home: "Home",
 		map: "Map",
 	},
 	layout_mapped: {},
@@ -277,6 +278,9 @@ frappe.router = {
 
 			route[1] = "view";
 			route[2] = _route.toLowerCase();
+			// keep the query string: frappe.route_options holds one value per field, so a field
+			// filtered twice (?status=...&status=...) would lose a filter
+			frappe.route_hash = window.location.search + window.location.hash;
 			this.set_route(route);
 		}
 

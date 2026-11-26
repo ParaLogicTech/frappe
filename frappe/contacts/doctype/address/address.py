@@ -231,7 +231,7 @@ def render_address(address: dict | str | None, check_permissions=False) -> str |
 	name, template = get_address_templates(address)
 
 	try:
-		return frappe.render_template(template, address)
+		return frappe.render_template(template, address, restrict_globals=True)
 	except TemplateSyntaxError:
 		frappe.throw(_("There is an error in your Address Template {0}").format(name))
 

@@ -344,6 +344,7 @@ class PersonalDataDeletionRequest(Document):
 
 	@frappe.whitelist()
 	def put_on_hold(self):
+		frappe.only_for("System Manager")
 		self.db_set("status", "On Hold")
 
 
@@ -378,7 +379,7 @@ def remove_unverified_record():
 
 
 @frappe.whitelist(allow_guest=True)
-def confirm_deletion(email, name, host_name):
+def confirm_deletion(email: str, name: str, host_name: str):
 	if not verify_request():
 		return
 

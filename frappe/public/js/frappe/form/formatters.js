@@ -140,7 +140,10 @@ frappe.form.formatters = {
 	Data: function (value, df, options, doc) {
 		if (df && df.options == "URL") {
 			if (!value) return "";
-			return `<a href="${value}" title="Open Link" target="_blank">${value}</a>`;
+			const plain = frappe.utils.unescape_html(value);
+			const safe = frappe.utils.escape_html(plain);
+			if (frappe.utils.has_unsafe_url_scheme(plain)) return safe;
+			return `<a href="${safe}" title="Open Link" target="_blank">${safe}</a>`;
 		}
 		if (df && df.options == "IBAN") {
 			if (!value) return "";
@@ -224,12 +227,10 @@ frappe.form.formatters = {
 		var currency = frappe.meta.get_field_currency(docfield, doc);
 
 		let precision;
-		if (typeof docfield.precision == "number") {
-			precision = docfield.precision;
+		if (typeof docfield.precision == "number" || docfield.precision) {
+			precision = cint(docfield.precision);
 		} else {
-			precision = cint(
-				docfield.precision || frappe.boot.sysdefaults.currency_precision || 2
-			);
+			precision = frappe.meta.get_field_precision(docfield, doc);
 		}
 
 		// If you change anything below, it's going to hurt a company in UAE, a bit.
@@ -265,7 +266,7 @@ frappe.form.formatters = {
 	},
 	Check: function (value) {
 		return `<input type="checkbox" disabled
-			class="disabled-${value ? "selected" : "deselected"}">`;
+			class="disabled-${cint(value) ? "selected" : "deselected"}">`;
 	},
 	Link: function (value, docfield, options, doc) {
 		let doctype = docfield._options || docfield.options;

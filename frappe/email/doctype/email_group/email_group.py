@@ -106,14 +106,14 @@ class EmailGroup(Document):
 
 
 @frappe.whitelist()
-def import_from(name, doctype):
+def import_from(name: str | int, doctype: str):
 	nlist = frappe.get_doc("Email Group", name)
 	if nlist.has_permission("write"):
 		return nlist.import_from(doctype)
 
 
 @frappe.whitelist()
-def add_subscribers(name, email_list):
+def add_subscribers(name: str | int, email_list: str | list[str] | tuple[str, ...]):
 	if not isinstance(email_list, list | tuple):
 		email_list = email_list.replace(",", "\n").split("\n")
 
@@ -150,7 +150,7 @@ def send_welcome_email(welcome_email, email, email_group):
 		return
 
 	args = dict(email=email, email_group=email_group)
-	message = frappe.render_template(welcome_email.response_, args)
+	message = frappe.render_template(welcome_email.response_, args, restrict_globals=True)
 	frappe.sendmail(email, subject=welcome_email.subject, message=message)
 
 

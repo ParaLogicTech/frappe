@@ -395,7 +395,7 @@ class Workspace:
 
 @frappe.whitelist()
 @frappe.read_only()
-def get_desktop_page(page):
+def get_desktop_page(page: str):
 	"""Applies permissions, customizations and returns the configruration for a page
 	on desk.
 
@@ -405,8 +405,13 @@ def get_desktop_page(page):
 	Returns:
 	        dict: dictionary of cards, charts and shortcuts to be displayed on website
 	"""
+	from frappe.desk.doctype.workspace.workspace import has_permission
+
 	try:
 		workspace = Workspace(loads(page))
+		if not has_permission(workspace.doc):
+			frappe.throw(_("You do not have access to this workspace."), frappe.PermissionError)
+
 		workspace.build_workspace()
 		return {
 			"charts": workspace.charts,
@@ -671,7 +676,7 @@ def prepare_widget(config, doctype, parentfield):
 
 
 @frappe.whitelist()
-def update_onboarding_step(name, field, value):
+def update_onboarding_step(name: str | int, field: str, value: int | str):
 	"""Update status of onboaridng step
 
 	Args:
@@ -681,6 +686,10 @@ def update_onboarding_step(name, field, value):
 
 	"""
 	from frappe.utils.telemetry import capture
+
+	allowed_fields = ["is_skipped", "is_complete"]
+	if field not in allowed_fields:
+		return
 
 	frappe.db.set_value("Onboarding Step", name, field, value)
 

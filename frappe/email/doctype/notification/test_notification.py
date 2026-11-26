@@ -3,11 +3,14 @@
 
 import json
 from contextlib import contextmanager
+from unittest.mock import patch
 
 import frappe
 import frappe.utils
 from frappe.desk.form import assign_to
 from frappe.tests.utils import FrappeTestCase
+
+from .notification import get_comments_for_context
 
 test_dependencies = ["User", "Notification"]
 
@@ -19,6 +22,26 @@ def get_test_notification(config):
 		yield notification
 	finally:
 		notification.delete()
+
+
+@contextmanager
+def doc_hook(doctype, method, handler):
+	"""Hook `handler` (a dotted path) into `method` of `doctype`, as `doc_events` in hooks.py would"""
+	doc_hooks = frappe.get_doc_hooks()
+	doctype_hooks = dict(doc_hooks.get(doctype, {}))
+	doctype_hooks[method] = [handler]
+	with patch.dict(doc_hooks, {doctype: doctype_hooks}):
+		yield
+
+
+def skip_notification_hook(doc, method, notification_key=None, **kwargs):
+	if notification_key == "_Test Validated Key" and "_Test Skip" in (doc.description or ""):
+		return 0
+
+
+def notification_attachment_hook(doc, method, notification_key=None):
+	if notification_key == "_Test Attachment Key":
+		return [{"file_url": "/files/_test_hooked_attachment.txt"}]
 
 
 @contextmanager
@@ -134,6 +157,29 @@ class TestNotification(FrappeTestCase):
 
 		self.assertEqual(frappe.db.get_value("Communication", communication.name, "subject"), "__testing__")
 
+	def test_comments_in_context(self):
+		todo = frappe.get_doc(doctype="ToDo", description="comments context").insert()
+		self.assertIsNone(get_comments_for_context(todo))
+
+		comment = todo.add_comment("Comment", "hello")
+		email = frappe.get_doc(
+			doctype="Communication",
+			content="reply",
+			sender="a@example.com",
+			reference_doctype="ToDo",
+			reference_name=todo.name,
+		).insert()
+		self.assertEqual(
+			get_comments_for_context(todo),
+			[
+				{"comment": "hello", "by": comment.comment_email, "name": comment.name},
+				{"comment": "reply", "by": "a@example.com", "name": email.name},
+			],
+		)
+
+		todo.add_comment("Comment", "x" * 150)
+		self.assertEqual(get_comments_for_context(todo)[-1]["comment"], "x" * 97 + "...")
+
 	def test_condition(self):
 		"""Check notification is triggered based on a condition."""
 		event = frappe.new_doc("Event")
@@ -222,6 +268,31 @@ class TestNotification(FrappeTestCase):
 			)
 		)
 
+	def test_system_notification_sets_app_from_module(self):
+		"""A System Notification rule records its owning app (from `module`) on the log."""
+		notification = {
+			"name": "Test App From Module",
+			"notification_title": "Test App From Module",
+			"document_type": "Event",
+			"module": "Core",  # owned by the frappe app
+			"event": "New",
+			"channel": "System Notification",
+			"notification_type": "Alert",
+			"recipients": [{"receiver_by_document_field": "owner"}],
+		}
+
+		with get_test_notification(notification) as n:
+			frappe.db.delete("Notification Log", {"title": n.notification_title})
+
+			event = frappe.new_doc("Event")
+			event.subject = "Test App From Module Event"
+			event.event_type = "Private"
+			event.starts_on = frappe.utils.add_to_date(frappe.utils.now_datetime(), minutes=14)
+			event.insert()
+
+			app = frappe.db.get_value("Notification Log", {"title": n.notification_title}, "app")
+			self.assertEqual(app, "frappe")
+
 	def test_alert_disabled_on_wrong_field(self):
 		frappe.set_user("Administrator")
 		notification = frappe.get_doc(
@@ -285,7 +356,9 @@ class TestNotification(FrappeTestCase):
 			self.assertEqual(email_keys, ["_Test Key"])
 			self.assertTrue(get_notification_last_scheduled("ToDo", todo.name, "_Test Key", "Email"))
 
-			flush()
+			# sending commits, which would keep this test's notification on the site
+			with patch.object(frappe.db, "commit"):
+				flush()
 			self.assertEqual(get_notification_count("ToDo", todo.name, "_Test Key", "Email"), 1)
 
 	def test_notification_key_defaults_to_name(self):
@@ -620,6 +693,256 @@ class TestNotification(FrappeTestCase):
 
 			# Clean up
 			todo.delete(ignore_permissions=True)
+
+	def get_email_queue_for(self, doctype, name):
+		return frappe.get_all(
+			"Email Queue",
+			filters={"reference_doctype": doctype, "reference_name": name},
+			fields=["name", "attachments", "notification_key"],
+		)
+
+	def get_communications_for(self, doctype, name):
+		return frappe.get_all(
+			"Communication",
+			filters={"reference_doctype": doctype, "reference_name": name},
+			fields=["name", "subject", "content", "communication_medium", "communication_type"],
+			order_by="creation",
+		)
+
+	def test_validate_notification_hook(self):
+		config = {
+			"name": "_Test Validated Notification",
+			"subject": "_Test Validated Notification",
+			"document_type": "ToDo",
+			"event": "New",
+			"channel": "Email",
+			"message": "Test validated notification",
+			"notification_key": "_Test Validated Key",
+			"recipients": [{"receiver_by_document_field": "owner"}],
+		}
+		handler = "frappe.email.doctype.notification.test_notification.skip_notification_hook"
+		with get_test_notification(config), doc_hook("ToDo", "validate_notification", handler):
+			skipped = frappe.get_doc(doctype="ToDo", description="_Test Skip this one").insert()
+			sent = frappe.get_doc(doctype="ToDo", description="_Test Send this one").insert()
+
+			self.assertFalse(self.get_email_queue_for("ToDo", skipped.name))
+			self.assertTrue(self.get_email_queue_for("ToDo", sent.name))
+
+	def test_notification_attachment_hook(self):
+		config = {
+			"name": "_Test Hooked Attachment",
+			"subject": "_Test Hooked Attachment",
+			"document_type": "ToDo",
+			"event": "New",
+			"channel": "Email",
+			"message": "Test hooked attachment",
+			"notification_key": "_Test Attachment Key",
+			"recipients": [{"receiver_by_document_field": "owner"}],
+		}
+		handler = "frappe.email.doctype.notification.test_notification.notification_attachment_hook"
+		with get_test_notification(config), doc_hook("ToDo", "get_notification_attachment", handler):
+			todo = frappe.get_doc(doctype="ToDo", description="Test hooked attachment").insert()
+
+			email_queue = self.get_email_queue_for("ToDo", todo.name)
+			self.assertEqual(
+				json.loads(email_queue[0].attachments), [{"file_url": "/files/_test_hooked_attachment.txt"}]
+			)
+
+	def test_send_only_once(self):
+		config = {
+			"name": "_Test Send Only Once",
+			"subject": "_Test Send Only Once",
+			"document_type": "ToDo",
+			"event": "Save",
+			"channel": "Email",
+			"message": "Test send only once",
+			"send_only_once": 1,
+			"recipients": [{"receiver_by_document_field": "owner"}],
+		}
+		with get_test_notification(config):
+			todo = frappe.get_doc(doctype="ToDo", description="Test send only once").insert()
+			self.assertEqual(len(self.get_email_queue_for("ToDo", todo.name)), 1)
+
+			todo.description = "Test send only once, changed"
+			todo.save()
+			self.assertEqual(len(self.get_email_queue_for("ToDo", todo.name)), 1)
+
+			other_todo = frappe.get_doc(doctype="ToDo", description="Test send only once, other").insert()
+			self.assertEqual(len(self.get_email_queue_for("ToDo", other_todo.name)), 1)
+
+	def test_email_template(self):
+		email_template = frappe.get_doc(
+			doctype="Email Template",
+			name="_Test Notification Email Template",
+			subject="Template subject {{ doc.description }}",
+			response="Template message {{ doc.name }}",
+		).insert(ignore_if_duplicate=True)
+		self.addCleanup(email_template.delete, ignore_permissions=True)
+
+		config = {
+			"name": "_Test Notification With Email Template",
+			"subject": "Own subject",
+			"document_type": "ToDo",
+			"event": "New",
+			"channel": "Email",
+			"message": "Own message",
+			"use_email_template": 1,
+			"email_template": email_template.name,
+			"recipients": [{"receiver_by_document_field": "owner"}],
+		}
+		with get_test_notification(config) as notification:
+			todo = frappe.get_doc(doctype="ToDo", description="Test template").insert()
+
+			communication = self.get_communications_for("ToDo", todo.name)[0]
+			self.assertEqual(communication.subject, "Template subject Test template")
+			self.assertIn(f"Template message {todo.name}", communication.content)
+
+			# the system notification reuses what the email rendered
+			notification.send_system_notification = 1
+			with patch(
+				"frappe.email.doctype.notification.notification.enqueue_create_notification"
+			) as enqueue_create_notification:
+				notification.send(todo)
+
+			notification_doc = enqueue_create_notification.call_args.args[1]
+			self.assertEqual(notification_doc["subject"], "Template subject Test template")
+			self.assertIn(f"Template message {todo.name}", notification_doc["email_content"])
+
+	def test_timeline_field(self):
+		config = {
+			"name": "_Test Notification Timeline",
+			"subject": "_Test Notification Timeline",
+			"document_type": "ToDo",
+			"event": "New",
+			"channel": "Email",
+			"message": "Test timeline",
+			"timeline_field": "assigned_by",
+			"recipients": [{"receiver_by_document_field": "owner"}],
+		}
+		with get_test_notification(config) as notification:
+			todo = frappe.get_doc(
+				doctype="ToDo",
+				description="Test timeline",
+				assigned_by="test@example.com",
+				reference_type="User",
+				reference_name="test1@example.com",
+			).insert()
+
+			communication = self.get_communications_for("ToDo", todo.name)[0]
+			timeline_links = frappe.get_all(
+				"Communication Link",
+				filters={"parent": communication.name},
+				fields=["link_doctype", "link_name"],
+			)
+			self.assertIn({"link_doctype": "User", "link_name": "test@example.com"}, timeline_links)
+
+			notification.timeline_field = "reference_name"
+			self.assertEqual(notification.get_timeline_doctype_and_name(todo), ("User", "test1@example.com"))
+
+			notification.timeline_field = "description"
+			self.assertEqual(notification.get_timeline_doctype_and_name(todo), (None, None))
+
+	def test_recipient_template(self):
+		config = {
+			"name": "_Test Notification Recipient Template",
+			"subject": "_Test Notification Recipient Template",
+			"document_type": "ToDo",
+			"event": "New",
+			"channel": "Email",
+			"message": "Test recipient template",
+			"recipients": [{"recipient": "{{ doc.assigned_by }},test2@example.com"}],
+		}
+		with get_test_notification(config) as notification:
+			todo = frappe.new_doc(
+				"ToDo", description="Test recipient template", assigned_by="test1@example.com"
+			)
+			context = {"doc": todo}
+
+			recipients, _cc, _bcc = notification.get_list_of_recipients(todo, context)
+			self.assertCountEqual(recipients, ["test1@example.com", "test2@example.com"])
+
+			notification.recipients[0].recipient = "{{ doc.description }}"
+			todo.description = "+971 50-123 4567"
+			self.assertEqual(notification.get_receiver_list(todo, context), ["+971501234567"])
+
+	def test_context_reaches_condition_and_message(self):
+		from frappe.email.doctype.notification.notification import evaluate_alert
+
+		config = {
+			"name": "_Test Notification Context",
+			"subject": "_Test Notification Context",
+			"document_type": "ToDo",
+			"event": "Method",
+			"method": "_test_never_called",
+			"channel": "Email",
+			# the context isn't there when the condition is validated on save
+			"condition": "not doc.name or extra == 'Send'",
+			"message": "Extra: {{ extra }}",
+			"recipients": [{"receiver_by_document_field": "owner"}],
+		}
+		with get_test_notification(config) as notification:
+			todo = frappe.get_doc(doctype="ToDo", description="Test context").insert()
+
+			evaluate_alert(todo, notification.name, notification.event, context={"extra": "Skip"})
+			self.assertFalse(self.get_communications_for("ToDo", todo.name))
+
+			evaluate_alert(todo, notification.name, notification.event, context={"extra": "Send"})
+			self.assertIn("Extra: Send", self.get_communications_for("ToDo", todo.name)[0].content)
+
+	@patch("frappe.are_sms_muted", return_value=False)
+	def test_sms_channel(self, are_sms_muted):
+		from frappe.core.doctype.notification_count.notification_count import (
+			get_notification_last_scheduled,
+		)
+
+		config = {
+			"name": "_Test SMS Notification",
+			"document_type": "ToDo",
+			"event": "New",
+			"channel": "SMS",
+			"message": "SMS for {{ doc.description }}",
+			"notification_key": "_Test SMS Key",
+			"timeline_field": "assigned_by",
+			"recipients": [{"recipient": "+971501234567"}],
+		}
+		with get_test_notification(config):
+			todo = frappe.get_doc(
+				doctype="ToDo", description="Test SMS notification", assigned_by="test@example.com"
+			).insert()
+
+			sms_queue = frappe.get_all(
+				"SMS Queue",
+				filters={"reference_doctype": "ToDo", "reference_name": todo.name},
+				fields=["name", "message", "notification_key", "party_doctype", "party", "communication"],
+			)
+			self.assertEqual(len(sms_queue), 1)
+			self.assertEqual(sms_queue[0].message, "SMS for Test SMS notification")
+			self.assertEqual(sms_queue[0].notification_key, "_Test SMS Key")
+			self.assertEqual((sms_queue[0].party_doctype, sms_queue[0].party), ("User", "test@example.com"))
+			self.assertEqual(
+				frappe.get_all("SMS Queue Recipient", {"parent": sms_queue[0].name}, pluck="recipient"),
+				["+971501234567"],
+			)
+
+			communication = frappe.get_doc("Communication", sms_queue[0].communication)
+			self.assertEqual(communication.communication_medium, "SMS")
+			self.assertEqual(communication.communication_type, "Automated Message")
+			self.assertEqual(communication.subject, "_Test SMS Key SMS")
+
+			self.assertTrue(get_notification_last_scheduled("ToDo", todo.name, "_Test SMS Key", "SMS"))
+
+			# muted SMS: nothing is queued
+			are_sms_muted.return_value = True
+			muted_todo = frappe.get_doc(doctype="ToDo", description="Test muted SMS").insert()
+			self.assertFalse(
+				frappe.get_all("SMS Queue", {"reference_doctype": "ToDo", "reference_name": muted_todo.name})
+			)
+
+	def test_has_notification_with_trigger_method(self):
+		from frappe.email.doctype.notification.notification import has_notification
+
+		self.assertTrue(has_notification("ToDo", "_Test No Such Key", trigger_method="validate"))
+		self.assertFalse(has_notification("ToDo", "_Test No Such Key", trigger_method="_test_no_such_method"))
 
 	@classmethod
 	def tearDownClass(cls):

@@ -11,7 +11,7 @@ def sendmail_to_system_managers(subject, content):
 
 
 @frappe.whitelist()
-def get_contact_list(txt, page_length=20, extra_filters: str | None = None) -> list[dict]:
+def get_contact_list(txt: str, page_length: int = 20, extra_filters: str | None = None) -> list[dict]:
 	"""Return email ids for a multiselect field."""
 	if extra_filters:
 		extra_filters = frappe.parse_json(extra_filters)
@@ -52,7 +52,7 @@ def get_system_managers():
 
 
 @frappe.whitelist()
-def relink(name: str, reference_doctype: str | None = None, reference_name: str | None = None):
+def relink(name: str, reference_doctype: str | None = None, reference_name: str | int | None = None):
 	frappe.has_permission("Communication", "write", name, throw=True)
 	frappe.db.sql(
 		"""update
@@ -70,35 +70,16 @@ def relink(name: str, reference_doctype: str | None = None, reference_name: str 
 
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
-def get_communication_doctype(doctype, txt, searchfield, start, page_len, filters):
-	user_perms = frappe.utils.user.UserPermissions(frappe.session.user)
-	user_perms.build_permissions()
-	can_read = user_perms.can_read
-	from frappe import _
-	from frappe.modules import load_doctype_module
+def get_communication_doctype(
+	doctype: str, txt: str, searchfield: str, start: int, page_len: int, filters: str | list | dict
+):
+	can_read = frappe.get_user().get_can_read()
 
-	com_doctypes = []
-	if len(txt) < 2:
-		for name in frappe.get_hooks("communication_doctypes"):
-			try:
-				module = load_doctype_module(name, suffix="_dashboard")
-				if hasattr(module, "get_data"):
-					for i in module.get_data()["transactions"]:
-						com_doctypes += i["items"]
-			except ImportError:
-				pass
-	else:
-		com_doctypes = [
-			d[0] for d in frappe.db.get_values("DocType", {"issingle": 0, "istable": 0, "hide_toolbar": 0})
-		]
+	com_doctypes = frappe.db.get_values(
+		"DocType", {"issingle": 0, "istable": 0, "hide_toolbar": 0}, pluck="name"
+	)
 
-	results = []
-	txt_lower = txt.lower().replace("%", "")
-
-	for dt in list(set(com_doctypes)):
-		if dt in can_read:
-			if txt_lower in dt.lower() or txt_lower in _(dt).lower():
-				results.append([dt])
+	results = [[dt] for dt in list(set(com_doctypes)) if dt in can_read]
 
 	return results
 
@@ -143,6 +124,8 @@ def sendmail(
 	email_read_tracker_url=None,
 	x_priority: Literal[1, 3, 5] = 3,
 	email_headers=None,
+	redact_message_after_send=False,
+	auto_submitted=None,
 ):
 	"""Send email using user's default **Email Account** or global default **Email Account**.
 
@@ -161,7 +144,7 @@ def sendmail(
 	    :param attachments: List of attachments.
 	    :param reply_to: Reply-To Email Address.
 	    :param message_id: Used for threading. If a reply is received to this email, Message-Id is sent back as In-Reply-To in received email.
-	    :param in_reply_to: Used to send the Message-Id of a received email back as In-Reply-To.
+	    :param in_reply_to: Name of the Communication this email replies to. Its Message-Id is sent as In-Reply-To.
 	    :param send_after: Send after the given datetime.
 	    :param expose_recipients: Controls recipient visibility. "header" shows all TO recipients in the To header.
 	"footer" adds "This email was sent to..." text in footer. None (default) hides TO recipients from each other.
@@ -174,6 +157,8 @@ def sendmail(
 	    :param with_container: Wraps email inside a styled container
 	    :param x_priority: 1 = HIGHEST, 3 = NORMAL, 5 = LOWEST
 	    :param email_headers: Additional headers to be added in the email, e.g. {"X-Custom-Header": "value"} or {"Custom-Header": "value"}. Automatically prepends "X-" to the header name if not present.
+	    :param redact_message_after_send: Replace the message body with a placeholder once sent, for emails carrying sensitive content.
+	    :param auto_submitted: Value of the `Auto-Submitted` header (RFC 3834), e.g. "auto-replied".
 	"""
 
 	from frappe.utils.jinja import get_email_from_template
@@ -198,6 +183,9 @@ def sendmail(
 
 	if not delayed:
 		now = True
+
+	if communication and not (recipients or cc or bcc):
+		frappe.throw(frappe._("At least one recipient is required"))
 
 	from frappe.email.doctype.email_queue.email_queue import QueueBuilder
 
@@ -233,6 +221,8 @@ def sendmail(
 		email_read_tracker_url=email_read_tracker_url,
 		x_priority=x_priority,
 		email_headers=email_headers,
+		redact_message_after_send=redact_message_after_send,
+		auto_submitted=auto_submitted,
 	)
 
 	# build email queue and send the email if send_now is True.

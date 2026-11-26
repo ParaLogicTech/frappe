@@ -11,7 +11,7 @@ from frappe.apps import get_default_path
 from frappe.auth import LoginManager
 from frappe.core.doctype.navbar_settings.navbar_settings import get_app_logo
 from frappe.rate_limiter import rate_limit
-from frappe.utils import cint, get_url
+from frappe.utils import cint, get_request_host, get_url
 from frappe.utils.data import escape_html
 from frappe.utils.html_utils import get_icon_html
 from frappe.utils.jinja import guess_is_path
@@ -146,6 +146,12 @@ def send_login_link(email: str):
 	if not frappe.get_system_settings("login_with_email_link"):
 		return
 
+	frappe.enqueue(_send_login_link, queue="short", email=email, lang=frappe.local.lang)
+
+
+def _send_login_link(email: str, lang: str):
+	frappe.local.lang = lang
+
 	try:
 		expiry = frappe.get_system_settings("login_with_email_link_expiry") or 10
 		link = _generate_temporary_login_link(email, expiry)
@@ -218,12 +224,10 @@ def sanitize_redirect(redirect: str | None) -> str | None:
 
 	parsed_redirect = urlparse(redirect)
 
-	parsed_request_host = urlparse(frappe.local.request.url)
-	output_parsed_url = parsed_redirect._replace(
-		netloc=parsed_request_host.netloc, scheme=parsed_request_host.scheme
-	)
+	request_host = get_request_host(frappe.local.request)
+	output_parsed_url = parsed_redirect._replace(netloc=request_host, scheme=frappe.local.request.scheme)
 	if parsed_redirect.netloc:
-		if parsed_request_host.netloc != parsed_redirect.netloc:
+		if request_host != parsed_redirect.netloc:
 			output_parsed_url = output_parsed_url._replace(path="/app")
 		else:
 			output_parsed_url = output_parsed_url._replace(path=parsed_redirect.path)

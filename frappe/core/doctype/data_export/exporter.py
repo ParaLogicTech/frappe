@@ -4,6 +4,7 @@
 import csv
 import os
 import re
+from typing import Any
 
 import frappe
 import frappe.permissions
@@ -30,15 +31,15 @@ def get_data_keys():
 
 @frappe.whitelist()
 def export_data(
-	doctype=None,
-	parent_doctype=None,
-	all_doctypes=True,
-	with_data=False,
-	select_columns=None,
-	file_type="CSV",
-	template=False,
-	filters=None,
-	export_without_column_meta=False,
+	doctype: str | list[str | dict[str, Any]] | None = None,
+	parent_doctype: str | None = None,
+	all_doctypes: bool | int | str = True,
+	with_data: bool | int | str = False,
+	select_columns: str | dict[str, list[str]] | None = None,
+	file_type: str = "CSV",
+	template: bool | str = False,
+	filters: str | dict[str, Any] | list | None = None,
+	export_without_column_meta: bool | str = False,
 ):
 	_doctype = doctype
 	if isinstance(_doctype, list):
@@ -364,7 +365,13 @@ class DataExporter:
 		if self.template and not self.with_data:
 			return
 
-		frappe.permissions.can_export(self.parent_doctype, raise_exception=True)
+		filters = self.filters
+		if not frappe.permissions.can_export(self.parent_doctype):
+			frappe.permissions.can_export(self.parent_doctype, raise_exception=True, is_owner=True)
+			if isinstance(filters, dict):
+				filters = {**filters, "owner": frappe.session.user}
+			else:
+				filters = [*(filters or []), ["owner", "=", frappe.session.user]]
 
 		# sort nested set doctypes by `lft asc`
 		order_by = None
@@ -373,7 +380,7 @@ class DataExporter:
 			order_by = f"`tab{self.parent_doctype}`.`lft` asc"
 		# get permitted data only
 		self.data = frappe.get_list(
-			self.doctype, fields=["*"], filters=self.filters, limit_page_length=None, order_by=order_by
+			self.doctype, fields=["*"], filters=filters, limit_page_length=None, order_by=order_by
 		)
 
 		for doc in self.data:

@@ -57,6 +57,21 @@ class TestNaming(FrappeTestCase):
 		self.assertEqual(country.name, original_name)
 		self.assertEqual(country.name, country.country_name)
 
+	def test_field_autoname_keeps_fieldtype(self):
+		doctype = new_doctype(
+			autoname="field:number",
+			fields=[{"label": "Number", "fieldname": "number", "fieldtype": "Int", "set_only_once": 1}],
+		).insert()
+
+		doc = frappe.get_doc(doctype=doctype.name, number=3).insert()
+		self.assertEqual(doc.number, 3)
+
+		doc = frappe.get_doc(doctype.name, doc.name)
+		doc.some_fieldname = "changed"
+		doc.save()
+
+		doctype.delete()
+
 	def test_child_table_naming(self):
 		child_dt_with_naming = new_doctype(istable=1, autoname="field:some_fieldname").insert()
 		dt_with_child_autoname = new_doctype(
@@ -213,6 +228,22 @@ class TestNaming(FrappeTestCase):
 
 		self.assertEqual(current_index.get("current"), 2)
 
+		frappe.db.delete("Series", {"name": series})
+
+	def test_revert_series_date_based_cross_date(self):
+		# A date-templated series must revert against the date embedded in the name,
+		# not the current date. Deleting a doc created on a different day should still
+		# decrement that day's counter.
+		key = "PO-.YYYY.-.MM.-.DD.-.###"
+		series = "PO-2020-01-01-"
+		name = "PO-2020-01-01-005"
+		frappe.db.delete("Series", {"name": series})
+		frappe.db.sql("""INSERT INTO `tabSeries` (name, current) values (%s, 5)""", (series,))
+		revert_series_if_last(key, name)
+		current_index = frappe.db.sql(
+			"""SELECT current from `tabSeries` where name = %s""", series, as_dict=True
+		)[0]
+		self.assertEqual(current_index.get("current"), 4)
 		frappe.db.delete("Series", {"name": series})
 
 	def test_naming_for_cancelled_and_amended_doc(self):
@@ -418,6 +449,29 @@ class TestNaming(FrappeTestCase):
 			time.sleep(0.1)
 			names.append(make_autoname("hash"))
 		self.assertEqual(names, sorted(names))
+
+	def test_series_with_parentheses(self):
+		series = NamingSeries("TEST(A)-.####")
+		series.validate()
+		self.assertRaises(InvalidNamingSeriesError, NamingSeries("TEST[A]-.####").validate)
+
+	def test_series_value_field(self):
+		doc = frappe.new_doc("ToDo", series_no=0)
+		name = make_autoname("TESTSVF-.####", doc=doc, series_value_field="series_no")
+		self.assertEqual(name, f"TESTSVF-{doc.series_no:04d}")
+		current = frappe.db.get_value("Series", "TESTSVF-", "current", order_by=None)
+		self.assertEqual(current, doc.series_no)
+
+		# a value that's already set is used instead of the counter
+		doc = frappe.new_doc("ToDo", series_no=42)
+		self.assertEqual(
+			make_autoname("TESTSVF-.####", doc=doc, series_value_field="series_no"), "TESTSVF-0042"
+		)
+		self.assertEqual(frappe.db.get_value("Series", "TESTSVF-", "current", order_by=None), current)
+
+	def test_date_parts_use_creation(self):
+		doc = frappe._dict(creation="2020-05-17 10:00:00")
+		self.assertEqual(parse_naming_series("TEST-.YYYY.-.MM.-.DD.-", doc=doc), "TEST-2020-05-17-")
 
 
 def parse_naming_series_variable(doc, variable):

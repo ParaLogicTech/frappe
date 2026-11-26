@@ -12,7 +12,7 @@ from frappe.core.doctype.notification_count.notification_count import (
 	set_notification_last_scheduled,
 )
 from frappe.core.doctype.role.role import get_info_based_on_role, get_user_info
-from frappe.core.doctype.sms_settings.sms_settings import clean_receiver_nos, send_sms
+from frappe.core.doctype.sms_settings.sms_settings import clean_receiver_nos, queue_or_send_sms
 from frappe.desk.doctype.notification_log.notification_log import enqueue_create_notification
 from frappe.integrations.doctype.slack_webhook_url.slack_webhook_url import send_slack_message
 from frappe.model.base_document import get_controller
@@ -70,6 +70,9 @@ class Notification(Document):
 		method: DF.Data | None
 		module: DF.Link | None
 		notification_key: DF.Data | None
+		notification_message: DF.SmallText | None
+		notification_title: DF.Data | None
+		notification_type: DF.Link | None
 		print_format: DF.Link | None
 		property_value: DF.Data | None
 		recipients: DF.Table[NotificationRecipient]
@@ -94,13 +97,19 @@ class Notification(Document):
 
 	def autoname(self):
 		if not self.name:
-			self.name = self.subject
+			# Subject is optional for System Notification rules; fall back to the headline.
+			self.name = self.subject or self.notification_title
 
 	def validate(self):
 		if self.channel in ("Email", "Slack", "System Notification"):
 			validate_template(self.subject)
 
 		validate_template(self.message)
+
+		if self.notification_title:
+			validate_template(self.notification_title)
+		if self.notification_message:
+			validate_template(self.notification_message)
 
 		if self.event in ("Days Before", "Days After") and not self.date_changed:
 			frappe.throw(_("Please specify which date field must be checked"))
@@ -201,9 +210,7 @@ def get_context(context):
 		if not context:
 			context = {}
 
-		context.update({"doc": doc, "alert": self, "comments": None})
-		if doc.get("_comments"):
-			context["comments"] = json.loads(doc.get("_comments"))
+		context.update({"doc": doc, "alert": self, "comments": get_comments_for_context(doc)})
 
 		if self.is_standard:
 			self.load_standard_properties(context)
@@ -265,15 +272,25 @@ def get_context(context):
 			)
 
 	def create_system_notification(self, doc, context):
-		if self.flags.message:
-			subject = self.flags.subject
-			message = self.flags.message
-		else:
-			subject = self.subject
-			if "{" in subject:
-				subject = frappe.render_template(self.subject, context)
+		def _render(template):
+			# Templates (subject / notification_title / notification_message) come from the
+			# System Notification rule, authored by System Managers — the same trusted source as
+			# the other render_template calls in this controller.
+			if not (template and "{" in template):
+				return template
+			return frappe.render_template(  # nosemgrep: frappe-semgrep-rules.rules.security.frappe-ssti
+				template, context, restrict_globals=True
+			)
 
-			message = frappe.render_template(self.message, context)
+		# Title falls back to the email Subject so existing rules keep their headline.
+		# Description, however, comes ONLY from the dedicated Notification Message — we do not
+		# fall back to the email Message, whose default placeholder ("Add your message here")
+		# would otherwise leak into the panel. This matches the older behaviour where the bell
+		# showed just the headline when there was no body.
+		# Reuse what the primary channel rendered: its subject and message may come from an Email Template.
+		subject = self.flags.subject or _render(self.subject)
+		title = _render(self.notification_title) or subject
+		description = _render(self.notification_message)
 
 		attachments = self.get_attachment(doc)
 
@@ -285,12 +302,22 @@ def get_context(context):
 			return
 
 		notification_doc = {
-			"type": "Alert",
+			"type": self.notification_type or "Alert",
 			"document_type": get_reference_doctype(doc),
 			"document_name": get_reference_name(doc),
+			# Scope the in-app notification to the rule's own app so it appears in that app's panel
+			# even when the reference document belongs to a different app (or there is none).
+			# Falls through to NotificationLog.before_insert's document_type derivation when unset.
+			"app": frappe.db.get_value("Module Def", self.module, "app_name") if self.module else None,
+			"title": title,
 			"subject": subject,
+			"description": description,
+			# Email body comes from the rule's Message field (its dedicated purpose), not the
+			# in-app Description: a non-skip notification_type can make the log email itself
+			# (NotificationLog.after_insert), and a blank Notification Message must not produce a
+			# body-less email. This restores the pre-split behaviour (email_content <- self.message).
+			"email_content": self.flags.message or _render(self.message),
 			"from_user": doc.modified_by or doc.owner,
-			"email_content": message,
 			"attached_file": json.dumps(attachments) if attachments else None,
 		}
 
@@ -326,9 +353,9 @@ def get_context(context):
 		else:
 			subject = self.subject
 			if "{" in subject:
-				subject = frappe.render_template(self.subject, context)
+				subject = frappe.render_template(self.subject, context, restrict_globals=True)
 
-			message = frappe.render_template(self.message, context)
+			message = frappe.render_template(self.message, context, restrict_globals=True)
 
 		self.flags.subject = subject
 		self.flags.message = message
@@ -403,7 +430,7 @@ def get_context(context):
 		)
 
 	def send_a_slack_msg(self, doc, context):
-		message = frappe.render_template(self.message, context)
+		message = frappe.render_template(self.message, context, restrict_globals=True)
 		self.flags.message = message
 
 		send_slack_message(
@@ -417,7 +444,7 @@ def get_context(context):
 		if frappe.are_sms_muted():
 			return
 
-		message = frappe.render_template(self.message, context)
+		message = frappe.render_template(self.message, context, restrict_globals=True)
 		self.flags.message = message
 
 		timeline_doctype, timeline_name = self.get_timeline_doctype_and_name(doc)
@@ -437,7 +464,7 @@ def get_context(context):
 				child_name=context.get("child_name"),
 			)
 
-		send_sms(
+		queue_or_send_sms(
 			receiver_list=receiver_list,
 			message=message,
 			reference_doctype=get_reference_doctype(doc),
@@ -630,7 +657,7 @@ def get_context(context):
 
 
 @frappe.whitelist()
-def get_documents_for_today(notification):
+def get_documents_for_today(notification: str):
 	notification = frappe.get_doc("Notification", notification)
 	notification.check_permission("read")
 	return [d.name for d in notification.get_documents_for_today()]
@@ -779,6 +806,37 @@ def has_notification(reference_doctype, notification_key=None, trigger_method=No
 	return len(template) > 0
 
 
+def get_comments_for_context(doc):
+	"""`{{ comments }}` for notification templates, in the shape the `_comments` cache had."""
+	if not doc.get("name"):
+		return None
+
+	reference = {"reference_doctype": doc.doctype, "reference_name": doc.name}
+	comments = frappe.get_all(
+		"Comment",
+		fields=["name", "content", "comment_email as author", "owner", "creation"],
+		filters=reference | {"comment_type": "Comment"},
+		order_by="creation desc",
+		limit=100,
+	) + frappe.get_all(
+		"Communication",
+		fields=["name", "content", "sender as author", "owner", "creation"],
+		filters=reference,
+		order_by="creation desc",
+		limit=100,
+	)
+	comments.sort(key=lambda c: c.creation)
+	return [
+		{"comment": truncate(c.content), "by": c.author or c.owner, "name": c.name} for c in comments[-100:]
+	] or None
+
+
+def truncate(content):
+	"""Preview length the `_comments` cache used to hand templates."""
+	content = content or ""
+	return (content[:97] + "...") if len(content) > 100 else content
+
+
 def get_context(doc):
 	return {
 		"doc": doc,
@@ -801,7 +859,7 @@ def get_emails_from_template(template, context):
 	if not template:
 		return ()
 
-	emails = frappe.render_template(template, context) if "{" in template else template
+	emails = frappe.render_template(template, context, restrict_globals=True) if "{" in template else template
 	return filter(None, emails.replace(",", "\n").split("\n"))
 
 

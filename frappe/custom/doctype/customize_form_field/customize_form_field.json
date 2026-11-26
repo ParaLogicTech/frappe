@@ -82,7 +82,7 @@
    "label": "Field Type",
    "oldfieldname": "fieldtype",
    "oldfieldtype": "Select",
-   "options": "Autocomplete\nAttach\nAttach Image\nBarcode\nButton\nCheck\nCode\nColor\nColumn Break\nCurrency\nData\nDate\nDatetime\nDuration\nDynamic Link\nFloat\nFold\nGeolocation\nHeading\nHTML\nHTML Editor\nIcon\nImage\nInt\nLink\nLong Text\nMarkdown Editor\nPassword\nPercent\nPhone\nRating\nRead Only\nSection Break\nSelect\nSignature\nSmall Text\nTab Break\nTable\nTable MultiSelect\nText\nText Editor\nTime",
+   "options": "Autocomplete\nAttach\nAttach Image\nAttachment Gallery\nBarcode\nButton\nCheck\nCode\nColor\nColumn Break\nCurrency\nData\nDate\nDatetime\nDuration\nDynamic Link\nFloat\nFold\nGeolocation\nHeading\nHTML\nHTML Editor\nIcon\nImage\nInt\nLink\nLong Text\nMarkdown Editor\nPassword\nPercent\nPhone\nRating\nRead Only\nSection Break\nSelect\nSignature\nSmall Text\nTab Break\nTable\nTable MultiSelect\nText\nText Editor\nTime",
    "reqd": 1,
    "search_index": 1,
    "sort_options": 1
@@ -100,7 +100,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:!in_list([\"Section Break\", \"Column Break\", \"Button\", \"HTML\"], doc.fieldtype)",
+   "depends_on": "eval:!['Section Break', 'Column Break', 'Button', 'HTML', 'Attachment Gallery'].includes(doc.fieldtype)",
    "fieldname": "reqd",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -112,12 +112,14 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "unique",
    "fieldtype": "Check",
    "label": "Unique"
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "is_virtual",
    "fieldtype": "Check",
    "label": "Is Virtual"
@@ -125,6 +127,7 @@
   {
    "columns": 1,
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery' && (!doc.is_virtual)",
    "fieldname": "in_list_view",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -133,6 +136,7 @@
   {
    "columns": 1,
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "in_standard_filter",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -147,6 +151,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "bold",
    "fieldtype": "Check",
    "label": "Bold"
@@ -178,6 +183,7 @@
   },
   {
    "columns": 2,
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "description": "For Links, enter the DocType as range.\nFor Select, enter list of Options, each on a new line.",
    "fieldname": "options",
    "fieldtype": "Small Text",
@@ -274,6 +280,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "report_hide",
    "fieldtype": "Check",
    "label": "Report Hide",
@@ -288,6 +295,7 @@
    "label": "Remember Last Selected Value"
   },
   {
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "default",
    "fieldtype": "Small Text",
    "label": "Default",
@@ -297,6 +305,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "in_filter",
    "fieldtype": "Check",
    "label": "In Filter",
@@ -317,6 +326,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "print_hide",
    "fieldtype": "Check",
    "label": "Print Hide",
@@ -331,6 +341,7 @@
    "label": "Print Hide If No Value"
   },
   {
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "description": "Print Width of the field, if the field is a column in a table",
    "fieldname": "print_width",
    "fieldtype": "Data",
@@ -339,13 +350,14 @@
    "width": "50px"
   },
   {
-   "depends_on": "eval:parent.istable",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery' && (parent.istable)",
    "description": "Number of columns for a field in a Grid (Total Columns in a grid should be less than 11)",
    "fieldname": "columns",
    "fieldtype": "Int",
    "label": "Columns"
   },
   {
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "width",
    "fieldtype": "Data",
    "label": "Width",
@@ -364,11 +376,13 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "allow_in_quick_entry",
    "fieldtype": "Check",
    "label": "Allow in Quick Entry"
   },
   {
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "mandatory_depends_on",
    "fieldtype": "Code",
    "label": "Mandatory Depends On (JS)",
@@ -384,7 +398,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:!in_list(['Table', 'Table MultiSelect'], doc.fieldtype);",
+   "depends_on": "eval:!['Table', 'Table MultiSelect', 'Attachment Gallery'].includes(doc.fieldtype)",
    "fieldname": "in_preview",
    "fieldtype": "Check",
    "label": "In Preview"
@@ -426,6 +440,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "no_copy",
    "fieldtype": "Check",
    "label": "No Copy"
@@ -440,6 +455,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "description": "Don't encode HTML tags like &lt;script&gt; or just characters like &lt; or &gt;, as they could be intentionally used in this field",
    "fieldname": "ignore_xss_filter",
    "fieldtype": "Check",
@@ -459,11 +475,14 @@
    "label": "Sort Options"
   },
   {
+   "depends_on": "eval:['Attachment Gallery', 'Link'].includes(doc.fieldtype)",
+   "description": "Filters applied to Link queries and Attachment Gallery files.",
    "fieldname": "link_filters",
    "fieldtype": "JSON",
-   "label": "Link Filters"
+   "label": "Filters"
   },
   {
+   "depends_on": "eval:doc.fieldtype !== 'Attachment Gallery'",
    "fieldname": "placeholder",
    "fieldtype": "Data",
    "label": "Placeholder"
@@ -474,7 +493,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-04-06 15:50:59.905389",
+ "modified": "2026-07-17 16:27:05.328159",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Customize Form Field",

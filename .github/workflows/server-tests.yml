@@ -5,13 +5,14 @@ on:
     branches:
       - version-15
   pull_request:
+  merge_group:
   workflow_dispatch:
   schedule:
     # Run weekly, Sunday midnight UTC
     - cron: "0 0 * * 0"
 
 concurrency:
-  group: server-develop-${{ github.event_name }}-${{ github.event.number }}
+  group: server-develop-${{ github.event_name }}-${{ github.event.number || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
@@ -37,6 +38,8 @@ jobs:
         env:
           TYPE: "server"
           PR_NUMBER: ${{ github.event.number }}
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          HEAD_SHA: ${{ github.event.merge_group.head_sha }}
           REPO_NAME: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -86,7 +89,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Check for valid Python & Merge Conflicts
         run: |
