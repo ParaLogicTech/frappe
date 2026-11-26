@@ -603,9 +603,16 @@ def _awesomebar_bad_items(txt):
 	]
 
 
-@frappe.whitelist()
+@whitelist_for_tests
 @frappe.validate_and_sanitize_search_inputs
-def query_with_typed_values(doctype, txt, searchfield, start, page_len, filters):
+def query_with_typed_values(
+	doctype: str,
+	txt: str,
+	searchfield: str,
+	start: int,
+	page_len: int,
+	filters: str | list | dict[str, Any],
+):
 	return [["_Test", datetime.date(2026, 1, 2), 1234.5, 3, None, 0]]
 
 
