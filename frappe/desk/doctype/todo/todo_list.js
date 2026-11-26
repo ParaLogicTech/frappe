@@ -3,6 +3,8 @@ frappe.listview_settings["ToDo"] = {
 	add_fields: ["reference_type", "reference_name"],
 
 	onload: function (me) {
+		// onload also runs in the Report, Kanban and Calendar views, which have titles of their own
+		if (me.view_name !== "List") return;
 		me.page.set_title(__("To Do"));
 	},
 
