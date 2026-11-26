@@ -23,7 +23,7 @@
     "@frappe/esbuild-plugin-postcss2": "^0.1.3",
     "@headlessui/vue": "^1.7.16",
     "@paralogic/air-datepicker": "^2.2.7",
-    "@paralogic/frappe-datatable": "^1.20.7",
+    "@paralogic/frappe-datatable": "^1.27.2",
     "@popperjs/core": "^2.11.2",
     "@redis/client": "^1.5.8",
     "@sentry/browser": "^7.119.1",
