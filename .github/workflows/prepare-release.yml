@@ -1,0 +1,50 @@
+# Fork releases are versioned <upstream version>+pl.<n>. This opens a PR that bumps __version__ to the next one;
+# merging it creates a draft GitHub release (publish-release.yml).
+# After merging an upstream release, resolve the __version__ conflict to upstream's plain version, so the next
+# release becomes <new upstream version>+pl.1.
+name: Prepare Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare:
+    name: Open release PR
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'ParaLogicTech'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: version-15
+
+      - name: Bump version
+        id: version
+        run: |
+          current=$(sed -nE 's/^__version__ = "(.*)"$/\1/p' frappe/__init__.py)
+          base=${current%%+*}
+          if [[ "$current" =~ \+pl\.([0-9]+)$ ]]; then
+            next="$base+pl.$((BASH_REMATCH[1] + 1))"
+          else
+            next="$base+pl.1"
+          fi
+          sed -i -E "s/^__version__ = \".*\"$/__version__ = \"$next\"/" frappe/__init__.py
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+
+      - name: Open PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.next }}
+        run: |
+          branch="release/v$VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git commit -am "chore(release): v$VERSION"
+          git push origin "$branch"
+          gh pr create --base version-15 --head "$branch" --title "chore(release): v$VERSION" \
+            --body "Bumps the fork version to \`$VERSION\`. Merging this PR creates a draft GitHub release to review and publish."

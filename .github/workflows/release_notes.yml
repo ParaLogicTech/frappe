@@ -25,6 +25,7 @@ jobs:
   regen-notes:
     name: 'Regenerate release notes'
     runs-on: ubuntu-latest
+    if: github.repository_owner == 'frappe'
 
     steps:
     - name: Get Frappe Release Bot token

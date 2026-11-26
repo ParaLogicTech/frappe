@@ -14,6 +14,7 @@ jobs:
   build-release-and-publish:
     name: 'Build and Publish Assets built for Releases'
     runs-on: ubuntu-latest
+    if: github.repository_owner == 'frappe'
 
     steps:
       - uses: actions/checkout@v4
@@ -54,6 +55,7 @@ jobs:
   docker-release:
     name: 'Trigger Docker build on release'
     runs-on: ubuntu-latest
+    if: github.repository_owner == 'frappe'
     permissions:
       contents: none
     container:
