@@ -1511,11 +1511,11 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 	}
 
 	setup_realtime_updates() {
-		this.pending_document_refreshes = [];
-
+		// runs after every refresh, and a refresh can be skipped (throttled), so keep the queued updates
 		if (this.list_view_settings?.disable_auto_refresh || this.realtime_events_setup) {
 			return;
 		}
+		this.pending_document_refreshes = [];
 		frappe.realtime.doctype_subscribe(this.doctype);
 		frappe.realtime.off("list_update");
 		frappe.realtime.on("list_update", (data) => {
