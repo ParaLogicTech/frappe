@@ -365,6 +365,26 @@ class TestJinjaGlobals(FrappeTestCase):
 		self.assertIs(get_jenv(restrict_globals=True), jenv_restricted)
 		self.assertIs(get_jenv(restrict_globals=False), jenv_unrestricted)
 
+	def test_restricted_globals_return_read_only_docs(self):
+		from frappe.model.document import Document
+
+		frappe_globals = get_jenv(restrict_globals=True).globals["frappe"]
+		docs = [
+			frappe_globals["get_doc"]("User", "Administrator"),
+			frappe_globals["get_cached_doc"]("User", "Administrator"),
+			frappe_globals["get_last_doc"]("User"),
+		]
+		for doc in docs:
+			self.assertIsInstance(doc, SafeDoc)
+			self.assertNotIsInstance(doc, Document)
+
+		self.assertNotIn("get_single", frappe_globals)
+		self.assertNotIn("get_mapped_doc", frappe_globals)
+
+		unrestricted_globals = get_jenv(restrict_globals=False).globals["frappe"]
+		self.assertIs(unrestricted_globals["get_single"], frappe.get_single)
+		self.assertIs(unrestricted_globals["get_doc"], frappe.get_doc)
+
 	def test_module_path_hook_excludes_merely_imported_functions(self):
 		"""Module-path jinja hooks must not expose functions merely imported into that module."""
 		from subprocess import check_output
