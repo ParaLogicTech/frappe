@@ -545,6 +545,7 @@ def render_safe_globals():
 	# allow iterators and list comprehension
 	out._getiter_ = iter
 	out._iter_unpack_sequence_ = RestrictedPython.Guards.guarded_iter_unpack_sequence
+	out._inplacevar_ = protected_inplacevar
 	out.sorted = sorted
 
 	# add common python builtins, also remove standard builtins

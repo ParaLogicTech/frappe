@@ -25,6 +25,13 @@ class TestSafeExec(FrappeTestCase):
 		safe_exec("""out = frappe.utils.cint("1")""", None, _locals)
 		self.assertEqual(_locals["out"], 1)
 
+	def test_augmented_assignment(self):
+		_locals = dict(out=None)
+		safe_exec("x = 1\nx += 2\nitems = [1]\nitems += [2]\nout = (x, items)", None, _locals)
+		self.assertEqual(_locals["out"], (3, [1, 2]))
+
+		self.assertRaises(TypeError, safe_exec, "d = {}\nd |= {'a': 1}")
+
 	def test_safe_eval(self):
 		TEST_CASES = {
 			"1+1": 2,
