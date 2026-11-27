@@ -18,6 +18,7 @@
 	<a target="_blank" href="https://www.python.org/downloads/" title="Python version"><img src="https://img.shields.io/badge/python-%3E=_3.11-success.svg"></a>
 	<a href="https://frappeframework.com/docs"><img src="https://img.shields.io/badge/docs-%F0%9F%93%96-success.svg"/></a>
 	<a href="https://github.com/ParaLogicTech/frappe/actions/workflows/server-tests.yml"><img src="https://github.com/ParaLogicTech/frappe/actions/workflows/server-tests.yml/badge.svg?branch=version-15"></a>
+	<a href="https://github.com/ParaLogicTech/frappe/actions/workflows/ui-tests.yml"><img src="https://github.com/ParaLogicTech/frappe/actions/workflows/ui-tests.yml/badge.svg?branch=version-15"></a>
 </div>
 
 > [!NOTE]
