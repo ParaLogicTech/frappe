@@ -1603,8 +1603,7 @@ from {tables}
 		if any(re.search(r"\b" + pattern + r"\b", sanitized) for pattern in subquery_indicators):
 			frappe.throw(_("Cannot use sub-query here."))
 
-		# blacklisted_operators = {"if", "regexp", "rlike", "like"}
-		blacklisted_operators = {"regexp", "rlike", "like"}
+		blacklisted_operators = {"if", "regexp", "rlike", "like"}
 		if any(re.search(r"\b" + op + r"\b", sanitized) for op in blacklisted_operators):
 			frappe.throw(_("Illegal SQL Query"))
 
