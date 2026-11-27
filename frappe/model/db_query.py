@@ -1161,7 +1161,7 @@ from {tables}
 
 			nodes = []
 			lft, rgt = "", ""
-			lft_rgt = frappe.db.get_value(ref_doctype, f.value, ["lft", "rgt"]) if f.values else None
+			lft_rgt = frappe.db.get_value(ref_doctype, f.value, ["lft", "rgt"]) if f.value else None
 			if lft_rgt:
 				lft, rgt = lft_rgt
 				lt_op, gt_op = (
