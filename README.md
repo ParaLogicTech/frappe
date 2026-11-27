@@ -1,10 +1,5 @@
 <div align="center">
-	<h1>
-		<br>
-		<a href="https://frappeframework.com">
-			<img src=".github/frappe-framework-logo.svg" height="50">
-		</a>
-	</h1>
+	<h1>Frappe Framework</h1>
 	<h3>
 		a web framework with <a href="https://www.youtube.com/watch?v=LOjk3m0wTwg">"batteries included"</a>
 	</h3>
@@ -28,18 +23,7 @@
 > changes ParaLogic's apps need. It is not an official Frappe release and is not supported by Frappe Technologies.
 
 Full-stack web application framework that uses Python and MariaDB on the server side and a tightly integrated client
-side library. Built for [ERPNext](https://erpnext.com).
-
-## Table of Contents
-* [How this fork differs](#how-this-fork-differs)
-* [Installation](#installation)
-* [Versions](#versions)
-* [Keeping up with upstream](#keeping-up-with-upstream)
-* [Compatibility](#compatibility)
-* [Reporting issues](#reporting-issues)
-* [Contributing](#contributing)
-* [Resources](#resources)
-* [License](#license)
+side library. Upstream Frappe is built for [ERPNext](https://erpnext.com); this fork runs ParaLogic's ERPNext fork.
 
 ## How this fork differs
 
@@ -60,8 +44,8 @@ The fork follows upstream `version-15` and adds to it. The main additions:
 Some upstream behaviour is also changed: different defaults (time zone `Asia/Karachi`, Monday as the first day of
 the week, 12-hour time), a few checks relaxed, and a few function signatures extended.
 
-**[FORK.md](FORK.md) lists every difference**, where it lives in the code and what it affects. Read it before you
-rely on upstream documentation for anything listed there.
+**[FORK.md](FORK.md) lists every difference**, where it lives in the code and what it affects. Check it before
+relying on upstream documentation.
 
 ## Installation
 
@@ -73,16 +57,23 @@ fork instead of stock Frappe:
 bench init --frappe-path https://github.com/ParaLogicTech/frappe --frappe-branch version-15 frappe-bench
 ```
 
-To switch an existing bench to the fork:
+To switch an existing v15 bench to the fork, back up every site first: migrating runs the fork's patches, and
+Contacts and Addresses created afterwards follow the fork's naming. Switching from a stock v15 release newer than the
+fork's base is a downgrade and isn't supported.
 
 ```bash
 bench remote-set-url https://github.com/ParaLogicTech/frappe
+git -C apps/frappe fetch upstream
+git -C apps/frappe checkout -B version-15 upstream/version-15
+bench setup requirements
+bench --site all migrate
+bench build
 ```
 
-Then check out `version-15` in `apps/frappe` and run `bench update` (or `bench migrate` and `bench build` on each
-site).
+The "Report" button on Desk server errors emails the traceback and request data to ParaLogic's address unless
+`error_report_email` is set in the site config. Set it to your own address.
 
-ParaLogic's apps (ERPNext fork, CRM and the product apps) require this fork; they won't run on stock Frappe.
+ParaLogic's ERPNext fork and CRM require this fork; they won't run on stock Frappe.
 
 ## Versions
 
@@ -98,13 +89,15 @@ based on, plus a ParaLogic build number that restarts at 1 for each upstream rel
   build number.
 - Fixes and features from newer upstream branches may be backported. Backported code is kept byte-identical to
   upstream, so later merges don't conflict. Backports are listed in [FORK.md](FORK.md#backports).
-- Fixes that aren't specific to this fork should go to [frappe/frappe](https://github.com/frappe/frappe) as well.
+- Fixes that aren't specific to this fork are sent to [frappe/frappe](https://github.com/frappe/frappe) where we
+  can, and we'd like to send more.
 
 ## Compatibility
 
 - Most apps written for Frappe v15 work on this fork. Check [FORK.md](FORK.md#changed-upstream-behaviour) if an
   app relies on the document mapper, `get_system_managers()`, Contact or Address naming, or the defaults listed
   there.
+- Stock ERPNext and HRMS aren't tested on this fork.
 - Python 3.11+, MariaDB 10.6+, Node 18+, as for upstream v15.
 
 ## Reporting issues
