@@ -4,9 +4,9 @@ on:
   pull_request:
   merge_group:
   workflow_dispatch:
-#  schedule:
-#    # Run everday at midnight UTC / 5:30 IST
-#    - cron: "0 0 * * *"
+  schedule:
+    # Run weekly, Sunday midnight UTC
+    - cron: "0 0 * * 0"
 
 concurrency:
   group: ui-develop-${{ github.event_name }}-${{ github.event.number || github.ref_name }}
