@@ -663,6 +663,44 @@ class TestImpersonation(FrappeAPITestCase):
 			self.assertEqual(resp.json["message"], user.name)
 
 
+class TestGetSystemManagers(FrappeTestCase):
+	def setUp(self):
+		frappe.get_doc("User", "Administrator").add_roles("System Manager")
+		self.admin_email = frappe.db.get_value("User", "Administrator", "email")
+
+	def tearDown(self):
+		frappe.db.set_value("User", "Administrator", "email", self.admin_email)
+
+	def test_returns_emails(self):
+		from email.utils import formataddr
+
+		from frappe.utils.user import get_system_managers
+
+		with test_user(roles=["System Manager"]) as user:
+			self.assertIn(user.email, get_system_managers())
+			self.assertIn(
+				formataddr((user.full_name, user.email)), get_system_managers(formatted_addresses=True)
+			)
+			self.assertIn(user.name, get_system_managers(only_name=True))
+
+			# the address comes from the email field, not the user name
+			frappe.db.set_value("User", user.name, "email", "other-address@example.org")
+			self.assertIn("other-address@example.org", get_system_managers())
+			self.assertNotIn(user.name, get_system_managers())
+
+	def test_administrator_with_real_email(self):
+		from frappe.email import get_system_managers as get_system_managers_from_email
+		from frappe.utils.user import get_system_managers
+
+		frappe.db.set_value("User", "Administrator", "email", "admin@example.com")
+		self.assertNotIn("admin@example.com", get_system_managers())
+
+		frappe.db.set_value("User", "Administrator", "email", "real-admin@example.org")
+		self.assertIn("real-admin@example.org", get_system_managers())
+		self.assertIn("real-admin@example.org", get_system_managers_from_email())
+		self.assertNotIn("Administrator", get_system_managers(only_name=True))
+
+
 @contextmanager
 def test_user(
 	*, first_name: str | None = None, email: str | None = None, roles: list[str], commit=False, **kwargs
