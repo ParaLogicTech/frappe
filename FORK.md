@@ -62,7 +62,9 @@ Read this first: these differences are the most likely to surprise someone who k
     `table_maps["postprocess"]`.
   - `map_child_doc(target_d=)` maps into an existing row; `map_docs(method_supports_list=)`.
   - Args in `frappe.flags.args`; `frappe.flags.postprocess_after_mapping`.
-- **`get_system_managers()`** (`utils/user.py`) returns plain addresses; `formatted_addresses=True` gives `Name <address>`.
+- **`get_system_managers()`** (`utils/user.py`) returns plain addresses from the User's `email` field;
+  `formatted_addresses=True` gives `Name <address>`. Administrator is included once its email is changed from the
+  placeholder `admin@example.com`. `frappe.email.get_system_managers()` wraps it.
 - **`search_widget`** (`desk/search.py`): exact name match first, relevance by match position, formatted results (`format_values=1`).
 - **`import_file_by_path`** (`modules/import_file.py`) re-imports when `modified` differs at all (upstream: only when newer). DocType shows
   "newer JSON" on any difference. Report `add_total_row` syncs from JSON.
