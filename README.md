@@ -1,5 +1,10 @@
 <div align="center">
-	<h1>Frappe Framework</h1>
+	<h1>
+		<br>
+		<a href="https://frappeframework.com">
+			<img src=".github/frappe-framework-logo.svg" height="50">
+		</a>
+	</h1>
 	<h3>
 		a web framework with <a href="https://www.youtube.com/watch?v=LOjk3m0wTwg">"batteries included"</a>
 	</h3>
@@ -57,19 +62,6 @@ fork instead of stock Frappe:
 bench init --frappe-path https://github.com/ParaLogicTech/frappe --frappe-branch version-15 frappe-bench
 ```
 
-To switch an existing v15 bench to the fork, back up every site first: migrating runs the fork's patches, and
-Contacts and Addresses created afterwards follow the fork's naming. Switching from a stock v15 release newer than the
-fork's base is a downgrade and isn't supported.
-
-```bash
-bench remote-set-url https://github.com/ParaLogicTech/frappe
-git -C apps/frappe fetch upstream
-git -C apps/frappe checkout -B version-15 upstream/version-15
-bench setup requirements
-bench --site all migrate
-bench build
-```
-
 The "Report" button on Desk server errors emails the traceback and request data to ParaLogic's address unless
 `error_report_email` is set in the site config. Set it to your own address.
 
@@ -94,10 +86,10 @@ based on, plus a ParaLogic build number that restarts at 1 for each upstream rel
 
 ## Compatibility
 
-- Most apps written for Frappe v15 work on this fork. Check [FORK.md](FORK.md#changed-upstream-behaviour) if an
-  app relies on the document mapper, `get_system_managers()`, Contact or Address naming, or the defaults listed
-  there.
-- Stock ERPNext and HRMS aren't tested on this fork.
+- Apps written for stock Frappe v15 may need changes. The document mapper's table-map `condition`, `filter` and
+  `postprocess` callbacks receive extra arguments, so callbacks written for upstream fail. Also check
+  [FORK.md](FORK.md#changed-upstream-behaviour) if an app relies on `get_system_managers()`, Contact or Address
+  naming, or the defaults listed there.
 - Python 3.11+, MariaDB 10.6+, Node 18+, as for upstream v15.
 
 ## Reporting issues
