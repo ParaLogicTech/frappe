@@ -25,6 +25,13 @@ class TestSafeExec(FrappeTestCase):
 		safe_exec("""out = frappe.utils.cint("1")""", None, _locals)
 		self.assertEqual(_locals["out"], 1)
 
+	def test_augmented_assignment(self):
+		_locals = dict(out=None)
+		safe_exec("x = 1\nx += 2\nitems = [1]\nitems += [2]\nout = (x, items)", None, _locals)
+		self.assertEqual(_locals["out"], (3, [1, 2]))
+
+		self.assertRaises(TypeError, safe_exec, "d = {}\nd |= {'a': 1}")
+
 	def test_safe_eval(self):
 		TEST_CASES = {
 			"1+1": 2,
@@ -364,6 +371,26 @@ class TestJinjaGlobals(FrappeTestCase):
 		self.assertIsNot(jenv_restricted.globals, jenv_unrestricted.globals)
 		self.assertIs(get_jenv(restrict_globals=True), jenv_restricted)
 		self.assertIs(get_jenv(restrict_globals=False), jenv_unrestricted)
+
+	def test_restricted_globals_return_read_only_docs(self):
+		from frappe.model.document import Document
+
+		frappe_globals = get_jenv(restrict_globals=True).globals["frappe"]
+		docs = [
+			frappe_globals["get_doc"]("User", "Administrator"),
+			frappe_globals["get_cached_doc"]("User", "Administrator"),
+			frappe_globals["get_last_doc"]("User"),
+		]
+		for doc in docs:
+			self.assertIsInstance(doc, SafeDoc)
+			self.assertNotIsInstance(doc, Document)
+
+		self.assertNotIn("get_single", frappe_globals)
+		self.assertNotIn("get_mapped_doc", frappe_globals)
+
+		unrestricted_globals = get_jenv(restrict_globals=False).globals["frappe"]
+		self.assertIs(unrestricted_globals["get_single"], frappe.get_single)
+		self.assertIs(unrestricted_globals["get_doc"], frappe.get_doc)
 
 	def test_module_path_hook_excludes_merely_imported_functions(self):
 		"""Module-path jinja hooks must not expose functions merely imported into that module."""

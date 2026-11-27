@@ -101,6 +101,23 @@ class TestBlogPost(FrappeTestCase):
 			frappe.delete_doc(blog.doctype, blog.name)
 		frappe.delete_doc("Blog Category", blogs[0].blog_category)
 
+	def test_blog_search(self):
+		blog = make_test_blog("Search Category")
+		blog_without_blogger = make_test_blog("Search Category")
+		blog_without_blogger.db_set("blogger", None)
+
+		filters = frappe._dict({"blog_category": scrub("Search Category")})
+
+		self.assertEqual([d.name for d in get_blog_list(None, blog.title, filters)], [blog.name])
+		self.assertEqual(
+			[d.name for d in get_blog_list(None, blog_without_blogger.content, filters)],
+			[blog_without_blogger.name],
+		)
+
+		for d in (blog, blog_without_blogger):
+			frappe.delete_doc(d.doctype, d.name)
+		frappe.delete_doc("Blog Category", blog.blog_category)
+
 	def test_caching(self):
 		# to enable caching
 		frappe.flags.force_website_cache = True

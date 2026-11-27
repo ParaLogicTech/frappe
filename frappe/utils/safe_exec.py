@@ -451,12 +451,10 @@ def render_safe_globals():
 			bold=frappe.bold,
 			errprint=frappe.errprint,
 			qb=frappe.qb,
-			get_meta=frappe.get_meta,
-			get_doc=frappe.get_doc,
-			get_single=frappe.get_single,
-			get_mapped_doc=get_mapped_doc,
-			get_last_doc=frappe.get_last_doc,
-			get_cached_doc=frappe.get_cached_doc,
+			get_meta=safer_get_meta,
+			get_doc=get_doc_as_dict,
+			get_last_doc=safer_get_last_doc,
+			get_cached_doc=safer_get_cached_doc,
 			get_cached_value=frappe.get_cached_value,
 			get_list=safe_get_list,
 			get_all=safe_get_all,
@@ -547,6 +545,7 @@ def render_safe_globals():
 	# allow iterators and list comprehension
 	out._getiter_ = iter
 	out._iter_unpack_sequence_ = RestrictedPython.Guards.guarded_iter_unpack_sequence
+	out._inplacevar_ = protected_inplacevar
 	out.sorted = sorted
 
 	# add common python builtins, also remove standard builtins
@@ -565,6 +564,7 @@ def exec_safe_globals():
 			copy_doc=frappe.copy_doc,
 			new_doc=frappe.new_doc,
 			get_doc=frappe.get_doc,
+			get_single=frappe.get_single,
 			get_mapped_doc=get_mapped_doc,
 			rename_doc=rename_doc,
 			delete_doc=delete_doc,
