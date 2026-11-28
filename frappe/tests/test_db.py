@@ -884,6 +884,26 @@ class TestDBSetValue(FrappeTestCase):
 		cached_doc = frappe.get_cached_doc(self.todo2.doctype, self.todo2.name)
 		self.assertEqual(cached_doc.description, description)
 
+	def test_cleared_value_cache(self):
+		todo = self.todo2
+		todo.reload()
+
+		# init the get_value cache for a single field and a list of fields
+		frappe.db.get_value(todo.doctype, todo.name, "description", cache=True)
+		frappe.db.get_value(todo.doctype, todo.name, ["description", "priority"], cache=True)
+
+		description = f"{todo.description}-edit by `test_cleared_value_cache`"
+		frappe.db.set_value(todo.doctype, todo.name, {"description": description, "priority": "High"})
+		self.assertEqual(frappe.db.get_value(todo.doctype, todo.name, "description", cache=True), description)
+		self.assertEqual(
+			frappe.db.get_value(todo.doctype, todo.name, ["description", "priority"], cache=True),
+			(description, "High"),
+		)
+
+		# db_set writes through set_value
+		todo.db_set("priority", "Low")
+		self.assertEqual(frappe.db.get_value(todo.doctype, todo.name, "priority", cache=True), "Low")
+
 	@classmethod
 	def tearDownClass(cls):
 		frappe.db.rollback()
