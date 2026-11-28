@@ -72,6 +72,9 @@ Read this first: these differences are the most likely to surprise someone who k
   without wiping others (`set_role_list`).
 - **Contact**: primary/secondary email and mobile are synced with the child tables, replacing upstream's "only one
   primary" validation.
+- **`db.set_value`** (`database/database.py`) clears the doctype's `get_value(..., cache=True)` entries too, so a
+  cached read later in the transaction returns the new value (upstream clears only the Single doctype cache).
+  `db.clear_value_cache(doctype)` does it for other raw writes.
 - `get_desk_link` uses `get_url_to_form` and shows the name.
 - Version diffs compare formatted values (Int with thousand separators, Percent without `.00`).
 - Website home page: hooks win over role home pages. (`website/utils.py`)

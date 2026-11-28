@@ -1014,8 +1014,15 @@ class Database:
 
 			notify_doc_update(dt, dn, to_update.get("modified") or modified)
 
-		if dt in self.value_cache:
-			del self.value_cache[dt]
+		self.clear_value_cache(dt)
+
+	def clear_value_cache(self, doctype: str):
+		"""Remove the doctype's entries from the transaction's local value cache: the dict that
+		`get_single_value` caches under the doctype name and the `(doctype, name, fieldname)` keys that
+		`get_value(..., cache=True)` caches under."""
+		self.value_cache.pop(doctype, None)
+		for key in [k for k in self.value_cache if isinstance(k, tuple) and k[0] == doctype]:
+			del self.value_cache[key]
 
 	def bulk_update(
 		self,
